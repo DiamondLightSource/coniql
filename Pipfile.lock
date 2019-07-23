@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "aed82427c69ac27fe87becf9a735e716f6c83c886ad825435132e00b5c9d450e"
+            "sha256": "3c4cf71671c284a9be99341481b8c2179046f1d586cb11d8614fe9ced91ad874"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -70,6 +70,12 @@
             ],
             "version": "==3.0.4"
         },
+        "epicscorelibs": {
+            "hashes": [
+                "sha256:2f02d87ec57f8f1173dc16b54fc7dea53d06768deecd1da9787187d8df86ca41"
+            ],
+            "version": "==7.0.2.99.0.0"
+        },
         "graphql-core": {
             "hashes": [
                 "sha256:c7430780dce5a8616c601647ed11ebe2c8198d602704d5b5ec18ffdb3c893a94",
@@ -132,6 +138,25 @@
                 "sha256:db603a1c235d110c860d5f39988ebc8218ee028f07a7cbc056ba6424372ca31b"
             ],
             "version": "==4.5.2"
+        },
+        "nose": {
+            "hashes": [
+                "sha256:9ff7c6cc443f8c51994b34a667bbcf45afd6d945be7477b52e97516fd17c53ac"
+            ],
+            "version": "==1.3.7"
+        },
+        "numpy": {
+            "hashes": [
+                "sha256:cbddc56b2502d3f87fda4f98d948eb5b11f36ff3902e17cb6cc44727f2200525"
+            ],
+            "version": "==1.16.4"
+        },
+        "p4p": {
+            "hashes": [
+                "sha256:ed2a52c0611101cf17a4fb3c9cfc43a1eb3e608c8899c56bc89607a9034de8fb"
+            ],
+            "index": "pypi",
+            "version": "==3.3.0"
         },
         "yarl": {
             "hashes": [

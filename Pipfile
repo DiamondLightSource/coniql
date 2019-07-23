@@ -11,6 +11,7 @@ graphql-core = "==3.0.0a0"
 aiohttp = "*"
 annotypes = "*"
 graphql-ws-next = "*"
+p4p = "*"
 
 [requires]
 python_version = "3.7"

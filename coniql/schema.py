@@ -1,22 +1,30 @@
-import asyncio
-
-import graphql
+from graphql import (
+    GraphQLObjectType,
+    GraphQLArgument as A,
+    GraphQLField as F,
+    GraphQLNonNull as NN,
+    GraphQLFloat, GraphQLString,
+    GraphQLSchema)
 
 from coniql.util import field_from_resolver
-from coniql.resolvers import say_hello
+from coniql.resolvers import say_hello, subscribe_float
 
-query_type = graphql.GraphQLObjectType('RootQueryType', dict(
+query_type = GraphQLObjectType('RootQueryType', dict(
     hello=field_from_resolver(say_hello)
 ))
 
-async def subscribe_time(root, info):
-    for i in range(10):
-        yield dict(time=str(i))
-        await asyncio.sleep(1)
+float_scalar_type = GraphQLObjectType("FloatScalar", dict(
+    typeid=F(NN(GraphQLString), description="Structure typeid"),
+    value=F(NN(GraphQLFloat), description="The value"),
+))
 
-subscription_type = graphql.GraphQLObjectType('RootSubscriptionType', dict(
-    time=graphql.GraphQLField(
-graphql.GraphQLNonNull(graphql.GraphQLString), subscribe=subscribe_time
-)))
 
-schema = graphql.GraphQLSchema(query=query_type, subscription=subscription_type)
+subscription_type = GraphQLObjectType('RootSubscriptionType', dict(
+    subscribeFloatScalar=F(
+        NN(float_scalar_type),
+        subscribe=subscribe_float,
+        args=dict(
+            channel=A(NN(GraphQLString), description="The channel name")))))
+
+
+schema = GraphQLSchema(query=query_type, subscription=subscription_type)
