@@ -3,8 +3,8 @@ from pathlib import Path
 
 from aiohttp import web
 from graphql import graphql
-import graphql_ws
-from graphql_ws.aiohttp import AiohttpConnectionContext
+import graphql_ws_next
+from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql.schema import schema
 from coniql.template import render_graphiql
@@ -34,11 +34,12 @@ async def graphql_view(request):
 
 
 async def graphiql_view(request):
-    return web.Response(text=render_graphiql(), headers={'Content-Type': 'text/html'})
+    return web.Response(
+        text=render_graphiql(), headers={'Content-Type': 'text/html'})
 
 
 async def handle_subscriptions(request):
-    wsr = web.WebSocketResponse(protocols=(graphql_ws.WS_PROTOCOL,))
+    wsr = web.WebSocketResponse(protocols=(graphql_ws_next.WS_PROTOCOL,))
     request.app["websockets"].add(wsr)
     await wsr.prepare(request)
     await request.app["subscription_server"].handle(wsr, None)
@@ -51,7 +52,7 @@ app.router.add_get('/subscriptions', handle_subscriptions)
 app.router.add_get('/graphiql', graphiql_view)
 app.router.add_get('/graphql', graphql_view)
 app.router.add_post('/graphql', graphql_view)
-app["subscription_server"] = graphql_ws.SubscriptionServer(
+app["subscription_server"] = graphql_ws_next.SubscriptionServer(
     schema, AiohttpConnectionContext
 )
 app["websockets"] = set()
