@@ -1,3 +1,5 @@
+#!/bin/env python
+
 import asyncio
 from pathlib import Path
 

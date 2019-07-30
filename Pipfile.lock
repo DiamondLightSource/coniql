@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3c4cf71671c284a9be99341481b8c2179046f1d586cb11d8614fe9ced91ad874"
+            "sha256": "e6e534ef5894ba817c67797cc20f9bd72213d3c42d0c38b2d4779ee5fee6abf5"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -83,21 +83,6 @@
             ],
             "index": "pypi",
             "version": "==3.0.0a0"
-        },
-        "graphql-core-next": {
-            "hashes": [
-                "sha256:254187ad5f5acdfd521429d87fd3c05896dc1b74ddcb30b1fa37905dc1dc7c13",
-                "sha256:76b52e7f654d8fc6abefc8583ebfd869a3939590813110ad27c0c0908b7d0659"
-            ],
-            "version": "==1.1.1"
-        },
-        "graphql-ws-next": {
-            "hashes": [
-                "sha256:423ce220833b55fc571d3a8c3b733c908672aecaba2546703eb24acd61dcfeb7",
-                "sha256:d76a019ea64730af77f3a0ff3e15de62502b132a4ae3a02628fca3725f2bf907"
-            ],
-            "index": "pypi",
-            "version": "==1.0.0"
         },
         "idna": {
             "hashes": [
