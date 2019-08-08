@@ -1,0 +1,80 @@
+"""
+A type that describes the user. Its description might not
+fit within the bounds of 80 width and so you want MULTILINE
+"""
+type User {
+     "The user's username, should be typed in the login field."
+     username: String!
+     "The user's password."
+     password: String!
+
+}
+
+enum Episode {
+     NEWHOPE
+     EMPIRE
+     JEDI
+}
+
+enum AlarmSeverity {
+     NO_ALARM, MINOR_ALARM, MAJOR_ALARM, INVALID_ALARM, UNDEFINED_ALARM
+}
+
+enum AlarmStatus {
+     NO_STATUS, DEVICE_STATUS, DRIVER_STATUS, RECORD_STATUS, DB_STATUS,
+     CONF_STATUS, UNDEFINED_STATUS, CLIENT_STATUS
+}
+
+"Alarms are attached to a number of fields to say if all is well"
+type Alarm {
+     "How bad is the alarm"
+     severity: AlarmSeverity
+     "What type of alarm is it"
+     status: AlarmStatus
+     "More info about the alarm"
+     message: String
+}
+
+"Timestamps indicate when a field was last updated"
+type Time {
+     "Seconds since Jan 1, 1970 00:00:00 UTC"
+     secondsPastEpoch: Float
+     "Nanoseconds relative to the secondsPastEpoch field"
+     nanoseconds: Int
+     "An integer value whose interpretation is deliberately undefined"
+     userTag: Int
+}
+
+enum DisplayForm {
+     DEFAULT, STRING, BINARY, DECIMAL, HEX, EXPONENTIAL, ENGINEERING
+}
+
+"Information on how to display a numerical value"
+type Display {
+     "Lower bound of expected range of values"
+     limitLow: Float
+     "Upper bound of expected range of values"
+     limitHigh: Float
+     "Description of what the value quantifies"
+     description: String
+     "Physical units for the value field"
+     units: String
+     "Number of decimal places to display"
+     precision: Int
+     "How to display"
+     form: DisplayForm
+}
+
+"An NTScalar where value is a float"
+type FloatScalar {
+     "Structure typeid"
+     typeid: String
+     "The value"
+     value: Float
+     "The alarm value"
+     alarm: Alarm
+     "When value last updated"
+     timeStamp: Time
+     "How to display a number"
+     display: Display
+}

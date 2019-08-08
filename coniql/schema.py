@@ -1,73 +1,34 @@
-from enum import Enum
 import asyncio
+from pathlib import Path
+from typing import List, Tuple
 
 from graphql import (
-    GraphQLObjectType,
+    GraphQLObjectType, build_schema,
     GraphQLArgument as A,
     GraphQLField as F,
     GraphQLNonNull as NN,
-    GraphQLEnumType as E,
     GraphQLFloat, GraphQLString,
-    GraphQLSchema, GraphQLInt)
+    GraphQLSchema, GraphQLInt, GraphQLEnumType)
 from p4p.client.asyncio import Context, Value
 
 from coniql.util import field_from_resolver
 from coniql.resolvers import say_hello
 
 
-query_type = GraphQLObjectType('RootQueryType', dict(
-    hello=field_from_resolver(say_hello)
-))
+SCHEMA = Path(__file__).parent / "schema.graphql"
+
+with open(SCHEMA) as f:
+    schema = build_schema(f.read())
 
 
-class AlarmSeverity(Enum):
-    NO_ALARM, MINOR_ALARM, MAJOR_ALARM, INVALID_ALARM, UNDEFINED_ALARM = \
-        range(5)
-
-
-class AlarmStatus(Enum):
-    """An alarm status"""
-    NO_STATUS, DEVICE_STATUS, DRIVER_STATUS, RECORD_STATUS, DB_STATUS, \
-        CONF_STATUS, UNDEFINED_STATUS, CLIENT_STATUS = \
-        range(8)
-
-class DisplayForm(Enum):
-    DEFAULT, STRING, BINARY, DECIMAL, HEX, EXPONENTIAL, ENGINEERING = \
-        range(7)
-
-
-alarm_status_type = E('AlarmStatus', AlarmStatus)
-alarm_severity_type = E('AlarmSeverity', AlarmSeverity)
-alarm_type = GraphQLObjectType('Alarm', dict(
-    severity=F(alarm_severity_type, description="How bad is the alarm"),
-    status=F(alarm_status_type, description="What type of alarm is it"),
-    message=F(GraphQLString, description="More info about the alarm"),
-))
-
-time_type = GraphQLObjectType('Time', dict(
-    secondsPastEpoch=F(
-        GraphQLFloat, description=
-        "Seconds since Jan 1, 1970 00:00:00 UTC"),
-    nanoseconds=F(
-        GraphQLInt, description=
-        "Nanoseconds relative to the secondsPastEpoch field"),
-    userTag=F(
-        GraphQLInt, description=
-        "An integer value whose interpretation is deliberately undefined"),
-))
-
-float_scalar_type = GraphQLObjectType("FloatScalar", dict(
-    typeid=F(NN(GraphQLString), description="Structure typeid"),
-    value=F(GraphQLFloat, description="The value"),
-    timeStamp=F(time_type, description="When value last updated"),
-    alarm=F(alarm_type, description="The alarm value")
-))
+float_scalar_type = schema.get_type("FloatScalar")
+assert isinstance(float_scalar_type, GraphQLObjectType)
 
 float_leaves = set()
 
 
 def add_leaves(node, path=()):
-    # type: (GraphQLObjectType) -> None
+    # type: (GraphQLObjectType, Tuple[str, ...]) -> None
     for name, field in node.fields.items():
         if isinstance(field.type, GraphQLObjectType):
             add_leaves(field.type, path + (name,))
@@ -75,7 +36,17 @@ def add_leaves(node, path=()):
             float_leaves.add(".".join(path + (name,)))
 
 
+def patch_numeric_enum(enum_name: str):
+    """Patch SDL defined enums to have 0 indexed numeric values"""
+    enum_type = schema.get_type(enum_name)  # type: GraphQLEnumType
+    for i, value in enumerate(enum_type.values.values()):
+        value.value = i
+
+
 add_leaves(float_scalar_type)
+patch_numeric_enum("AlarmSeverity")
+patch_numeric_enum("AlarmStatus")
+patch_numeric_enum("DisplayForm")
 
 
 async def subscribe_float(root, info, channel: str):
@@ -89,6 +60,9 @@ async def subscribe_float(root, info, channel: str):
             data = dict(typeid=value.getID())
             # Add any data that has changed
             for changed in value.changedSet():
+                # Special case DisplayForm
+                if changed == "display.form.index":
+                    changed = "display.form"
                 # If we don't want to publish it, drop it
                 if changed not in float_leaves:
                     continue
@@ -112,6 +86,9 @@ async def subscribe_float(root, info, channel: str):
                 # For the last level, set it on the structure directly
                 k = split[-1]
                 v = getattr(v, split[-1])
+                # Special case DisplayForm
+                if changed == "display.form":
+                    v = v.index
                 d[k] = v
                 cd[k] = v
             yield dict(subscribeFloatScalar=data)
@@ -122,6 +99,11 @@ subscription_type = GraphQLObjectType('RootSubscriptionType', dict(
         subscribe=subscribe_float,
         args=dict(
             channel=A(NN(GraphQLString), description="The channel name")))))
+
+
+query_type = GraphQLObjectType('RootQueryType', dict(
+    hello=field_from_resolver(say_hello)
+))
 
 
 schema = GraphQLSchema(query=query_type, subscription=subscription_type)
