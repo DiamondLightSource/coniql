@@ -1,21 +1,3 @@
-"""
-A type that describes the user. Its description might not
-fit within the bounds of 80 width and so you want MULTILINE
-"""
-type User {
-     "The user's username, should be typed in the login field."
-     username: String!
-     "The user's password."
-     password: String!
-
-}
-
-enum Episode {
-     NEWHOPE
-     EMPIRE
-     JEDI
-}
-
 enum AlarmSeverity {
      NO_ALARM, MINOR_ALARM, MAJOR_ALARM, INVALID_ALARM, UNDEFINED_ALARM
 }
@@ -77,4 +59,40 @@ type FloatScalar {
      timeStamp: Time
      "How to display a number"
      display: Display
+}
+
+type QueryType {
+     "Get a single Float channel"
+     getFloatScalar(
+          "The name of the channel to connect to"
+          channel: String!
+          "How long to wait, negative is forever"
+          timeout: Float = 5
+     ): FloatScalar
+}
+
+type SubscriptionType {
+     "Subscribe to a single Float channel"
+     subscribeFloatScalar(
+          "The name of the channel to connect to"
+          channel: String!
+     ): FloatScalar
+}
+
+type MutationType {
+     "Put a value to a Float channel"
+     putFloatScalar(
+          "The name of the channel to connect to"
+          channel: String!
+          "The value to put to the channel"
+          value: Float!
+          "How long to wait, negative is forever"
+          timeout: Float = 5
+     ): Boolean
+}
+
+schema {
+     query: QueryType
+     subscription: SubscriptionType
+     mutation: MutationType
 }

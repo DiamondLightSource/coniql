@@ -1,19 +1,11 @@
-import asyncio
 from pathlib import Path
-from typing import List, Tuple
+import asyncio
+from concurrent.futures import TimeoutError
+from typing import Tuple, Dict, Callable
 
-from graphql import (
-    GraphQLObjectType, build_schema,
-    GraphQLArgument as A,
-    GraphQLField as F,
-    GraphQLNonNull as NN,
-    GraphQLFloat, GraphQLString,
-    GraphQLSchema, GraphQLInt, GraphQLEnumType)
-from p4p.client.asyncio import Context, Value
-
-from coniql.util import field_from_resolver
-from coniql.resolvers import say_hello
-
+from graphql import build_schema, GraphQLObjectType, GraphQLEnumType, \
+    GraphQLResolveInfo
+from p4p.client.asyncio import Value, Context
 
 SCHEMA = Path(__file__).parent / "schema.graphql"
 
@@ -24,18 +16,9 @@ with open(SCHEMA) as f:
 float_scalar_type = schema.get_type("FloatScalar")
 assert isinstance(float_scalar_type, GraphQLObjectType)
 
-float_leaves = set()
 
-
-def add_leaves(node, path=()):
-    # type: (GraphQLObjectType, Tuple[str, ...]) -> None
-    for name, field in node.fields.items():
-        if isinstance(field.type, GraphQLObjectType):
-            add_leaves(field.type, path + (name,))
-        else:
-            float_leaves.add(".".join(path + (name,)))
-
-
+# Make sure that these enums have integer values that map to the ones we get
+# from PVA
 def patch_numeric_enum(enum_name: str):
     """Patch SDL defined enums to have 0 indexed numeric values"""
     enum_type = schema.get_type(enum_name)  # type: GraphQLEnumType
@@ -43,67 +26,96 @@ def patch_numeric_enum(enum_name: str):
         value.value = i
 
 
-add_leaves(float_scalar_type)
 patch_numeric_enum("AlarmSeverity")
 patch_numeric_enum("AlarmStatus")
 patch_numeric_enum("DisplayForm")
 
 
-async def subscribe_float(root, info, channel: str):
-    with Context("pva", unwrap={}) as ctxt:
-        q = asyncio.Queue()
-        ctxt.monitor(channel, q.put)
-        # This will hold the current version of everything
-        cached_data = {}
-        while True:
-            value = await q.get()  # type: Value
-            data = dict(typeid=value.getID())
-            # Add any data that has changed
-            for changed in value.changedSet():
-                # Special case DisplayForm
-                if changed == "display.form.index":
-                    changed = "display.form"
-                # If we don't want to publish it, drop it
-                if changed not in float_leaves:
+# These are the converters from PVA Value to what GraphQL wants
+float_field_set_data = {}  # type: Dict[str, Callable]
+
+
+def add_set_data(node, path=()):
+    # type: (GraphQLObjectType, Tuple[str, ...]) -> None
+    for name, field in node.fields.items():
+        if isinstance(field.type, GraphQLObjectType):
+            # Is node
+            add_set_data(field.type, path + (name,))
+        else:
+            # Is leaf
+            str_path = ".".join(path + (name,))
+            if str_path == "display.form":
+                # Special case display form index
+                def converter(current, data):
+                    data.setdefault("display", {})["form"] = current
+                float_field_set_data["display.form.index"] = converter
+            else:
+                def converter(current, data, n=name):
+                    for p in path:
+                        data = data.setdefault(p, {})
+                    data[n] = current
+                float_field_set_data[str_path] = converter
+
+
+add_set_data(float_scalar_type)
+
+
+async def subscribe_float(root, info: GraphQLResolveInfo, channel: str):
+    ctxt = info.context
+    q = asyncio.Queue()
+    ctxt.monitor(channel, q.put)
+    # This will hold the current version of alarm data
+    last_alarm = {}
+    while True:
+        value = await q.get()  # type: Value
+        data = dict(typeid=value.getID())
+        # Add any data that has changed
+        for changed in value.changedSet():
+            set_data = float_field_set_data.get(changed, None)
+            if set_data is None:
+                continue
+            split = changed.split(".")
+            current = value[changed]
+            # Alarms are always published, but we only want to display it
+            # if it has changed
+            if split[0] == "alarm":
+                if last_alarm.get(changed, None) == current:
                     continue
-                # Changed is something like display.form.choices
-                split = changed.split(".")
-                # Alarms are always published, but we only want to display it
-                # if it has changed
-                if split[0] == "alarm":
-                    alarm = cached_data.get("alarm", {})
-                    if alarm.get(split[1]) == getattr(value.alarm, split[1]):
-                        # Same as cached value, no need to change
-                        continue
-                d = data
-                cd = cached_data
-                v = value
-                # Walk down to N-1 level
-                for k in split[:-1]:
-                    d = d.setdefault(k, {})
-                    cd = cd.setdefault(k, {})
-                    v = getattr(v, k)
-                # For the last level, set it on the structure directly
-                k = split[-1]
-                v = getattr(v, split[-1])
-                # Special case DisplayForm
-                if changed == "display.form":
-                    v = v.index
-                d[k] = v
-                cd[k] = v
-            yield dict(subscribeFloatScalar=data)
-
-subscription_type = GraphQLObjectType('RootSubscriptionType', dict(
-    subscribeFloatScalar=F(
-        NN(float_scalar_type),
-        subscribe=subscribe_float,
-        args=dict(
-            channel=A(NN(GraphQLString), description="The channel name")))))
+                last_alarm[changed] = current
+            # Add the value to data
+            set_data(current, data)
+        yield dict(subscribeFloatScalar=data)
 
 
-query_type = GraphQLObjectType('RootQueryType', dict(
-    hello=field_from_resolver(say_hello)
-))
+async def get_float(root, info: GraphQLResolveInfo, channel: str,
+                    timeout: float):
+    ctxt = info.context  # type: Context
+    try:
+        value = await asyncio.wait_for(ctxt.get(channel), timeout)
+    except TimeoutError:
+        raise TimeoutError("Timeout while getting %s" % channel)
+    data = dict(typeid=value.getID())
+    for changed in value.changedSet():
+        set_data = float_field_set_data.get(changed, None)
+        if set_data:
+            set_data(value[changed], data)
+    return data
 
 
-schema = GraphQLSchema(query=query_type, subscription=subscription_type)
+async def put_float(root, info: GraphQLResolveInfo, channel: str, value: float,
+                    timeout: float):
+    ctxt = info.context  # type: Context
+    try:
+        await asyncio.wait_for(ctxt.put(channel, value), timeout)
+    except TimeoutError:
+        raise TimeoutError("Timeout while putting to %s" % channel)
+
+
+schema.query_type.fields["getFloatScalar"].resolve = \
+    get_float
+schema.subscription_type.fields["subscribeFloatScalar"].subscribe = \
+    subscribe_float
+schema.mutation_type.fields["putFloatScalar"].resolve = \
+    put_float
+
+

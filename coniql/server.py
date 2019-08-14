@@ -7,6 +7,7 @@ from aiohttp import web
 from graphql import graphql
 import graphql_ws_next
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
+from p4p.client.asyncio import Context
 
 from coniql.schema import schema
 from coniql.template import render_graphiql
@@ -23,48 +24,9 @@ async def get_query(request):
         return (await request.json())['query']
 
 
-async def graphql_view(request):
-    query = await get_query(request)
-    result = await graphql(schema, query)
-    errors = result.errors
-    if errors:
-        errors = [error.formatted for error in errors]
-        result = {'errors': errors}
-    else:
-        result = {'data': result.data}
-    return web.json_response(result)
-
-
 async def graphiql_view(request):
     return web.Response(
         text=render_graphiql(), headers={'Content-Type': 'text/html'})
-
-
-async def handle_subscriptions(request):
-    wsr = web.WebSocketResponse(protocols=(graphql_ws_next.WS_PROTOCOL,))
-    request.app["websockets"].add(wsr)
-    await wsr.prepare(request)
-    await request.app["subscription_server"].handle(wsr, None)
-    request.app["websockets"].remove(wsr)
-    return wsr
-
-
-app = web.Application()
-app.router.add_get('/subscriptions', handle_subscriptions)
-app.router.add_get('/graphiql', graphiql_view)
-app.router.add_get('/graphql', graphql_view)
-app.router.add_post('/graphql', graphql_view)
-app["subscription_server"] = graphql_ws_next.SubscriptionServer(
-    schema, AiohttpConnectionContext
-)
-app["websockets"] = set()
-
-
-async def on_shutdown(app):
-    await asyncio.wait([wsr.close() for wsr in app["websockets"]])
-
-
-app.on_shutdown.append(on_shutdown)
 
 
 async def run_ioc():
@@ -87,5 +49,45 @@ async def run_ioc():
 async def start_ioc(app):
     app['ioc'] = asyncio.create_task(run_ioc())
 
-app.on_startup.append(start_ioc)
-web.run_app(app, port=8000)
+
+class App(web.Application):
+    def __init__(self):
+        super(App, self).__init__()
+        self.router.add_get('/subscriptions', self.handle_subscriptions)
+        self.router.add_get('/graphiql', graphiql_view)
+        self.router.add_get('/graphql', self.graphql_view)
+        self.router.add_post('/graphql', self.graphql_view)
+        self.subscription_server = graphql_ws_next.SubscriptionServer(
+            schema, AiohttpConnectionContext
+        )
+        self.websockets = set()
+        self.ctxt = Context("pva", unwrap={})
+        self.on_startup.append(start_ioc)
+        self.on_shutdown.append(self.close_all_websockets)
+        self.on_shutdown.append(lambda _: self.ctxt.close())
+
+    async def graphql_view(self, request):
+        query = await get_query(request)
+        result = await graphql(schema, query, context_value=self.ctxt)
+        errors = result.errors
+        if errors:
+            errors = [error.formatted for error in errors]
+            result = {'errors': errors}
+        else:
+            result = {'data': result.data}
+        return web.json_response(result)
+
+    async def handle_subscriptions(self, request):
+        wsr = web.WebSocketResponse(protocols=(graphql_ws_next.WS_PROTOCOL,))
+        self.websockets.add(wsr)
+        await wsr.prepare(request)
+        await self.subscription_server.handle(wsr, context_value=self.ctxt)
+        self.websockets.remove(wsr)
+        return wsr
+
+    async def close_all_websockets(self, _):
+        if self.websockets:
+            await asyncio.wait([wsr.close() for wsr in self.websockets])
+
+
+web.run_app(App(), port=8000)
