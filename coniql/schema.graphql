@@ -37,23 +37,23 @@ enum UserRole {
 "Describes some metadata about an Attribute, Method or Device"
 interface Meta {
      "A long human readable possibly multi-line description"
-     description: String
+     description: String!
      "A list of freeform text tags that can be used to provide extra info"
-     tags: [String]
+     tags: [String]!
      "Whether the object will accept mutations"
-     mutable: Boolean
+     mutable: Boolean!
      "A short human readable label not longer than a few words"
-     label: String
+     label: String!
      "What is the minimum role of user that should see this"
-     role: UserRole
+     role: UserRole!
 }
 
 "A name-value entry for use in a List of Meta objects"
 type NamedMeta {
      "The name of the field the meta represents"
-     name: String
+     name: String!
      "The meta object that defines it"
-     value: Meta
+     value: Meta!
 }
 
 "An array of Numbers with a given datatype, base64 encoded"
@@ -64,7 +64,7 @@ type NumberArray {
      base64: String!
 }
 
-"A range of numbers"
+"A range of numbers. Null in either field means... something"
 type Range {
      "The minimum number of the range"
      min: Float
@@ -75,46 +75,51 @@ type Range {
 "Alarms are attached to a number of fields to say if all is well"
 type AttributeStatus {
      "Of what quality is the current Attribute value"
-     quality: AttributeQuality
+     quality: AttributeQuality!
      "More info about the status"
-     message: String
+     message: String!
 }
 
 "Timestamps indicate when a field was last updated"
 type Time {
      "Seconds since Jan 1, 1970 00:00:00 UTC"
-     seconds: Float
+     seconds: Float!
      "Nanoseconds relative to the seconds field"
-     nanoseconds: Int
+     nanoseconds: Int!
      "An integer value whose interpretation is deliberately undefined"
-     userTag: Int
+     userTag: Int!
 }
 
 "Information on how to display a numerical value"
 type NumberDisplay {
      "The range of values that a control value should be within"
-     controlRange: Range
+     controlRange: Range!
      "Expected range of values that will be produced"
-     displayRange: Range
+     displayRange: Range!
      "The range outside of which an alarm will be produced"
-     alarmRange: Range
+     alarmRange: Range!
      "The range outside of which a warning will be produced"
-     warningRange: Range
+     warningRange: Range!
      "Physical units for the value field"
-     units: String
+     units: String!
      "Number of decimal places to display"
-     precision: Int
+     precision: Int!
      "How to display"
-     form: DisplayForm
+     form: DisplayForm!
 }
 
 "The metadata to describe a generic object"
 type ObjectMeta implements Meta {
-     description: String
-     tags: [String]
-     mutable: Boolean
-     label: String
-     role: UserRole
+     "A long human readable possibly multi-line description"
+     description: String!
+     "A list of freeform text tags that can be used to provide extra info"
+     tags: [String]!
+     "Whether the object will accept mutations"
+     mutable: Boolean!
+     "A short human readable label not longer than a few words"
+     label: String!
+     "What is the minimum role of user that should see this"
+     role: UserRole!
      "Whether the value is an array"
      array: Boolean
      "Object type, like String|Boolean|MyEnum|MyType"
@@ -123,11 +128,16 @@ type ObjectMeta implements Meta {
 
 "The metadata to describe a choice from a list of Strings"
 type ChoiceMeta implements Meta {
-     description: String
-     tags: [String]
-     mutable: Boolean
-     label: String
-     role: UserRole
+     "A long human readable possibly multi-line description"
+     description: String!
+     "A list of freeform text tags that can be used to provide extra info"
+     tags: [String]!
+     "Whether the object will accept mutations"
+     mutable: Boolean!
+     "A short human readable label not longer than a few words"
+     label: String!
+     "What is the minimum role of user that should see this"
+     role: UserRole!
      "Whether the value is an array"
      array: Boolean
      "The possible choices that the string value could take"
@@ -136,11 +146,16 @@ type ChoiceMeta implements Meta {
 
 "The metadata required for a Number Attribute"
 type NumberMeta implements Meta {
-     description: String
-     tags: [String]
-     mutable: Boolean
-     label: String
-     role: UserRole
+     "A long human readable possibly multi-line description"
+     description: String!
+     "A list of freeform text tags that can be used to provide extra info"
+     tags: [String]!
+     "Whether the object will accept mutations"
+     mutable: Boolean!
+     "A short human readable label not longer than a few words"
+     label: String!
+     "What is the minimum role of user that should see this"
+     role: UserRole!
      "Whether the value is an array"
      array: Boolean
      "The native datatype of the value"
@@ -151,16 +166,22 @@ type NumberMeta implements Meta {
 
 "The metadata requried for a Table Attribute"
 type TableMeta implements Meta {
-     description: String
-     tags: [String]
-     mutable: Boolean
-     label: String
-     role: UserRole
+     "A long human readable possibly multi-line description"
+     description: String!
+     "A list of freeform text tags that can be used to provide extra info"
+     tags: [String]!
+     "Whether the object will accept mutations"
+     mutable: Boolean!
+     "A short human readable label not longer than a few words"
+     label: String!
+     "What is the minimum role of user that should see this"
+     role: UserRole!
      "Meta objects describing each column of the table"
      columns: [NamedMeta]
 }
 
-"A single value with associated time, status and metadata"
+"""A single value with associated time, status and metadata. These values can
+be Null so that in a subscription they are only updated on change"""
 type Attribute {
      "ID that uniquely defines this Attribute, normally a PV"
      id: ID!

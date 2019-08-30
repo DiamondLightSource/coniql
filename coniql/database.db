@@ -31,7 +31,7 @@ record (ai, "TMC43-TS-IOC-01:AI") {
     field(PREC, "3")
 }
 
-record (mbbo, "TMC43-TS-IOC-01:MBBI") {
+record (mbbi, "TMC43-TS-IOC-01:MBBI") {
     field(DESC, "Select the units of something")
     field(ZRST, "m")
     field(ZRVL, "0")
@@ -41,4 +41,11 @@ record (mbbo, "TMC43-TS-IOC-01:MBBI") {
     field(TWVL, "2")
     field(THST, "nm")
     field(THVL, "4")
+}
+
+record (waveform, "TMC43-TS-IOC-01:UINT8ARR") {
+    field(DESC, "An array of datatype uint8")
+    field(FTVL, "UCHAR")
+    field(NELM, "20")
+    field(PINI, "YES")
 }

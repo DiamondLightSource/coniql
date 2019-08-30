@@ -1,3 +1,4 @@
+import base64
 from pathlib import Path
 import asyncio
 from concurrent.futures import TimeoutError
@@ -25,8 +26,34 @@ patch_numeric_enum("DisplayForm")
 
 
 def convert_value(value, data):
-    # TODO: handle conversions properly
-    data["value"] = str(value.value)
+    type_specifier = value.type()["value"]
+    scalar_types = list(NUMBER_TYPES) + list(OTHER_TYPES)
+    assert type_specifier in scalar_types, \
+        "Expected a scalar type, got %r" % type_specifier
+    if type_specifier in ("l", "L"):
+        # 64-bit signed and unsigned numbers in javascript can overflow, use
+        # a string conversion
+        v = str(value.value)
+    else:
+        # Native type is fine
+        v = value.value
+    data["value"] = v
+
+
+def convert_value_array(value, data):
+    type_specifier = value.type()["value"]
+    assert type_specifier[0] == "a", \
+        "Expected an array type, got %r" % type_specifier
+    type_specifier = type_specifier[1:]
+    if type_specifier in NUMBER_TYPES:
+        v = dict(
+            datatype=NUMBER_TYPES[type_specifier],
+            # https://stackoverflow.com/a/6485943
+            base64=base64.b64encode(value.value).decode()
+        )
+    else:
+        raise ValueError("Don't support %r at the moment" % type_specifier)
+    data["value"] = v
 
 
 def convert_alarm(value, data):
@@ -43,6 +70,7 @@ def convert_timestamp(value, data):
         nanoseconds=timestamp.nanoseconds,
         userTag=timestamp.userTag
     )
+
 
 # https://mdavidsaver.github.io/p4p/values.html
 NUMBER_TYPES = {
@@ -124,13 +152,22 @@ def convert_enum_choices(value, data):
         mutable=True,
         label=label(data["id"]),
         role="USER",
-        choices=value["value.choices"]
+        choices=value["value.choices"],
+        array=False,
     )
 
 
 CONVERTERS = {
     "epics:nt/NTScalar:1.0": {
         "value": convert_value,
+        "alarm": convert_alarm,
+        "timeStamp": convert_timestamp,
+        "display": convert_display,
+        "control": convert_display,
+        "valueAlarm": convert_display,
+    },
+    "epics:nt/NTScalarArray:1.0": {
+        "value": convert_value_array,
         "alarm": convert_alarm,
         "timeStamp": convert_timestamp,
         "display": convert_display,
