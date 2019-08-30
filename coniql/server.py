@@ -9,7 +9,7 @@ import graphql_ws_next
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 from p4p.client.asyncio import Context
 
-from coniql.schema import schema
+from coniql.pvaschema import schema
 from coniql.template import render_graphiql
 
 

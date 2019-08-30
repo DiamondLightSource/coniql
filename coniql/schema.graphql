@@ -1,44 +1,105 @@
-enum AlarmSeverity {
-     NO_ALARM, MINOR_ALARM, MAJOR_ALARM, INVALID_ALARM, UNDEFINED_ALARM
-}
+"A scalar type that will accept anything, formatted as JSON"
+scalar Any
 
-enum AlarmStatus {
-     NO_STATUS, DEVICE_STATUS, DRIVER_STATUS, RECORD_STATUS, DB_STATUS,
-     CONF_STATUS, UNDEFINED_STATUS, CLIENT_STATUS
-}
-
-"Alarms are attached to a number of fields to say if all is well"
-type Alarm {
-     "How bad is the alarm"
-     severity: AlarmSeverity
-     "What type of alarm is it"
-     status: AlarmStatus
-     "More info about the alarm"
-     message: String
-}
-
-"Timestamps indicate when a field was last updated"
-type Time {
-     "Seconds since Jan 1, 1970 00:00:00 UTC"
-     secondsPastEpoch: Float
-     "Nanoseconds relative to the secondsPastEpoch field"
-     nanoseconds: Int
-     "An integer value whose interpretation is deliberately undefined"
-     userTag: Int
+enum NumberDatatype {
+     INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT32,
+     FLOAT64
 }
 
 enum DisplayForm {
      DEFAULT, STRING, BINARY, DECIMAL, HEX, EXPONENTIAL, ENGINEERING
 }
 
-"Information on how to display a numerical value"
-type Display {
-     "Lower bound of expected range of values"
-     limitLow: Float
-     "Upper bound of expected range of values"
-     limitHigh: Float
-     "Description of what the value quantifies"
+enum AttributeQuality {
+     "Everything ok"
+     VALID
+     "A warning"
+     WARNING
+     "An alarm indicating "
+     ALARM
+     "The value is known, but not valid"
+     INVALID
+     "The value is unknown"
+     UNDEFINED
+     "The Attribute is currently in the process of being changed"
+     CHANGING
+}
+
+enum UserRole {
+     "User of a deployed system"
+     USER
+     "Engineer responsible for deploying a system"
+     ENGINEER
+     "Expert responsible for developing the system"
+     EXPERT
+}
+
+"Describes some metadata about an Attribute, Method or Device"
+interface Meta {
+     "A long human readable possibly multi-line description"
      description: String
+     "A list of freeform text tags that can be used to provide extra info"
+     tags: [String]
+     "Whether the object will accept mutations"
+     mutable: Boolean
+     "A short human readable label not longer than a few words"
+     label: String
+     "What is the minimum role of user that should see this"
+     role: UserRole
+}
+
+"A name-value entry for use in a List of Meta objects"
+type NamedMeta {
+     "The name of the field the meta represents"
+     name: String
+     "The meta object that defines it"
+     value: Meta
+}
+
+"An array of Numbers with a given datatype, base64 encoded"
+type NumberArray {
+     "The datatype of the input array"
+     datatype: NumberDatatype!
+     "A base64 encoded version of the array"
+     base64: String!
+}
+
+"A range of numbers"
+type Range {
+     "The minimum number of the range"
+     min: Float
+     "The maximum number of the range"
+     max: Float
+}
+
+"Alarms are attached to a number of fields to say if all is well"
+type AttributeStatus {
+     "Of what quality is the current Attribute value"
+     quality: AttributeQuality
+     "More info about the status"
+     message: String
+}
+
+"Timestamps indicate when a field was last updated"
+type Time {
+     "Seconds since Jan 1, 1970 00:00:00 UTC"
+     seconds: Float
+     "Nanoseconds relative to the seconds field"
+     nanoseconds: Int
+     "An integer value whose interpretation is deliberately undefined"
+     userTag: Int
+}
+
+"Information on how to display a numerical value"
+type NumberDisplay {
+     "The range of values that a control value should be within"
+     controlRange: Range
+     "Expected range of values that will be produced"
+     displayRange: Range
+     "The range outside of which an alarm will be produced"
+     alarmRange: Range
+     "The range outside of which a warning will be produced"
+     warningRange: Range
      "Physical units for the value field"
      units: String
      "Number of decimal places to display"
@@ -47,48 +108,100 @@ type Display {
      form: DisplayForm
 }
 
-"An NTScalar where value is a float"
-type FloatScalar {
-     "Structure typeid"
-     typeid: String
-     "The value"
-     value: Float
+"The metadata to describe a generic object"
+type ObjectMeta implements Meta {
+     description: String
+     tags: [String]
+     mutable: Boolean
+     label: String
+     role: UserRole
+     "Whether the value is an array"
+     array: Boolean
+     "Object type, like String|Boolean|MyEnum|MyType"
+     type: String
+}
+
+"The metadata to describe a choice from a list of Strings"
+type ChoiceMeta implements Meta {
+     description: String
+     tags: [String]
+     mutable: Boolean
+     label: String
+     role: UserRole
+     "Whether the value is an array"
+     array: Boolean
+     "The possible choices that the string value could take"
+     choices: [String]
+}
+
+"The metadata required for a Number Attribute"
+type NumberMeta implements Meta {
+     description: String
+     tags: [String]
+     mutable: Boolean
+     label: String
+     role: UserRole
+     "Whether the value is an array"
+     array: Boolean
+     "The native datatype of the value"
+     datatype: NumberDatatype
+     "How should the number be displayed"
+     display: NumberDisplay
+}
+
+"The metadata requried for a Table Attribute"
+type TableMeta implements Meta {
+     description: String
+     tags: [String]
+     mutable: Boolean
+     label: String
+     role: UserRole
+     "Meta objects describing each column of the table"
+     columns: [NamedMeta]
+}
+
+"A single value with associated time, status and metadata"
+type Attribute {
+     "ID that uniquely defines this Attribute, normally a PV"
+     id: ID!
+     "The current value"
+     value: Any
      "The alarm value"
-     alarm: Alarm
+     status: AttributeStatus
      "When value last updated"
-     timeStamp: Time
-     "How to display a number"
-     display: Display
+     time: Time
+     "Metadata telling clients how to display, control, and validate"
+     meta: Meta
 }
 
 type QueryType {
-     "Get a single Float channel"
-     getFloatScalar(
-          "The name of the channel to connect to"
-          channel: String!
+     "Get a single channel"
+     getAttribute(
+          "The ID of the Attribute to connect to"
+          id: ID!
           "How long to wait, negative is forever"
           timeout: Float = 5
-     ): FloatScalar
+     ): Attribute
 }
 
 type SubscriptionType {
      "Subscribe to a single Float channel"
-     subscribeFloatScalar(
-          "The name of the channel to connect to"
-          channel: String!
-     ): FloatScalar
+     subscribeAttribute(
+          "The ID of the Attribute to connect to"
+          id: ID!
+     ): Attribute
 }
 
 type MutationType {
      "Put a value to a Float channel"
-     putFloatScalar(
-          "The name of the channel to connect to"
-          channel: String!
+     putAttribute(
+          "The ID of the Attribute to connect to"
+          id: ID!
           "The value to put to the channel"
-          value: Float!
+          value: Any!
           "How long to wait, negative is forever"
           timeout: Float = 5
-     ): Boolean
+     ): Any
 }
 
 schema {
