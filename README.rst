@@ -27,32 +27,20 @@ http://localhost:8000/graphiql
 With something like::
 
     subscription {
-      subscribeAttribute(id: "TMC43-TS-IOC-01:AI") {
+      subscribeChannel(id: "TMC43-TS-IOC-01:AI") {
         id
-        value
-        time {
-          seconds
-          nanoseconds
-          userTag
-        }
-        status {
-          quality
-          message
-        }
         meta {
           __typename
           description
           tags
-          mutable
           label
-          role
           ... on ObjectMeta {
             array
             type
           }
           ... on NumberMeta {
             array
-            datatype
+            numberType
             display {
               controlRange {
                 min
@@ -80,6 +68,16 @@ With something like::
             choices
           }
         }
+        value
+        time {
+          seconds
+          nanoseconds
+          userTag
+        }
+        status {
+          quality
+          message
+          mutable
+        }
       }
     }
-

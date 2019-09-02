@@ -21,7 +21,7 @@ def patch_numeric_enum(enum_name: str):
         value.value = i
 
 
-patch_numeric_enum("AttributeQuality")
+patch_numeric_enum("ChannelQuality")
 patch_numeric_enum("DisplayForm")
 
 
@@ -47,7 +47,7 @@ def convert_value_array(value, data):
     type_specifier = type_specifier[1:]
     if type_specifier in NUMBER_TYPES:
         v = dict(
-            datatype=NUMBER_TYPES[type_specifier],
+            numberType=NUMBER_TYPES[type_specifier],
             # https://stackoverflow.com/a/6485943
             base64=base64.b64encode(value.value).decode()
         )
@@ -60,14 +60,17 @@ def convert_alarm(value, data):
     alarm = value.alarm
     data["status"] = dict(
         quality=alarm.severity,
-        message=alarm.message)
+        message=alarm.message,
+        mutable=True
+    )
 
 
 def convert_timestamp(value, data):
     timestamp = value.timeStamp
+    nanoseconds = timestamp.nanoseconds
     data["time"] = dict(
-        seconds=timestamp.secondsPastEpoch,
-        nanoseconds=timestamp.nanoseconds,
+        seconds=timestamp.secondsPastEpoch + nanoseconds * 1e-9,
+        nanoseconds=nanoseconds,
         userTag=timestamp.userTag
     )
 
@@ -101,19 +104,18 @@ def convert_display(value, data):
     display = value.display
     meta = dict(
         description=display.description,
-        tags=[],
-        mutable=True,
-        label=label(data["id"]),
-        role="USER",
+        label=label(data["id"])
     )
     if type_specifier.startswith("a"):
+        meta["tags"] = ["widget:table", "role:user"]
         meta["array"] = True
         type_specifier = type_specifier[1:]
     else:
+        meta["tags"] = ["widget:textinput", "role:user"]
         meta["array"] = False
     if type_specifier in NUMBER_TYPES:
         meta["__typename"] = "NumberMeta"
-        meta["datatype"] = NUMBER_TYPES[type_specifier]
+        meta["numberType"] = NUMBER_TYPES[type_specifier]
         control = value.control
         value_alarm = value.valueAlarm
         meta["display"] = dict(
@@ -148,10 +150,8 @@ def convert_enum_choices(value, data):
     data["meta"] = dict(
         __typename="ChoiceMeta",
         description=data["id"],
-        tags=[],
-        mutable=True,
+        tags=["widget:combo", "role:user"],
         label=label(data["id"]),
-        role="USER",
         choices=value["value.choices"],
         array=False,
     )
@@ -183,7 +183,7 @@ CONVERTERS = {
 }
 
 
-async def subscribe_attribute(root, info: GraphQLResolveInfo, id: str):
+async def subscribe_channel(root, info: GraphQLResolveInfo, id: str):
     ctxt = info.context
     q = asyncio.Queue()
     m = ctxt.monitor(id, q.put)
@@ -206,14 +206,13 @@ async def subscribe_attribute(root, info: GraphQLResolveInfo, id: str):
                     del data["status"]
                 else:
                     last_status = data["status"]
-            yield dict(subscribeAttribute=data)
+            yield dict(subscribeChannel=data)
             value = await q.get()  # type: Value
     finally:
         m.close()
 
 
-async def get_attribute(root, info: GraphQLResolveInfo, id: str,
-                        timeout: float):
+async def get_channel(root, info: GraphQLResolveInfo, id: str, timeout: float):
     ctxt = info.context  # type: Context
     try:
         value = await asyncio.wait_for(ctxt.get(id), timeout)
@@ -226,22 +225,22 @@ async def get_attribute(root, info: GraphQLResolveInfo, id: str,
     return data
 
 
-async def put_attribute(root, info: GraphQLResolveInfo, id: str, value,
-                        timeout: float):
+async def put_channel(root, info: GraphQLResolveInfo, id: str, value,
+                      timeout: float):
     ctxt = info.context  # type: Context
     try:
         await asyncio.wait_for(ctxt.put(id, value), timeout)
     except TimeoutError:
         raise TimeoutError("Timeout while putting to %s" % id)
-    # TODO: return get?
-    return value
+    value = await asyncio.wait_for(ctxt.get(id), timeout)
+    return value.value
 
 
-schema.query_type.fields["getAttribute"].resolve = \
-    get_attribute
-schema.subscription_type.fields["subscribeAttribute"].subscribe = \
-    subscribe_attribute
-schema.mutation_type.fields["putAttribute"].resolve = \
-    put_attribute
+schema.query_type.fields["getChannel"].resolve = \
+    get_channel
+schema.subscription_type.fields["subscribeChannel"].subscribe = \
+    subscribe_channel
+schema.mutation_type.fields["putChannel"].resolve = \
+    put_channel
 
 

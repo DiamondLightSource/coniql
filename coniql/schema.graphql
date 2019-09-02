@@ -1,51 +1,41 @@
 "A scalar type that will accept anything, formatted as JSON"
 scalar Any
 
-enum NumberDatatype {
+"The underlying datatype of a number scalar or array"
+enum NumberType {
      INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT32,
      FLOAT64
 }
 
+"Instructions for how a number should be formatted for display"
 enum DisplayForm {
      DEFAULT, STRING, BINARY, DECIMAL, HEX, EXPONENTIAL, ENGINEERING
 }
 
-enum AttributeQuality {
-     "Everything ok"
+"Indication of how the current value of a Channel should be interpreted"
+enum ChannelQuality {
+     "Value is known, valid, nothing is wrong"
      VALID
-     "A warning"
+     "Value is known, valid, but is in the range generating a warning"
      WARNING
-     "An alarm indicating "
+     "Value is known, valid, but is in the range generating an alarm condition"
      ALARM
-     "The value is known, but not valid"
+     "Value is known, but not valid, e.g. a write channel before its first put"
      INVALID
-     "The value is unknown"
+     "The value is unknown, for instance because the channel is disconnected"
      UNDEFINED
-     "The Attribute is currently in the process of being changed"
+     "The Channel is currently in the process of being changed"
      CHANGING
 }
 
-enum UserRole {
-     "User of a deployed system"
-     USER
-     "Engineer responsible for deploying a system"
-     ENGINEER
-     "Expert responsible for developing the system"
-     EXPERT
-}
-
-"Describes some metadata about an Attribute, Method or Device"
+"Describes some metadata about an Channel, Action or Record"
 interface Meta {
      "A long human readable possibly multi-line description"
      description: String!
-     "A list of freeform text tags that can be used to provide extra info"
+     "Freeform text tags for widget, user role, port types, etc"
      tags: [String]!
-     "Whether the object will accept mutations"
-     mutable: Boolean!
      "A short human readable label not longer than a few words"
      label: String!
-     "What is the minimum role of user that should see this"
-     role: UserRole!
 }
 
 "A name-value entry for use in a List of Meta objects"
@@ -56,15 +46,15 @@ type NamedMeta {
      value: Meta!
 }
 
-"An array of Numbers with a given datatype, base64 encoded"
+"A base64 encoded array of Numbers with a given datatype"
 type NumberArray {
      "The datatype of the input array"
-     datatype: NumberDatatype!
+     numberType: NumberType!
      "A base64 encoded version of the array"
      base64: String!
 }
 
-"A range of numbers. Null in either field means... something"
+"A range of numbers. Null in either field means unbounded in that direction"
 type Range {
      "The minimum number of the range"
      min: Float
@@ -72,19 +62,21 @@ type Range {
      max: Float
 }
 
-"Alarms are attached to a number of fields to say if all is well"
-type AttributeStatus {
-     "Of what quality is the current Attribute value"
-     quality: AttributeQuality!
-     "More info about the status"
+"The current status of a Channel, including alarm and connection status"
+type ChannelStatus {
+     "Of what quality is the current Channel value"
+     quality: ChannelQuality!
+     "Freeform text describing the current status"
      message: String!
+     "Whether the Channel will currently accept mutations"
+     mutable: Boolean!
 }
 
-"Timestamps indicate when a field was last updated"
+"Timestamps indicate when a Field was last updated"
 type Time {
      "Seconds since Jan 1, 1970 00:00:00 UTC"
      seconds: Float!
-     "Nanoseconds relative to the seconds field"
+     "A more accurate version of the nanoseconds part of the seconds field"
      nanoseconds: Int!
      "An integer value whose interpretation is deliberately undefined"
      userTag: Int!
@@ -112,111 +104,99 @@ type NumberDisplay {
 type ObjectMeta implements Meta {
      "A long human readable possibly multi-line description"
      description: String!
-     "A list of freeform text tags that can be used to provide extra info"
+     "Freeform text tags for widget, user role, port types, etc"
      tags: [String]!
-     "Whether the object will accept mutations"
-     mutable: Boolean!
      "A short human readable label not longer than a few words"
      label: String!
-     "What is the minimum role of user that should see this"
-     role: UserRole!
      "Whether the value is an array"
-     array: Boolean
+     array: Boolean!
      "Object type, like String|Boolean|MyEnum|MyType"
-     type: String
+     type: String!
 }
 
 "The metadata to describe a choice from a list of Strings"
 type ChoiceMeta implements Meta {
      "A long human readable possibly multi-line description"
      description: String!
-     "A list of freeform text tags that can be used to provide extra info"
+     "Freeform text tags for widget, user role, port types, etc"
      tags: [String]!
-     "Whether the object will accept mutations"
-     mutable: Boolean!
      "A short human readable label not longer than a few words"
      label: String!
-     "What is the minimum role of user that should see this"
-     role: UserRole!
      "Whether the value is an array"
-     array: Boolean
+     array: Boolean!
      "The possible choices that the string value could take"
-     choices: [String]
+     choices: [String]!
 }
 
-"The metadata required for a Number Attribute"
+"The metadata required for a Number Channel"
 type NumberMeta implements Meta {
      "A long human readable possibly multi-line description"
      description: String!
-     "A list of freeform text tags that can be used to provide extra info"
+     "Freeform text tags for widget, user role, port types, etc"
      tags: [String]!
-     "Whether the object will accept mutations"
-     mutable: Boolean!
      "A short human readable label not longer than a few words"
      label: String!
-     "What is the minimum role of user that should see this"
-     role: UserRole!
      "Whether the value is an array"
-     array: Boolean
+     array: Boolean!
      "The native datatype of the value"
-     datatype: NumberDatatype
+     numberType: NumberType!
      "How should the number be displayed"
-     display: NumberDisplay
+     display: NumberDisplay!
 }
 
-"The metadata requried for a Table Attribute"
+"The metadata requried for a Table Channel"
 type TableMeta implements Meta {
      "A long human readable possibly multi-line description"
      description: String!
-     "A list of freeform text tags that can be used to provide extra info"
+     "Freeform text tags for widget, user role, port types, etc"
      tags: [String]!
-     "Whether the object will accept mutations"
-     mutable: Boolean!
      "A short human readable label not longer than a few words"
      label: String!
-     "What is the minimum role of user that should see this"
-     role: UserRole!
      "Meta objects describing each column of the table"
-     columns: [NamedMeta]
+     columns: [NamedMeta]!
+     "Which columns contain IDs, so cannot be modified"
+     idColumns: [String]!
 }
 
-"""A single value with associated time, status and metadata. These values can
-be Null so that in a subscription they are only updated on change"""
-type Attribute {
-     "ID that uniquely defines this Attribute, normally a PV"
+"""
+A single value with associated time, status and metadata. These values can
+be Null so that in a subscription they are only updated on change
+"""
+type Channel {
+     "ID that uniquely defines this Channel, normally a PV"
      id: ID!
-     "The current value"
-     value: Any
-     "The alarm value"
-     status: AttributeStatus
-     "When value last updated"
-     time: Time
      "Metadata telling clients how to display, control, and validate"
      meta: Meta
+     "The current value"
+     value: Any
+     "When the value was last updated"
+     time: Time
+     "Status of the connection, whether is is mutable, and alarm info"
+     status: ChannelStatus
 }
 
 type QueryType {
      "Get a single channel"
-     getAttribute(
-          "The ID of the Attribute to connect to"
+     getChannel(
+          "The ID of the Channel to connect to"
           id: ID!
           "How long to wait, negative is forever"
           timeout: Float = 5
-     ): Attribute
+     ): Channel
 }
 
 type SubscriptionType {
      "Subscribe to a single Float channel"
-     subscribeAttribute(
-          "The ID of the Attribute to connect to"
+     subscribeChannel(
+          "The ID of the Channel to connect to"
           id: ID!
-     ): Attribute
+     ): Channel
 }
 
 type MutationType {
      "Put a value to a Float channel"
-     putAttribute(
-          "The ID of the Attribute to connect to"
+     putChannel(
+          "The ID of the Channel to connect to"
           id: ID!
           "The value to put to the channel"
           value: Any!
