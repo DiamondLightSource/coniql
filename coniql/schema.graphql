@@ -9,7 +9,23 @@ enum NumberType {
 
 "Instructions for how a number should be formatted for display"
 enum DisplayForm {
-     DEFAULT, STRING, BINARY, DECIMAL, HEX, EXPONENTIAL, ENGINEERING
+     "Use the default representation from value"
+     DEFAULT
+     "Force string representation, most useful for array of bytes"
+     STRING
+     "Binary, precision determines number of binary digits"
+     BINARY
+     "Decimal, precision determines number of digits after decimal point"
+     DECIMAL
+     "Hexadecimal, precision determines number of hex digits"
+     HEX
+     "Exponential, precision determines number of digits after decimal point"
+     EXPONENTIAL
+     """
+     Exponential where exponent is multiple of 3,
+     precision determines number of digits after decimal point
+     """
+     ENGINEERING
 }
 
 "Indication of how the current value of a Channel should be interpreted"
