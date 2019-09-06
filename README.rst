@@ -63,7 +63,7 @@ With something like::
               form
             }
           }
-          ... on ChoiceMeta {
+          ... on EnumMeta {
             array
             choices
           }

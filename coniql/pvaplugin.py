@@ -127,12 +127,12 @@ def convert_display(value, data):
 
 
 def convert_enum_value(value, data):
-    data["value"] = value["value.choices"][value["value.index"]]
+    data["value"] = value["value.index"]
 
 
 def convert_enum_choices(value, data):
     data["meta"] = dict(
-        __typename="ChoiceMeta",
+        __typename="EnumMeta",
         description=data["id"],
         tags=["widget:combo", "role:user"],
         label=label(data["id"]),
@@ -159,7 +159,7 @@ CONVERTERS = {
         "valueAlarm": convert_display,
     },
     "epics:nt/NTEnum:1.0": {
-        "value.value": convert_enum_value,
+        "value.index": convert_enum_value,
         "value.choices": convert_enum_choices,
         "alarm": convert_alarm,
         "timeStamp": convert_timestamp
@@ -193,7 +193,6 @@ class PVAPlugin(Plugin):
     async def subscribe_channel(self, channel_id: str):
         q = asyncio.Queue()
         m = self.ctxt.monitor(channel_id, q.put)
-        print(channel_id)
         try:
             # This will hold the current version of alarm data
             last_status = None

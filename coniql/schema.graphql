@@ -130,8 +130,8 @@ type ObjectMeta implements Meta {
      type: String!
 }
 
-"The metadata to describe a choice from a list of Strings"
-type ChoiceMeta implements Meta {
+"The metadata to describe the Int index of one of a list of String values"
+type EnumMeta implements Meta {
      "A long human readable possibly multi-line description"
      description: String!
      "Freeform text tags for widget, user role, port types, etc"
