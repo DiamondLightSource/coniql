@@ -11,6 +11,7 @@ from coniql.plugin import Plugin
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql.pvaplugin import PVAPlugin
+from coniql.simplugin import SimPlugin
 from coniql.template import render_graphiql
 
 
@@ -60,7 +61,10 @@ class App(web.Application):
         self.router.add_get('/graphql', self.graphql_view)
         self.router.add_post('/graphql', self.graphql_view)
         self.websockets = set()
-        self.plugins: Dict[str, Plugin] = dict(pva=PVAPlugin())
+        self.plugins: Dict[str, Plugin] = dict(
+            pva=PVAPlugin(),
+            #sim=SimPlugin()
+        )
         self.plugins[""] = self.plugins["pva"]
         with open(SCHEMA) as f:
             self.schema = build_schema(f.read())
