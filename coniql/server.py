@@ -1,22 +1,19 @@
 #!/bin/env python
 import asyncio
-import traceback
 from pathlib import Path
-from typing import Dict
 
 from aiohttp import web
-from graphql import graphql, build_schema
+from graphql import graphql
 import graphql_ws_next
-from coniql.plugin import Plugin
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql.pvaplugin import PVAPlugin
-from coniql.simplugin import SimPlugin
+# from coniql.simplugin import SimPlugin
 from coniql.template import render_graphiql
+from coniql.schema import ConiqlSchema
 
 
 DB = Path(__file__).parent / "database.db"
-SCHEMA = Path(__file__).parent / "schema.graphql"
 
 
 async def get_query(request):
@@ -61,62 +58,13 @@ class App(web.Application):
         self.router.add_get('/graphql', self.graphql_view)
         self.router.add_post('/graphql', self.graphql_view)
         self.websockets = set()
-        self.plugins: Dict[str, Plugin] = dict(
-            pva=PVAPlugin(),
-            #sim=SimPlugin()
-        )
-        self.plugins[""] = self.plugins["pva"]
-        with open(SCHEMA) as f:
-            self.schema = build_schema(f.read())
-        self.schema.query_type.fields["getChannel"].resolve = \
-            self.get_channel
-        self.schema.mutation_type.fields["putChannel"].resolve = \
-            self.put_channel
-        self.schema.subscription_type.fields["subscribeChannel"].subscribe = \
-            self.subscribe_channel
+        self.schema = ConiqlSchema()
+        self.schema.add_plugin("pva", PVAPlugin(), set_default=True)
         self.subscription_server = graphql_ws_next.SubscriptionServer(
             self.schema, AiohttpConnectionContext
         )
         self.on_startup.append(start_ioc)
         self.on_shutdown.append(self.do_shutdown)
-
-    def plugin_channel(self, id: str):
-        split = id.split("://", 1)
-        if len(split) == 1:
-            scheme, channel_id = "", id
-        else:
-            scheme, channel_id = split
-        try:
-            plugin = self.plugins[scheme]
-        except KeyError:
-            raise ValueError("No plugin registered for scheme '%s'" % scheme)
-        return plugin, channel_id
-
-    async def get_channel(self, root, info, id: str, timeout: float):
-        plugin, channel_id = self.plugin_channel(id)
-        data = await plugin.get_channel(channel_id, timeout)
-        data["id"] = id
-        return data
-
-    async def put_channel(self, root, info, id: str, value, timeout: float):
-        plugin, channel_id = self.plugin_channel(id)
-        data = await plugin.put_channel(channel_id, value, timeout)
-        return data
-
-    async def subscribe_channel(self, root, info, id: str):
-        try:
-            plugin, channel_id = self.plugin_channel(id)
-            async for data in plugin.subscribe_channel(channel_id):
-                data["id"] = id
-                yield dict(subscribeChannel=data)
-        except Exception as e:
-            # TODO: I'm sure it's possible to raise an exception from a subscription...
-            message = "%s: %s" % (e.__class__.__name__, e)
-            d = dict(subscribeChannel=dict(id=id, status=dict(
-                quality="ALARM", message=message, mutable=False)))
-            yield d
-            traceback.print_exc()
-            raise
 
     async def graphql_view(self, request):
         query = await get_query(request)
@@ -140,9 +88,7 @@ class App(web.Application):
     async def do_shutdown(self, _):
         if self.websockets:
             await asyncio.wait([wsr.close() for wsr in self.websockets])
-        for plugin in set(self.plugins.values()):
-            plugin.destroy()
-        self.plugins = None
+        self.schema.destroy()
 
 
 web.run_app(App(), port=8000)

@@ -2,22 +2,24 @@ import asyncio
 import base64
 
 from p4p.client.asyncio import Context, Value
+from p4p.nt import NTEnum
 
 from .plugin import Plugin
-
+from ._types import NumberType, ChannelQuality, DisplayForm, Range, \
+    NumberDisplay
 
 # https://mdavidsaver.github.io/p4p/values.html
 NUMBER_TYPES = {
-    'b': "INT8",
-    'B': 'UINT8',
-    'h': "INT16",
-    'H': 'UINT16',
-    'i': "INT32",
-    'I': 'UINT32',
-    'l': "INT64",
-    'L': 'UINT64',
-    'f': "FLOAT32",
-    'd': 'FLOAT64',
+    'b': NumberType.INT8.value,
+    'B': NumberType.UINT8.value,
+    'h': NumberType.INT16.value,
+    'H': NumberType.UINT16.value,
+    'i': NumberType.INT32.value,
+    'I': NumberType.UINT32.value,
+    'l': NumberType.INT64.value,
+    'L': NumberType.UINT64.value,
+    'f': NumberType.FLOAT32.value,
+    'd': NumberType.FLOAT64.value,
 }
 
 OTHER_TYPES = {
@@ -26,7 +28,24 @@ OTHER_TYPES = {
 }
 
 # Map from alarm.severity to ChannelQuality string
-CHANNEL_QUALITY_MAP = ["VALID", "WARNING", "ALARM", "INVALID", "UNDEFINED"]
+CHANNEL_QUALITY_MAP = [
+    ChannelQuality.VALID.value,
+    ChannelQuality.WARNING.value,
+    ChannelQuality.ALARM.value,
+    ChannelQuality.INVALID.value,
+    ChannelQuality.UNDEFINED.value,
+]
+
+# Map from display form to DisplayForm enum
+DISPLAY_FORM_MAP = {
+    "Default": DisplayForm.DEFAULT.value,
+    "String": DisplayForm.STRING.value,
+    "Binary": DisplayForm.BINARY.value,
+    "Decimal": DisplayForm.DECIMAL.value,
+    "Hex": DisplayForm.HEX.value,
+    "Exponential": DisplayForm.EXPONENTIAL.value,
+    "Engineering": DisplayForm.ENGINEERING.value,
+}
 
 
 def label(channel_id):
@@ -102,22 +121,23 @@ def convert_display(value, data):
         meta["numberType"] = NUMBER_TYPES[type_specifier]
         control = value.control
         value_alarm = value.valueAlarm
-        meta["display"] = dict(
-            controlRange=dict(
+        meta["display"] = NumberDisplay(
+            controlRange=Range(
                 min=control.limitLow,
                 max=control.limitHigh),
-            displayRange=dict(
+            displayRange=Range(
                 min=display.limitLow,
                 max=display.limitHigh),
-            alarmRange=dict(
+            alarmRange=Range(
                 min=value_alarm.lowAlarmLimit,
                 max=value_alarm.highAlarmLimit),
-            warningRange=dict(
+            warningRange=Range(
                 min=value_alarm.lowWarningLimit,
                 max=value_alarm.highWarningLimit),
             units=display.units,
             precision=display.precision,
-            form=display.form.choices[display.form.index].upper())
+            form=DISPLAY_FORM_MAP[display.form.choices[display.form.index]])
+
     elif type_specifier in OTHER_TYPES:
         meta["__typename"] = "ObjectMeta"
         meta["type"] = OTHER_TYPES[type_specifier]
@@ -167,9 +187,17 @@ CONVERTERS = {
 }
 
 
+class NTEnumWrapperOnly(NTEnum):
+    def unwrap(self, value):
+        """Pass straight through"""
+        return value
+
+
 class PVAPlugin(Plugin):
     def __init__(self):
-        self.ctxt = Context("pva", unwrap={})
+        self.ctxt = Context("pva", nt={
+            "epics:nt/NTEnum:1.0": NTEnumWrapperOnly,
+        })
 
     async def get_channel(self, channel_id: str, timeout: float):
         try:
@@ -187,8 +215,8 @@ class PVAPlugin(Plugin):
             await asyncio.wait_for(self.ctxt.put(channel_id, value), timeout)
         except TimeoutError:
             raise TimeoutError("Timeout while putting to %s" % channel_id)
-        value = await asyncio.wait_for(self.ctxt.get(channel_id), timeout)
-        return value.value
+        data = await self.get_channel(channel_id, timeout)
+        return data
 
     async def subscribe_channel(self, channel_id: str):
         q = asyncio.Queue()
