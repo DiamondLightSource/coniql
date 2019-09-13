@@ -1,24 +1,37 @@
+import base64
 import traceback
-from typing import Tuple
+from typing import Tuple, Dict
 
 from graphql import (
     GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLNonNull,
-    GraphQLString, GraphQLArgument, GraphQLFloat
+    GraphQLString, GraphQLArgument, GraphQLFloat, GraphQLScalarType,
+    GraphQLOutputType
 )
 
 from coniql.plugin import Plugin
-from coniql._types import Channel
-from coniql.util import GqlMaker
+from coniql._types import Channel, ArrayWrapper
+from coniql.util import make_gql_type
+
+
+def serialize_any(value):
+    if isinstance(value, ArrayWrapper):
+        return dict(
+            numberType=value.array.dtype.name.upper(),
+            # https://stackoverflow.com/a/6485943
+            base64=base64.b64encode(value.array).decode()
+        )
+    else:
+        return value
 
 
 class ConiqlSchema(GraphQLSchema):
     def __init__(self):
-        self.plugins = {}
-        self.maker = GqlMaker()
-        self.channel_type = self.maker.make_gql_type(Channel)
-        self.any_type = self.maker.types["Any"]
+        self.any_type = GraphQLScalarType("Any", serialize=serialize_any)
+        self.types: Dict[str, GraphQLOutputType] = dict(Any=self.any_type)
+        self.channel_type = make_gql_type(Channel, self.types)
+        self.plugins: Dict[str, Plugin] = {}
         super(ConiqlSchema, self).__init__(
-            types=list(self.maker.types.values()),
+            types=list(self.types.values()),
             query=GraphQLObjectType('QueryType', self._query_fields),
             mutation=GraphQLObjectType('MutationType', self._mutation_fields),
             subscription=GraphQLObjectType(
@@ -60,7 +73,7 @@ class ConiqlSchema(GraphQLSchema):
             ), subscribe=self.subscribe_channel),
         )
 
-    def plugin_channel(self, id: str) -> Tuple[Plugin, str]:
+    def _plugin_channel(self, id: str) -> Tuple[Plugin, str]:
         split = id.split("://", 1)
         if len(split) == 1:
             scheme, channel_id = "", id
@@ -78,22 +91,22 @@ class ConiqlSchema(GraphQLSchema):
             self.plugins[""] = plugin
 
     async def get_channel(self, root, info, id: str, timeout: float):
-        plugin, channel_id = self.plugin_channel(id)
+        plugin, channel_id = self._plugin_channel(id)
         data = await plugin.get_channel(channel_id, timeout)
-        data["id"] = id
+        data.id = id
         return data
 
     async def put_channel(self, root, info, id: str, value, timeout: float):
-        plugin, channel_id = self.plugin_channel(id)
+        plugin, channel_id = self._plugin_channel(id)
         data = await plugin.put_channel(channel_id, value, timeout)
-        data["id"] = id
+        data.id = id
         return data
 
     async def subscribe_channel(self, root, info, id: str):
         try:
-            plugin, channel_id = self.plugin_channel(id)
+            plugin, channel_id = self._plugin_channel(id)
             async for data in plugin.subscribe_channel(channel_id):
-                data["id"] = id
+                data.id = id
                 yield dict(subscribeChannel=data)
         except Exception as e:
             # TODO: I'm sure it's possible to raise an exception from a subscription...
@@ -104,9 +117,13 @@ class ConiqlSchema(GraphQLSchema):
             traceback.print_exc()
             raise
 
-    def destroy(self):
+    async def startup(self, app):
         for plugin in set(self.plugins.values()):
-            plugin.destroy()
+            plugin.startup()
+
+    async def shutdown(self, app):
+        for plugin in set(self.plugins.values()):
+            plugin.shutdown()
         self.plugins = None
 
 

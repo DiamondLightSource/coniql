@@ -1,11 +1,24 @@
 from __future__ import annotations
 
+import math
+import time
 from enum import Enum
 from dataclasses import dataclass
 from typing import List, Optional, Any
 
 
 from coniql.util import DocEnum, doc_field
+
+
+class ArrayWrapper:
+    """Numpy arrays return ndarrays from == and !=, which conflicts with
+    graphql is_nullish(). Can be removed when PR is merged"""
+    def __init__(self, array):
+        self.array = array
+
+    def __eq__(self, other):
+        # Identity is enough for is_nullish()
+        return self is other
 
 
 class NumberType(Enum):
@@ -73,10 +86,15 @@ class NumberArray:
 class Range:
     """A range of numbers. Null in either field means unbounded in that
     direction"""
-    min: float = doc_field(
+    min: Optional[float] = doc_field(
         "The minimum number of the range")
-    max: float = doc_field(
+    max: Optional[float] = doc_field(
         "The maximum number of the range")
+
+    def contains(self, value: float) -> bool:
+        rmin = math.nan if self.min is None else self.min
+        rmax = math.nan if self.max is None else self.max
+        return rmin <= value <= rmax
 
 
 @dataclass
@@ -89,6 +107,10 @@ class ChannelStatus:
     mutable: bool = doc_field(
         "Whether the Channel will currently accept mutations")
 
+    @classmethod
+    def ok(cls, mutable: bool = False):
+        return cls(ChannelQuality.VALID, "", mutable)
+
 
 @dataclass
 class Time:
@@ -99,6 +121,11 @@ class Time:
         "A more accurate version of the nanoseconds part of the seconds field")
     userTag: int = doc_field(
      "An integer value whose interpretation is deliberately undefined")
+
+    @classmethod
+    def now(cls):
+        now = time.time()
+        return Time(now, int(now % 1 / 1e-9), 0)
 
 
 @dataclass
@@ -162,13 +189,18 @@ class TableMeta(Meta):
 class Channel:
     """A single value with associated time, status and metadata. These values
     can be Null so that in a subscription they are only updated on change"""
-    id: Optional[str] = doc_field(
-        "ID that uniquely defines this Channel, normally a PV")
+    id: str = doc_field(
+        "ID that uniquely defines this Channel, normally a PV",
+        "")
     meta: Optional[Meta] = doc_field(
-        "Metadata telling clients how to display, control, and validate")
+        "Metadata telling clients how to display, control, and validate",
+        None)
     value: Optional[Any] = doc_field(
-        "The current value")
+        "The current value",
+        None)
     time: Optional[Time] = doc_field(
-        "When the value was last updated")
+        "When the value was last updated",
+        None)
     status: Optional[ChannelStatus] = doc_field(
-        "Status of the connection, whether is is mutable, and alarm info")
+        "Status of the connection, whether is is mutable, and alarm info",
+        None)

@@ -6,28 +6,22 @@ Control system interface in GraphQL
 Installation
 ------------
 
-After cloning from Github/Gitlab, install epics base in /scratch from:
-
-https://epics-controls.org/download/base/base-7.0.2.2.tar.gz
-
-cd to the directory and type make
-
-Then install the depenencies using instructions from:
+Install the dependencies using instructions from:
 
 https://confluence.diamond.ac.uk/display/SSCC/Python+3+User+Documentation
 
 Then you can run the example::
     
-    PYTHONPATH=. pipenv run python coniql/server.py
+    pipenv run python -m coniql.server
 
-And see the grphiql interface here:
+And see the graphiql interface here:
 
 http://localhost:8000/graphiql
 
 With something like::
 
     subscription {
-      subscribeChannel(id: "TMC43-TS-IOC-01:AI") {
+      subscribeChannel(id: "sim://sine") {
         id
         meta {
           __typename
@@ -81,3 +75,22 @@ With something like::
         }
       }
     }
+
+
+Sim Plugin
+----------
+
+The sim plugin provides a number of channels that accept keyword args. For a
+channel `channel` which takes up to 3 args, the allowed combinations are::
+
+    sim://channel
+    sim://channel(arg1)
+    sim://channel(arg1, arg2)
+    sim://channel(arg1, arg2, arg3)
+
+Any unspecified arguments are defaulted.
+
+Available channels:
+
+- sim://sine(min_value, max_value, steps, update_seconds, warning_percent, alarm_percent)
+- sim://sinewave(period_seconds, sample_wavelength, size, update_seconds, min_value, max_value, warning_percent, alarm_percent)
