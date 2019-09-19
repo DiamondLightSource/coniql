@@ -1,14 +1,25 @@
-from ._types import Channel
+from typing import Any
+
+from ._types import Channel, Function
 
 
 class Plugin:
     async def get_channel(self, channel_id: str, timeout: float) -> Channel:
-        """Get the current structure of a channel"""
+        """Get the current structure of a Channel"""
+        raise NotImplementedError(self)
+
+    async def get_function(self, function_id: str, timeout: float) -> Function:
+        """Get the current structure of a Function"""
         raise NotImplementedError(self)
 
     async def put_channel(self, channel_id: str, value, timeout: float
                           ) -> Channel:
         """Put a value to a channel, returning the value after put"""
+        raise NotImplementedError(self)
+
+    async def call_function(self, function_id: str, arguments, timeout: float
+                            ) -> Any:
+        """Call a function and return the result"""
         raise NotImplementedError(self)
 
     async def subscribe_channel(self, channel_id: str):

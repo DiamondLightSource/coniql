@@ -1,5 +1,6 @@
 import base64
 import traceback
+import dataclasses
 from typing import Tuple, Dict
 
 from graphql import (
@@ -9,7 +10,7 @@ from graphql import (
 )
 
 from coniql.plugin import Plugin
-from coniql._types import Channel, ArrayWrapper
+from coniql._types import Channel, ArrayWrapper, Function
 from coniql.util import make_gql_type
 
 
@@ -20,6 +21,8 @@ def serialize_any(value):
             # https://stackoverflow.com/a/6485943
             base64=base64.b64encode(value.array).decode()
         )
+    elif dataclasses.is_dataclass(value):
+        return dataclasses.asdict(value)
     else:
         return value
 
@@ -29,6 +32,7 @@ class ConiqlSchema(GraphQLSchema):
         self.any_type = GraphQLScalarType("Any", serialize=serialize_any)
         self.types: Dict[str, GraphQLOutputType] = dict(Any=self.any_type)
         self.channel_type = make_gql_type(Channel, self.types)
+        self.function_type = make_gql_type(Function, self.types)
         self.plugins: Dict[str, Plugin] = {}
         super(ConiqlSchema, self).__init__(
             types=list(self.types.values()),
@@ -47,6 +51,15 @@ class ConiqlSchema(GraphQLSchema):
                     GraphQLFloat, 5,
                     description="How long to wait, negative is forever"),
             ), resolve=self.get_channel),
+            getFunction=GraphQLField(self.function_type, args=dict(
+                id=GraphQLArgument(
+                    GraphQLNonNull(GraphQLString),
+                    description="The ID of the Function to inspect"),
+                timeout=GraphQLArgument(
+                    GraphQLFloat, 5,
+                    description="How long to wait, negative is forever"),
+            ), resolve=self.get_function),
+
         )
 
     def _mutation_fields(self):
@@ -57,11 +70,22 @@ class ConiqlSchema(GraphQLSchema):
                     description="The ID of the Channel to connect to"),
                 value=GraphQLArgument(
                     GraphQLNonNull(self.any_type),
-                    description="The ID of the Channel to connect to"),
+                    description="The value to put to the Channel"),
                 timeout=GraphQLArgument(
                     GraphQLFloat, 5,
                     description="How long to wait, negative is forever"),
             ), resolve=self.put_channel),
+            callFunction=GraphQLField(self.any_type, args=dict(
+                id=GraphQLArgument(
+                    GraphQLNonNull(GraphQLString),
+                    description="The ID of the Function to call"),
+                arguments=GraphQLArgument(
+                    GraphQLNonNull(self.any_type),
+                    description="The arguments to pass to the Function"),
+                timeout=GraphQLArgument(
+                    GraphQLFloat, 5,
+                    description="How long to wait, negative is forever"),
+            ), resolve=self.call_function),
         )
 
     def _subscription_fields(self):
@@ -73,17 +97,17 @@ class ConiqlSchema(GraphQLSchema):
             ), subscribe=self.subscribe_channel),
         )
 
-    def _plugin_channel(self, id: str) -> Tuple[Plugin, str]:
+    def _plugin_object_id(self, id: str) -> Tuple[Plugin, str]:
         split = id.split("://", 1)
         if len(split) == 1:
-            scheme, channel_id = "", id
+            scheme, object_id = "", id
         else:
-            scheme, channel_id = split
+            scheme, object_id = split
         try:
             plugin = self.plugins[scheme]
         except KeyError:
             raise ValueError("No plugin registered for scheme '%s'" % scheme)
-        return plugin, channel_id
+        return plugin, object_id
 
     def add_plugin(self, name: str, plugin: Plugin, set_default=False):
         self.plugins[name] = plugin
@@ -91,20 +115,32 @@ class ConiqlSchema(GraphQLSchema):
             self.plugins[""] = plugin
 
     async def get_channel(self, root, info, id: str, timeout: float):
-        plugin, channel_id = self._plugin_channel(id)
+        plugin, channel_id = self._plugin_object_id(id)
         data = await plugin.get_channel(channel_id, timeout)
         data.id = id
         return data
 
+    async def get_function(self, root, info, id: str, timeout: float):
+        plugin, function_id = self._plugin_object_id(id)
+        data = await plugin.get_function(function_id, timeout)
+        data.id = id
+        return data
+
     async def put_channel(self, root, info, id: str, value, timeout: float):
-        plugin, channel_id = self._plugin_channel(id)
+        plugin, channel_id = self._plugin_object_id(id)
         data = await plugin.put_channel(channel_id, value, timeout)
         data.id = id
         return data
 
+    async def call_function(self, root, info, id: str, arguments,
+                            timeout: float):
+        plugin, function_id = self._plugin_object_id(id)
+        data = await plugin.call_function(function_id, arguments, timeout)
+        return data
+
     async def subscribe_channel(self, root, info, id: str):
         try:
-            plugin, channel_id = self._plugin_channel(id)
+            plugin, channel_id = self._plugin_object_id(id)
             async for data in plugin.subscribe_channel(channel_id):
                 data.id = id
                 yield dict(subscribeChannel=data)

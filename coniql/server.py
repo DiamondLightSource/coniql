@@ -1,5 +1,6 @@
 #!/bin/env python
 import asyncio
+import traceback
 
 from aiohttp import web
 from graphql import graphql
@@ -48,6 +49,8 @@ class App(web.Application):
         result = await graphql(self.schema, query)
         errors = result.errors
         if errors:
+            for error in errors:
+                traceback.print_tb(error.__traceback__)
             errors = [error.formatted for error in errors]
             result = {'errors': errors}
         else:

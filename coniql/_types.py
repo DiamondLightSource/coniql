@@ -69,8 +69,17 @@ class NamedMeta:
     """A name-value entry for use in a List of Meta objects"""
     name: str = doc_field(
         "The name of the field the meta represents")
-    value: Meta = doc_field(
+    meta: Meta = doc_field(
         "The meta object that defines it")
+    required: bool = doc_field(
+        "Whether the given object must exist")
+
+
+@dataclass
+class NamedValue:
+    """A name-value entry for use in a List of values"""
+    name: str = doc_field("The name of the entry")
+    value: Any = doc_field("The value of the entry")
 
 
 @dataclass
@@ -203,4 +212,48 @@ class Channel:
         None)
     status: Optional[ChannelStatus] = doc_field(
         "Status of the connection, whether is is mutable, and alarm info",
+        None)
+
+
+@dataclass
+class FunctionMeta(Meta):
+    """The metadata required to describe the arguments taken and returned
+    from a function call"""
+    takes: List[NamedMeta] = doc_field(
+        "Meta objects describing the arguments the function takes")
+    defaults: List[NamedValue] = doc_field(
+        "The defaults that will be used for non-required fields if not given")
+    returns: List[NamedMeta] = doc_field(
+        "Meta objects describing the arguments the function returns")
+
+
+@dataclass
+class FunctionLog:
+    """A log of arguments that were taken or returned, and the time this
+    happened"""
+    arguments: List[NamedValue] = doc_field(
+        "The arguments that were taken or returned")
+    time: Time = doc_field(
+        "The time this happened")
+
+
+@dataclass
+class Function:
+    """A function that on its own has no state, no current value. It may keep
+    track of the last call arguments, return value and status. The values
+    can be Null so that in a subscription they are only updated on change"""
+    id: str = doc_field(
+        "ID that uniquely defines this Method",
+        "")
+    meta: Optional[FunctionMeta] = doc_field(
+        "Metadata telling clients what arguments it takes and returns",
+        None)
+    took: Optional[FunctionLog] = doc_field(
+        "Log of the arguments taken and the time they were received",
+        None)
+    returned: Optional[FunctionLog] = doc_field(
+        "Log of the arguments returned and the time they were returned",
+        None)
+    status: Optional[ChannelStatus] = doc_field(
+        "Status of the connection, whether is is mutable, and error info",
         None)
