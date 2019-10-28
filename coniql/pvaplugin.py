@@ -1,9 +1,11 @@
 import asyncio
 import base64
+import os
 from pathlib import Path
 
 from p4p.client.asyncio import Context, Value
 
+from coniql import EPICS7_BASE
 from .plugin import Plugin
 from ._types import NumberType, ChannelQuality, DisplayForm, Range, \
     NumberDisplay, Channel, ChannelStatus, Time, EnumMeta, NumberMeta, \
@@ -185,7 +187,9 @@ DB = Path(__file__).parent / "database.db"
 
 
 async def run_ioc():
-    cmd = f'/scratch/base-7.0.2.2/bin/linux-x86_64/softIocPVA -d {DB}'
+    soft_ioc_pva = Path(os.environ[EPICS7_BASE]) / "bin" / "linux-x86_64" / "softIocPVA"
+
+    cmd = f'{soft_ioc_pva} -d {DB}'
     print(f'{cmd!r}')
     proc = await asyncio.create_subprocess_shell(
         cmd,

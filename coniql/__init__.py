@@ -1,3 +1,5 @@
+EPICS7_BASE = "EPICS7_BASE"
+
 try:
     # In a release there will be a static version file written by setup.py
     from ._static_version import __version__
