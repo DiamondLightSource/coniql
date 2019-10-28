@@ -49,7 +49,8 @@ class OperationMessagePayload(collections.abc.Mapping):
 
     @property
     def variable_values(self):
-        return self.get("variableValues")
+        # A change from the original code drop.
+        return self.get("variables")
 
     @property
     def operation_name(self):

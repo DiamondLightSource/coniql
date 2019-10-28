@@ -1,5 +1,6 @@
 #!/bin/env python
 import asyncio
+import os
 import traceback
 
 from aiohttp import web
@@ -7,6 +8,7 @@ from graphql import graphql
 import graphql_ws_next
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
+from coniql import EPICS7_BASE
 from coniql.template import render_graphiql
 from coniql.schema import ConiqlSchema
 
@@ -33,8 +35,9 @@ class App(web.Application):
         self.router.add_post('/graphql', self.graphql_view)
         self.websockets = set()
         self.schema = ConiqlSchema()
-        # from coniql.pvaplugin import PVAPlugin
-        # self.schema.add_plugin("pva", PVAPlugin(), set_default=True)
+        if EPICS7_BASE in os.environ:
+            from coniql.pvaplugin import PVAPlugin
+            self.schema.add_plugin("pva", PVAPlugin(), set_default=True)
         from coniql.simplugin import SimPlugin
         self.schema.add_plugin("sim", SimPlugin())
         self.subscription_server = graphql_ws_next.SubscriptionServer(
