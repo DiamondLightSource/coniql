@@ -105,4 +105,4 @@ Then set the environment variable **EPICS7_BASE** to the top level of the instal
 
     export EPICS7_BASE=/path/to/EPICS
 
-This should allow the values within the coniql database to be made availavle over pvAccess.
+This should allow the values within the coniql database to be made available over pvAccess.
