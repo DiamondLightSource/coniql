@@ -94,3 +94,15 @@ Available channels:
 
 - sim://sine(min_value, max_value, steps, update_seconds, warning_percent, alarm_percent)
 - sim://sinewave(period_seconds, sample_wavelength, size, update_seconds, min_value, max_value, warning_percent, alarm_percent)
+
+PVA Plugin
+----------
+
+Coniql will provide its values over pvAccess.
+This requires a working installation of `<EPICS 7 https://epics.anl.gov/base/R7-0/index.php>`_.
+
+Then set the environment variable **EPICS7_BASE** to the top level of the installation::
+
+    export EPICS7_BASE=/path/to/EPICS
+
+This should allow the values within the coniql database to be made availavle over pvAccess.
