@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 pytest = "*"
 p4p = "*"
+mypy = "*"
 
 [packages]
 graphql-core = "==3.0.0a2"
