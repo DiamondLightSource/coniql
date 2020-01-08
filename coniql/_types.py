@@ -216,6 +216,23 @@ class Channel:
 
 
 @dataclass
+class Device:
+    """A group of channels and sub-devices"""
+    id: str = doc_field(
+        "ID that uniquely defines this Channel, normally a PV",
+        "")
+    meta: Optional[Meta] = doc_field(
+        "Metadata telling clients how to display, control, and validate",
+        None)
+    channels: List[Channel] = doc_field(
+        "Channels associated with this device",
+        [])
+    children: List[Device] = doc_field(
+        "Sub-devices associated with this device",
+        [])
+
+
+@dataclass
 class FunctionMeta(Meta):
     """The metadata required to describe the arguments taken and returned
     from a function call"""
