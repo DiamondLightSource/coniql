@@ -8,7 +8,7 @@ from device.types.channel import ReadOnlyChannel, ReadWriteChannel
 class Positioner:
     """Abstract representation of a device that minimises error between a
     setpoint and an indicated position e.g. a motor or temperature controller"""
-    position: ReadOnlyChannel = doc_field(
+    position: ReadOnlyChannel[float] = doc_field(
         "The current indicated position")
-    setpoint: ReadWriteChannel = doc_field(
+    setpoint: ReadWriteChannel[float] = doc_field(
         "The target position")
