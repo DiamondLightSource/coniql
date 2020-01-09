@@ -8,7 +8,7 @@ pytest = "*"
 p4p = "*"
 
 [packages]
-graphql-core = "==3.0.0a2"
+graphql-core = "==3.0.1"
 aiohttp = "*"
 numpy = "*"
 
