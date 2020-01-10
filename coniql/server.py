@@ -4,6 +4,9 @@ import os
 import traceback
 
 from aiohttp import web
+from aiohttp.web import HTTPForbidden
+from aiohttp.web_exceptions import HTTPClientError
+from aiohttp_security import is_anonymous
 from graphql import graphql
 import graphql_ws_next
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
@@ -48,6 +51,10 @@ class App(web.Application):
         self.on_shutdown.append(self.close_websockets)
 
     async def graphql_view(self, request):
+        # Do not allow query to run without authentication
+        if is_anonymous(request):
+            raise HTTPForbidden(reason='User is not authenticated!')
+
         query = await get_query(request)
         result = await graphql(self.schema, query)
         errors = result.errors
