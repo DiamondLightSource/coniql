@@ -10,6 +10,7 @@ p4p = "*"
 [packages]
 graphql-core = "==3.0.1"
 aiohttp = "*"
+aiohttp-security = "*"
 numpy = "*"
 
 [requires]
