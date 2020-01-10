@@ -2,12 +2,13 @@
 import asyncio
 import os
 import traceback
+from typing import List
 
 from aiohttp import web
 from aiohttp.web import HTTPForbidden
 from aiohttp.web_exceptions import HTTPClientError
-from aiohttp_security import is_anonymous
-from graphql import graphql, validate
+from aiohttp_security import is_anonymous, check_permission
+from graphql import graphql, parse, OperationType
 import graphql_ws_next
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
@@ -22,6 +23,11 @@ async def get_query(request):
         return await request.text()
     elif content_type == 'application/json':
         return (await request.json())['query']
+
+
+async def operation_types(query) -> List[OperationType]:
+    node = parse(query)
+    return [definition.operation for definition in node.definitions]
 
 
 async def graphiql_view(request):
@@ -54,16 +60,21 @@ class App(web.Application):
         # Do not allow query to run without authentication
         if not await is_anonymous(request):
             query = await get_query(request)
-            result = await graphql(self.schema, query)
-            errors = result.errors
-            if errors:
-                for error in errors:
-                    traceback.print_tb(error.__traceback__)
-                errors = [error.formatted for error in errors]
-                result = {'errors': errors}
+
+            operations = await operation_types(query)
+            if all([check_permission(request, operation) for operation in operations]):
+                result = await graphql(self.schema, query)
+                errors = result.errors
+                if errors:
+                    for error in errors:
+                        traceback.print_tb(error.__traceback__)
+                    errors = [error.formatted for error in errors]
+                    result = {'errors': errors}
+                else:
+                    result = {'data': result.data}
+                return web.json_response(result)
             else:
-                result = {'data': result.data}
-            return web.json_response(result)
+                raise HTTPForbidden(reason='User is not authorized')
         else:
             raise HTTPForbidden(reason='User is not authenticated!')
 
