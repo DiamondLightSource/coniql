@@ -23,14 +23,27 @@ class MockReadOnlyChannel(ReadOnlyChannel[T]):
 
     async def monitor(self) -> AsyncGenerator[Result[T], None]:
         queue: Queue = Queue()
-
         await queue.put(self.get())
-
         while True:
             yield await queue.get()
 
 
-class MockReadWriteChannel(MockReadOnlyChannel[T], ReadWriteChannel[T]):
+class MockReadWriteChannel(ReadWriteChannel[T]):
+    def __init__(self, value: T):
+        self.__value = value
+
+    def get(self) -> Result[T]:
+        return MockWorkingResult(self.__value)
+
+    async def get_async(self) -> Result[T]:
+        return self.get()
+
+    async def monitor(self) -> AsyncGenerator[Result[T], None]:
+        queue: Queue = Queue()
+        await queue.put(self.get())
+        while True:
+            yield await queue.get()
+
     def put(self, value: T) -> Result[T]:
         self.__value = value
         return MockWorkingResult(self.__value)
