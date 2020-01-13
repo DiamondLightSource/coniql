@@ -22,9 +22,11 @@ class DevicePlugin(Plugin):
     def __init__(self):
         self.channels = {}
 
-    def register_device(self, device: Any):
+    def register_device(self, device: Any, name: Optional[str] = None):
         """Registers a device and its channels and subdevices with the plugin"""
         d = dataclasses.asdict(device)
+        if name is not None:
+            d = {name: d}
         self.channels = {**self.channels, **d}
 
     def lookup_channel(self, channel_addr: List[str], channels: Optional[Dict[str, Any]] = None) -> ReadWriteChannel:
@@ -106,7 +108,7 @@ def mock_device_environment() -> DevicePlugin:
     )
 
     plugin = DevicePlugin()
-    plugin.register_device(goniometer)
+    plugin.register_device(goniometer, name='goniometer')
 
     plugin.debug()
     return plugin
