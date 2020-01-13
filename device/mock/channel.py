@@ -35,5 +35,5 @@ class MockReadWriteChannel(MockReadOnlyChannel[T]):
         self.__value = value
         return MockWorkingResult(self.__value)
 
-    def put_async(self, value: T) -> Result[T]:
+    async def put_async(self, value: T) -> Result[T]:
         return self.put(value)

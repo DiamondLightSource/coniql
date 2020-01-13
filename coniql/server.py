@@ -40,6 +40,7 @@ class App(web.Application):
             self.schema.add_plugin("pva", PVAPlugin(), set_default=True)
         from coniql.simplugin import SimPlugin
         self.schema.add_plugin("sim", SimPlugin())
+        self.schema.add_plugin('device', )
         self.subscription_server = graphql_ws_next.SubscriptionServer(
             self.schema, AiohttpConnectionContext
         )

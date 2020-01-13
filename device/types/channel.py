@@ -20,5 +20,5 @@ class ReadWriteChannel(ReadOnlyChannel[T]):
     def put(self, value: T) -> Result[T]:
         return NotImplemented
 
-    def put_async(self, value: T) -> Result[T]:
+    async def put_async(self, value: T) -> Result[T]:
         return NotImplemented

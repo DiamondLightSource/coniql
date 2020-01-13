@@ -15,7 +15,7 @@ class MockWorkingResult(Result[T]):
     def is_error(self) -> bool:
         return False
 
-    def or_raise(self, err: Exception) -> T:
+    def or_raise(self, err: Exception = None) -> T:
         return self.__value
 
 
@@ -27,4 +27,4 @@ class MockErrorResult(Result[T]):
         return True
 
     def or_raise(self, err: Exception) -> T:
-        raise Exception('MOCKED ERROR!')
+        raise err
