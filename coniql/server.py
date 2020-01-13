@@ -7,7 +7,9 @@ from typing import List
 from aiohttp import web
 from aiohttp.web import HTTPForbidden
 from aiohttp.web_exceptions import HTTPClientError
-from aiohttp_security import is_anonymous, check_permission
+from aiohttp.web_response import Response
+from aiohttp_security import is_anonymous, check_permission, forget, remember
+from aiohttp_security.abc import AbstractAuthorizationPolicy
 from graphql import graphql, parse, OperationType
 import graphql_ws_next
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
@@ -60,7 +62,6 @@ class App(web.Application):
         # Do not allow query to run without authentication
         if not await is_anonymous(request):
             query = await get_query(request)
-
             operations = await operation_types(query)
             if all([check_permission(request, operation) for operation in operations]):
                 result = await graphql(self.schema, query)
@@ -78,6 +79,15 @@ class App(web.Application):
         else:
             raise HTTPForbidden(reason='User is not authenticated!')
 
+    async def handle_login(self, request):
+        if await is_anonymous(request):
+            # await remember(request, )
+            pass
+        else:
+            return Response(body=b'You are already logged in')
+
+    async def handle_logout(self, request):
+        await forget(request, Response(body=b'Logout successful'))
 
     async def handle_subscriptions(self, request):
         wsr = web.WebSocketResponse(protocols=(graphql_ws_next.WS_PROTOCOL,))
