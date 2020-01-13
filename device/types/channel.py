@@ -1,4 +1,4 @@
-from typing import TypeVar, Generic, Iterable
+from typing import TypeVar, Generic, Iterable, AsyncGenerator, Coroutine, Any
 
 from device.types.result import Result
 
@@ -12,8 +12,8 @@ class ReadOnlyChannel(Generic[T]):
     async def get_async(self) -> Result[T]:
         return NotImplemented
 
-    async def monitor(self) -> Iterable[Result[T]]:
-        return NotImplemented
+    async def monitor(self) -> AsyncGenerator[Result[T], None]:
+        yield NotImplemented
 
 
 class ReadWriteChannel(ReadOnlyChannel[T]):
