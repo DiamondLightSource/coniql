@@ -2,7 +2,7 @@ import asyncio
 
 from asyncio import Queue
 from collections import Iterable
-from typing import TypeVar, AsyncGenerator, Coroutine, Any, Generic
+from typing import TypeVar, AsyncGenerator, Coroutine, Any, Generic, Type
 
 from device.types.channel import ReadOnlyChannel, ReadWriteChannel
 from device.types.result import Result
@@ -30,7 +30,7 @@ class MockReadOnlyChannel(ReadOnlyChannel[T]):
             yield await queue.get()
 
 
-class MockReadWriteChannel(MockReadOnlyChannel[T]):
+class MockReadWriteChannel(MockReadOnlyChannel[T], ReadWriteChannel[T]):
     def put(self, value: T) -> Result[T]:
         self.__value = value
         return MockWorkingResult(self.__value)
