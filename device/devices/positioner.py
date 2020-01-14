@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from coniql.util import doc_field
-from device.types.channel import ReadOnlyChannel, ReadWriteChannel
+from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel
 
 
 @dataclass

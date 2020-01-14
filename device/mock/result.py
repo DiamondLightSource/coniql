@@ -1,6 +1,6 @@
 from typing import TypeVar
 
-from device.types.result import Result
+from device.devicetypes.result import Result
 
 T = TypeVar('T')
 

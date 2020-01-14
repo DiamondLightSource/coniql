@@ -1,6 +1,6 @@
 from typing import TypeVar, Generic, Iterable, AsyncGenerator, Coroutine, Any
 
-from device.types.result import Result
+from device.devicetypes.result import Result
 
 T = TypeVar('T')
 

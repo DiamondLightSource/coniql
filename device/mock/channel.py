@@ -4,8 +4,8 @@ from asyncio import Queue
 from collections import Iterable
 from typing import TypeVar, AsyncGenerator, Coroutine, Any, Generic, Type
 
-from device.types.channel import ReadOnlyChannel, ReadWriteChannel
-from device.types.result import Result
+from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel
+from device.devicetypes.result import Result
 from device.mock.result import MockWorkingResult
 
 T = TypeVar('T')
