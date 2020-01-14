@@ -1,16 +1,15 @@
 import dataclasses
 
-from typing import List, Dict, Any, TypeVar, Optional
-from dataclasses import dataclass
+from typing import List, Dict, Any, Optional
 
 from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
-from device.types.channel import ReadOnlyChannel, ReadWriteChannel
+from device.types.channel import ReadWriteChannel
 from device.mock.channel import MockReadOnlyChannel, MockReadWriteChannel
-from device.goniometer import Goniometer
-from device.motor import Motor
-from device.stage3d import Stage3D
+from device.devices.goniometer import Goniometer
+from device.devices.motor import Motor
+from device.devices.stage3d import Stage3D
 
 ADDRESS_DELIMETER = '.'
 

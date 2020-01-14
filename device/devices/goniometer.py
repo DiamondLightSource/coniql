@@ -1,9 +1,7 @@
 from dataclasses import dataclass
-from typing import List
 
-from device.motor import Motor
-from device.positioner import Positioner
-from device.stage3d import Stage3D
+from device.devices.motor import Motor
+from device.devices.stage3d import Stage3D
 
 
 @dataclass
