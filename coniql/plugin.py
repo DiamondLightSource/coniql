@@ -4,8 +4,12 @@ from ._types import Channel, Function
 
 
 class Plugin:
-    async def get_channel(self, channel_id: str, timeout: float) -> Channel:
-        """Get the current structure of a Channel"""
+    async def read_channel(self, channel_id: str, timeout: float):
+        """Read the current value and status of a channel"""
+        raise NotImplementedError(self)
+
+    async def get_channel(self, channel_id: str) -> Channel:
+        """Get information about a Channel"""
         raise NotImplementedError(self)
 
     async def get_function(self, function_id: str, timeout: float) -> Function:

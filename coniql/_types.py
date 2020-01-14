@@ -196,14 +196,20 @@ class TableMeta(Meta):
 
 @dataclass
 class Channel:
-    """A single value with associated time, status and metadata. These values
-    can be Null so that in a subscription they are only updated on change"""
+    """Emitter/consumer of single values with associated metadata."""
     id: str = doc_field(
         "ID that uniquely defines this Channel, normally a PV",
         "")
     meta: Optional[Meta] = doc_field(
         "Metadata telling clients how to display, control, and validate",
         None)
+
+
+@dataclass
+class Readback:
+    """A single value from a channel with associated time and status.
+    These values can be Null so that in a subscription they are only updated
+    on change"""
     value: Optional[Any] = doc_field(
         "The current value",
         None)
@@ -213,6 +219,10 @@ class Channel:
     status: Optional[ChannelStatus] = doc_field(
         "Status of the connection, whether is is mutable, and alarm info",
         None)
+
+    @classmethod
+    def ok(cls, value: Any, mutable: bool = False):
+        return Readback(value, Time.now(), ChannelStatus.ok(mutable))
 
 
 @dataclass

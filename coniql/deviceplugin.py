@@ -3,7 +3,8 @@ import dataclasses
 from typing import List, Dict, Any, TypeVar, Optional
 from dataclasses import dataclass
 
-from coniql._types import Channel, Function, ChannelStatus, ChannelQuality
+from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
+    Readback
 from coniql.plugin import Plugin
 from device.types.channel import ReadOnlyChannel, ReadWriteChannel
 from device.mock.channel import MockReadOnlyChannel, MockReadWriteChannel
@@ -44,15 +45,22 @@ class DevicePlugin(Plugin):
         import pprint
         pprint.pprint(self.channels)
 
-    async def get_channel(self, channel_id: str, timeout: float) -> Channel:
+    async def read_channel(self, channel_id: str, timeout: float):
+        channel = self.lookup_channel(parse_channel_address(channel_id))
+        readout = await channel.get_async()
+        if readout.is_present():
+            return Readback.ok(readout.or_raise(Exception()), True) # TODO: Sort out mutability
+        else:
+            return Readback(None, None,
+                            ChannelStatus(ChannelQuality.INVALID, '', False))
+
+    async def get_channel(self, channel_id: str) -> Channel:
         """Get the current structure of a Channel"""
         channel = self.lookup_channel(parse_channel_address(channel_id))
-        result = await channel.get_async()
-        if result.is_present():
-            return Channel(id=channel_id, value=result.or_raise(Exception()))
+        if channel is not None:
+            return Channel(id=channel_id)
         else:
-            return Channel(id=channel_id,
-                           status=ChannelStatus(quality=ChannelQuality.INVALID))
+            raise KeyError(f'Unknown channel: {channel_id}')
 
     async def get_function(self, function_id: str, timeout: float) -> Function:
         """Get the current structure of a Function"""
@@ -63,7 +71,7 @@ class DevicePlugin(Plugin):
         """Put a value to a channel, returning the value after put"""
         channel = self.lookup_channel(parse_channel_address(channel_id))
         result = await channel.put_async(value)
-        return await self.get_channel(channel_id, timeout)
+        return await self.get_channel(channel_id)
 
     async def call_function(self, function_id: str, arguments, timeout: float
                             ) -> Any:

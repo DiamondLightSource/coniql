@@ -10,7 +10,7 @@ from graphql import (
 )
 
 from coniql.plugin import Plugin
-from coniql._types import Channel, ArrayWrapper, Function
+from coniql._types import Channel, ArrayWrapper, Function, Readback, Time
 from coniql.util import make_gql_type
 
 
@@ -31,6 +31,7 @@ class ConiqlSchema(GraphQLSchema):
     def __init__(self):
         self.any_type = GraphQLScalarType("Any", serialize=serialize_any)
         self.types: Dict[str, GraphQLOutputType] = dict(Any=self.any_type)
+        self.readback_type = make_gql_type(Readback, self.types)
         self.channel_type = make_gql_type(Channel, self.types)
         self.function_type = make_gql_type(Function, self.types)
         self.plugins: Dict[str, Plugin] = {}
@@ -43,13 +44,18 @@ class ConiqlSchema(GraphQLSchema):
 
     def _query_fields(self):
         return dict(
-            getChannel=GraphQLField(self.channel_type, args=dict(
+            readChannel=GraphQLField(self.readback_type, args=dict(
                 id=GraphQLArgument(
                     GraphQLNonNull(GraphQLString),
                     description="The ID of the Channel to connect to"),
                 timeout=GraphQLArgument(
                     GraphQLFloat, 5,
-                    description="How long to wait, negative is forever"),
+                    description="How long to wait, negative is forever")
+            ), resolve=self.read_channel),
+            getChannel=GraphQLField(self.channel_type, args=dict(
+                id=GraphQLArgument(
+                    GraphQLNonNull(GraphQLString),
+                    description="The ID of the Channel to connect to")
             ), resolve=self.get_channel),
             getFunction=GraphQLField(self.function_type, args=dict(
                 id=GraphQLArgument(
@@ -114,9 +120,15 @@ class ConiqlSchema(GraphQLSchema):
         if set_default:
             self.plugins[""] = plugin
 
-    async def get_channel(self, root, info, id: str, timeout: float):
+    async def read_channel(self, root, info, id: str, timeout: float):
         plugin, channel_id = self._plugin_object_id(id)
-        data = await plugin.get_channel(channel_id, timeout)
+        data = await plugin.read_channel(channel_id, timeout)
+        # data.id = id
+        return data
+
+    async def get_channel(self, root, info, id: str):
+        plugin, channel_id = self._plugin_object_id(id)
+        data = await plugin.get_channel(channel_id)
         data.id = id
         return data
 
