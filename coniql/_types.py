@@ -6,13 +6,13 @@ from enum import Enum
 from dataclasses import dataclass
 from typing import List, Optional, Any
 
-
 from coniql.util import DocEnum, doc_field
 
 
 class ArrayWrapper:
     """Numpy arrays return ndarrays from == and !=, which conflicts with
     graphql is_nullish(). Can be removed when PR is merged"""
+
     def __init__(self, array):
         self.array = array
 
@@ -24,7 +24,7 @@ class ArrayWrapper:
 class NumberType(Enum):
     """The underlying datatype of a number scalar or array"""
     INT8, UINT8, INT16, UINT16, INT32, UINT32, INT64, UINT64, FLOAT32, \
-        FLOAT64 = range(10)
+    FLOAT64 = range(10)
 
 
 class DisplayForm(DocEnum):
@@ -33,12 +33,12 @@ class DisplayForm(DocEnum):
     STRING = "Force string representation, most useful for array of bytes"
     BINARY = "Binary, precision determines number of binary digits"
     DECIMAL = "Decimal, precision determines number of digits after " \
-        "decimal point"
+              "decimal point"
     HEX = "Hexadecimal, precision determines number of hex digits"
     EXPONENTIAL = "Exponential, precision determines number of digits after " \
-        "decimal point"
+                  "decimal point"
     ENGINEERING = "Exponential where exponent is multiple of 3, " \
-        "precision determines number of digits after decimal point"
+                  "precision determines number of digits after decimal point"
 
 
 class ChannelQuality(DocEnum):
@@ -46,11 +46,11 @@ class ChannelQuality(DocEnum):
     VALID = "Value is known, valid, nothing is wrong"
     WARNING = "Value is known, valid, but is in the range generating a warning"
     ALARM = "Value is known, valid, but is in the range generating an " \
-        "alarm condition"
+            "alarm condition"
     INVALID = "Value is known, but not valid, e.g. a write channel before " \
-        "its first put"
+              "its first put"
     UNDEFINED = "The value is unknown, for instance because the channel is " \
-        "disconnected"
+                "disconnected"
     CHANGING = "The Channel is currently in the process of being changed"
 
 
@@ -129,7 +129,7 @@ class Time:
     nanoseconds: int = doc_field(
         "A more accurate version of the nanoseconds part of the seconds field")
     userTag: int = doc_field(
-     "An integer value whose interpretation is deliberately undefined")
+        "An integer value whose interpretation is deliberately undefined")
 
     @classmethod
     def now(cls):
@@ -210,7 +210,7 @@ class Readback:
     """A single value from a channel with associated time and status.
     These values can be Null so that in a subscription they are only updated
     on change"""
-    value: Optional[Any] = doc_field(
+    value: Any = doc_field(
         "The current value",
         None)
     time: Optional[Time] = doc_field(

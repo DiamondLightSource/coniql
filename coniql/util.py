@@ -1,7 +1,7 @@
 import sys
 from enum import Enum
 import dataclasses
-from typing import Type, Dict
+from typing import Type, Dict, Generic
 
 from graphql import (
     GraphQLEnumType, GraphQLEnumValue, GraphQLField, GraphQLFloat,
@@ -96,7 +96,7 @@ def make_gql_type(typ: Type,
         # converted
         for supercls in typ.__mro__:
             if supercls not in (typ, object) and supercls.__name__ not in types:
-                make_gql_type(supercls)
+                make_gql_type(supercls, types)
         # Now we can declare our interfaces
         interfaces = [types[cls.__name__] for cls in typ.__mro__ if
                       cls.__name__ in types]
