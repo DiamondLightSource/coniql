@@ -101,7 +101,9 @@ def mock_device_environment() -> DevicePlugin:
             jog_positive=InMemoryReadWriteChannel(False),
             jog_negative=InMemoryReadWriteChannel(False),
             step_length=InMemoryReadWriteChannel(1.0),
-            velocity=InMemoryReadWriteChannel(1.0)
+            velocity=InMemoryReadWriteChannel(1.0),
+            min=InMemoryReadWriteChannel(-1000.0),
+            max=InMemoryReadWriteChannel(1000.0)
         )
 
     goniometer = Goniometer(
