@@ -46,7 +46,7 @@ class DevicePlugin(Plugin):
 
     async def read_channel(self, channel_id: str, timeout: float):
         channel = self.lookup_channel(parse_channel_address(channel_id))
-        readout = await channel.get_async()
+        readout = await channel.get()
         if readout.is_present():
             return Readback.ok(readout.or_raise(Exception()), True) # TODO: Sort out mutability
         else:
@@ -69,7 +69,7 @@ class DevicePlugin(Plugin):
                           ) -> Channel:
         """Put a value to a channel, returning the value after put"""
         channel = self.lookup_channel(parse_channel_address(channel_id))
-        result = await channel.put_async(value)
+        result = await channel.put(value)
         return await self.get_channel(channel_id)
 
     async def call_function(self, function_id: str, arguments, timeout: float
@@ -100,7 +100,8 @@ def mock_device_environment() -> DevicePlugin:
             d=MockReadWriteChannel(0.0),
             jog_positive=MockReadWriteChannel(False),
             jog_negative=MockReadWriteChannel(False),
-            step_length=MockReadWriteChannel(1.0)
+            step_length=MockReadWriteChannel(1.0),
+            velocity=MockReadWriteChannel(1.0)
         )
 
     goniometer = Goniometer(
