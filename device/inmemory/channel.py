@@ -7,13 +7,13 @@ from typing import TypeVar, AsyncGenerator, Coroutine, Any, Generic, Type, \
 
 from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel
 from device.devicetypes.result import Result
-from device.mock.result import MockWorkingResult
+from device.inmemory.result import MockWorkingResult
 
 T = TypeVar('T')
 _SUBSCRIBER = Callable[[T], None]
 
 
-class MockReadOnlyChannel(ReadOnlyChannel[T]):
+class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
     def __init__(self, value: T):
         self.__value = value
 
@@ -30,7 +30,7 @@ class MockReadOnlyChannel(ReadOnlyChannel[T]):
             yield await queue.get()
 
 
-class MockReadWriteChannel(MockReadOnlyChannel[T], ReadWriteChannel[T]):
+class InMemoryReadWriteChannel(InMemoryReadOnlyChannel[T], ReadWriteChannel[T]):
     async def put(self, value: T) -> Result[T]:
         self.set_value(value)
         return MockWorkingResult(value)

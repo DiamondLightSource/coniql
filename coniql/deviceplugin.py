@@ -6,7 +6,7 @@ from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
 from device.devicetypes.channel import ReadWriteChannel
-from device.mock.channel import MockReadOnlyChannel, MockReadWriteChannel
+from device.inmemory.channel import InMemoryReadOnlyChannel, InMemoryReadWriteChannel
 from device.devices.goniometer import Goniometer
 from device.devices.motor import Motor
 from device.devices.stage3d import Stage3D
@@ -93,15 +93,15 @@ class DevicePlugin(Plugin):
 def mock_device_environment() -> DevicePlugin:
     def mock_motor(position: float = 0.0) -> Motor:
         return Motor(
-            position=MockReadOnlyChannel(position),
-            setpoint=MockReadWriteChannel(position),
-            p=MockReadWriteChannel(1.0),
-            i=MockReadWriteChannel(0.0),
-            d=MockReadWriteChannel(0.0),
-            jog_positive=MockReadWriteChannel(False),
-            jog_negative=MockReadWriteChannel(False),
-            step_length=MockReadWriteChannel(1.0),
-            velocity=MockReadWriteChannel(1.0)
+            position=InMemoryReadOnlyChannel(position),
+            setpoint=InMemoryReadWriteChannel(position),
+            p=InMemoryReadWriteChannel(1.0),
+            i=InMemoryReadWriteChannel(0.0),
+            d=InMemoryReadWriteChannel(0.0),
+            jog_positive=InMemoryReadWriteChannel(False),
+            jog_negative=InMemoryReadWriteChannel(False),
+            step_length=InMemoryReadWriteChannel(1.0),
+            velocity=InMemoryReadWriteChannel(1.0)
         )
 
     goniometer = Goniometer(
