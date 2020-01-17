@@ -7,16 +7,19 @@ T = TypeVar('T')
 
 
 class ReadableChannel(Generic[T]):
+    """A channel whose value can be read e.g. into a variable"""
     async def get(self) -> Result[T]:
         return NotImplemented
 
 
 class MonitorableChannel(Generic[T]):
+    """A channel whose value can be continuously monitored"""
     async def monitor(self) -> AsyncGenerator[Result[T], None]:
         yield NotImplemented
 
 
 class WriteableChannel(Generic[T]):
+    """A channel whose value can be mutated"""
     async def put(self, value: T) -> Result[T]:
         return NotImplemented
 
@@ -27,22 +30,3 @@ class ReadOnlyChannel(ReadableChannel[T], MonitorableChannel[T]):
 
 class ReadWriteChannel(ReadOnlyChannel[T], WriteableChannel[T]):
     pass
-
-
-# class ReadOnlyChannel(Generic[T]):
-#     def get(self) -> Result[T]:
-#         return NotImplemented
-#
-#     async def get_async(self) -> Result[T]:
-#         return NotImplemented
-#
-#     async def monitor(self) -> AsyncGenerator[Result[T], None]:
-#         yield NotImplemented
-#
-#
-# class ReadWriteChannel(ReadOnlyChannel[T]):
-#     def put(self, value: T) -> Result[T]:
-#         return NotImplemented
-#
-#     async def put_async(self, value: T) -> Result[T]:
-#         return NotImplemented
