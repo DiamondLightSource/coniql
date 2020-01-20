@@ -10,13 +10,13 @@ _READBACK_DICT = Dict[ReadOnlyChannel, Result[Any]]
 
 
 async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
-    results = await asyncio.gather(*(channel.put_async(value)
+    results = await asyncio.gather(*(channel.put(value)
                                      for channel, value in channel_values.items()))
     return {channel: result
             for channel, result in zip(channel_values.keys(), results)}
 
 
 async def get_all(channels: List[ReadOnlyChannel]) -> _READBACK_DICT:
-    results = await asyncio.gather(*(channel.get_async() for channel in channels))
+    results = await asyncio.gather(*(channel.get() for channel in channels))
     return {channel: result
             for channel, result in zip(channels, results)}
