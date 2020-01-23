@@ -51,14 +51,14 @@ class ReadOnlyCaChannel(ReadOnlyChannel):
         return Readback.ok(value, mutable=False)
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:
-        queue = asyncio.Queue()
+        q = asyncio.Queue()
 
-        async def put(item):
-            await queue.put(item)
+        def queue_callback(value):
+            asyncio.create_task(q.put(value))
 
-        await camonitor(self.pv, put)
+        m = await camonitor(self.pv, queue_callback, format=FORMAT_TIME)
         while True:
-            yield await queue.get()
+            yield Readback.ok(await q.get(), mutable=False)
 
 
 class ReadWriteCaChannel(ReadWriteChannel):
@@ -70,14 +70,15 @@ class ReadWriteCaChannel(ReadWriteChannel):
         return Readback.ok(value, mutable=True)
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:
-        queue = asyncio.Queue()
+        q = asyncio.Queue()
 
-        async def put(item):
-            await queue.put(item)
+        def queue_callback(value):
+            asyncio.create_task(q.put(value))
 
-        await camonitor(self.pv, put)
+        m = await camonitor(self.pv, queue_callback, format=FORMAT_TIME)
         while True:
-            yield await queue.get()
+            yield Readback.ok(await q.get(), mutable=True)
+        m.close()
 
     async def put(self, value: T, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
         await caput_one(self.pv, value, timeout=timeout)

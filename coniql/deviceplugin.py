@@ -77,8 +77,10 @@ class DevicePlugin(Plugin):
     async def subscribe_channel(self, channel_id: str):
         """Subscribe to the structure of the value, yielding dict structures
         where only changing top level fields are filled in"""
-        yield
-        raise NotImplementedError(self)
+        channel = self.lookup_channel(parse_channel_address(channel_id))
+        stream = channel.monitor()
+        async for readback in stream:
+            yield readback.to_gql_readback()
 
     def startup(self):
         """Start any services the plugin needs. Don't block"""

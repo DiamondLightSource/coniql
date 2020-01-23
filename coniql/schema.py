@@ -96,7 +96,7 @@ class ConiqlSchema(GraphQLSchema):
 
     def _subscription_fields(self):
         return dict(
-            subscribeChannel=GraphQLField(self.channel_type, args=dict(
+            subscribeChannel=GraphQLField(self.readback_type, args=dict(
                 id=GraphQLArgument(
                     GraphQLNonNull(GraphQLString),
                     description="The ID of the Channel to connect to"),
