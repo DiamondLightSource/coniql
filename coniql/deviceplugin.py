@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
-from device.caproto.channel import ReadOnlyCaChannel, ReadWriteCaChannel
+from device.cothread.channel import ReadOnlyCaChannel, ReadWriteCaChannel
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, InMemoryReadWriteChannel
 from device.devices.goniometer import Goniometer
