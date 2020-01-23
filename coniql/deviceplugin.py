@@ -5,6 +5,7 @@ from typing import List, Dict, Any, Optional
 from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
+from device.caproto.channel import CaChannel
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, InMemoryReadWriteChannel
 from device.devices.goniometer import Goniometer
@@ -122,3 +123,33 @@ def mock_device_environment() -> DevicePlugin:
 
     plugin.debug()
     return plugin
+
+
+def adsim_device_environment():
+    def motor(prefix: str) -> Motor:
+        return Motor(
+            position=CaChannel(f'{prefix}.RBV'),
+            setpoint=CaChannel(f'{prefix}'),
+            p=CaChannel(f'{prefix}.PCOF'),
+            i=CaChannel(f'{prefix}.ICOF'),
+            d=CaChannel(f'{prefix}.DCOF'),
+            jog_positive=CaChannel(f'{prefix}.TWF'),
+            jog_negative=CaChannel(f'{prefix}.TWR'),
+            step_length=CaChannel(f'{prefix}.TWV'),
+            velocity=CaChannel(f'{prefix}.VELO'),
+            min=CaChannel(f'{prefix}.LLM'),
+            max=CaChannel(f'{prefix}.HLM')
+        )
+
+    x = motor('ws415-MO-SIM-01:M1')
+    y = motor('ws415-MO-SIM-01:M2')
+    z = motor('ws415-MO-SIM-01:M3')
+
+    plugin = DevicePlugin()
+    plugin.register_device(x, name='x')
+    plugin.register_device(y, name='y')
+    plugin.register_device(z, name='z')
+
+    plugin.debug()
+    return plugin
+

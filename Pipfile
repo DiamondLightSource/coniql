@@ -12,6 +12,8 @@ mypy = "*"
 graphql-core = "==3.0.1"
 aiohttp = "*"
 numpy = "*"
+caproto = "*"
+cothread = "*"
 
 [requires]
 python_version = "3.7"
