@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5bffaf1e3c7d19258c3c88b5c81f0e50802ebbdbc26233f08a45f8556b4e52dd"
+            "sha256": "c77724770c851ea282eba00ea8de057b3eb30ce9f79780550e72e1ab5d3ada20"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -62,12 +62,7 @@
             "version": "==3.0.4"
         },
         "cothread": {
-            "hashes": [
-                "sha256:69d225477e0037af05625ee16a5273fcdcee81689a6a7a189d477f40e0c40646",
-                "sha256:ad10b25bb584c8f7e6223af60199516b55263145803250af9a03ce8244cfaf23"
-            ],
-            "index": "pypi",
-            "version": "==2.16+dls1"
+            "path": "/home/hgs15624/code/python/cothread"
         },
         "graphql-core": {
             "hashes": [

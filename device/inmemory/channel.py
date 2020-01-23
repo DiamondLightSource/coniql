@@ -5,12 +5,11 @@ from collections import Iterable
 from typing import TypeVar, AsyncGenerator, Coroutine, Any, Generic, Type, \
     Callable, List, Optional
 
-from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel
-from device.devicetypes.result import Result
-from device.inmemory.result import MockWorkingResult
+from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel, \
+    DEFAULT_TIMEOUT
+from device.devicetypes.result import Readback
 
 T = TypeVar('T')
-_SUBSCRIBER = Callable[[T], None]
 
 
 class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
@@ -20,10 +19,10 @@ class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
     def set_value(self, value: T):
         self.__value = value
 
-    async def get(self) -> Result[T]:
-        return MockWorkingResult(self.__value)
+    async def get(self, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
+        return Readback.ok(self.__value, mutable=False)
 
-    async def monitor(self) -> AsyncGenerator[Result[T], None]:
+    async def monitor(self) -> AsyncGenerator[Readback[T], None]:
         queue: Queue = Queue()
         await queue.put(self.get())
         while True:
@@ -31,6 +30,6 @@ class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
 
 
 class InMemoryReadWriteChannel(InMemoryReadOnlyChannel[T], ReadWriteChannel[T]):
-    async def put(self, value: T) -> Result[T]:
+    async def put(self, value: T, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
         self.set_value(value)
-        return MockWorkingResult(value)
+        return await self.get(timeout)

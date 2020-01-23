@@ -5,7 +5,7 @@ from typing import List, Dict, Any, Optional
 from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
-from device.caproto.channel import CaChannel
+from device.caproto.channel import ReadOnlyCaChannel, ReadWriteCaChannel
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, InMemoryReadWriteChannel
 from device.devices.goniometer import Goniometer
@@ -47,12 +47,8 @@ class DevicePlugin(Plugin):
 
     async def read_channel(self, channel_id: str, timeout: float):
         channel = self.lookup_channel(parse_channel_address(channel_id))
-        readout = await channel.get()
-        if readout.is_present():
-            return Readback.ok(readout.or_raise(Exception()), True) # TODO: Sort out mutability
-        else:
-            return Readback(None, None,
-                            ChannelStatus(ChannelQuality.INVALID, '', False))
+        readback = await channel.get()
+        return readback.to_gql_readback()
 
     async def get_channel(self, channel_id: str) -> Channel:
         """Get the current structure of a Channel"""
@@ -128,17 +124,17 @@ def mock_device_environment() -> DevicePlugin:
 def adsim_device_environment():
     def motor(prefix: str) -> Motor:
         return Motor(
-            position=CaChannel(f'{prefix}.RBV'),
-            setpoint=CaChannel(f'{prefix}'),
-            p=CaChannel(f'{prefix}.PCOF'),
-            i=CaChannel(f'{prefix}.ICOF'),
-            d=CaChannel(f'{prefix}.DCOF'),
-            jog_positive=CaChannel(f'{prefix}.TWF'),
-            jog_negative=CaChannel(f'{prefix}.TWR'),
-            step_length=CaChannel(f'{prefix}.TWV'),
-            velocity=CaChannel(f'{prefix}.VELO'),
-            min=CaChannel(f'{prefix}.LLM'),
-            max=CaChannel(f'{prefix}.HLM')
+            position=ReadOnlyCaChannel(f'{prefix}.RBV'),
+            setpoint=ReadWriteCaChannel(f'{prefix}'),
+            p=ReadWriteCaChannel(f'{prefix}.PCOF'),
+            i=ReadWriteCaChannel(f'{prefix}.ICOF'),
+            d=ReadWriteCaChannel(f'{prefix}.DCOF'),
+            jog_positive=ReadWriteCaChannel(f'{prefix}.TWF'),
+            jog_negative=ReadWriteCaChannel(f'{prefix}.TWR'),
+            step_length=ReadWriteCaChannel(f'{prefix}.TWV'),
+            velocity=ReadWriteCaChannel(f'{prefix}.VELO'),
+            min=ReadWriteCaChannel(f'{prefix}.LLM'),
+            max=ReadWriteCaChannel(f'{prefix}.HLM')
         )
 
     x = motor('ws415-MO-SIM-01:M1')

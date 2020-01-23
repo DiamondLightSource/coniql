@@ -13,7 +13,7 @@ graphql-core = "==3.0.1"
 aiohttp = "*"
 numpy = "*"
 caproto = "*"
-cothread = "*"
+cothread = {path = "/home/hgs15624/code/python/cothread"}
 
 [requires]
 python_version = "3.7"
