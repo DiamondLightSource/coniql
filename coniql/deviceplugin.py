@@ -128,6 +128,7 @@ def adsim_device_environment():
         return Motor(
             position=ReadOnlyCaChannel(f'{prefix}.RBV'),
             setpoint=ReadWriteCaChannel(f'{prefix}'),
+            stationary=ReadOnlyCaChannel(f'{prefix}.DMOV'),
             p=ReadWriteCaChannel(f'{prefix}.PCOF'),
             i=ReadWriteCaChannel(f'{prefix}.ICOF'),
             d=ReadWriteCaChannel(f'{prefix}.DCOF'),
@@ -135,6 +136,7 @@ def adsim_device_environment():
             jog_negative=ReadWriteCaChannel(f'{prefix}.TWR'),
             step_length=ReadWriteCaChannel(f'{prefix}.TWV'),
             velocity=ReadWriteCaChannel(f'{prefix}.VELO'),
+            max_velocity=ReadWriteCaChannel(f'{prefix}.VMAX'),
             min=ReadWriteCaChannel(f'{prefix}.LLM'),
             max=ReadWriteCaChannel(f'{prefix}.HLM')
         )
