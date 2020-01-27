@@ -2,7 +2,8 @@ import asyncio
 from collections import Callable
 from dataclasses import dataclass
 
-from device.devicetypes.channel import ReadWriteChannel
+from device.devicetypes.channel import ReadWriteChannel, ReadableChannel, \
+    WriteableChannel
 
 _PREDICATE = Callable[[float], bool]
 _SIDE_EFFECT = Callable[[], None]
@@ -10,18 +11,20 @@ _SIDE_EFFECT = Callable[[], None]
 
 @dataclass
 class Trigger:
-    input: ReadWriteChannel[float]
+    input: ReadWriteChannel[ReadableChannel[float]]
     predicate: ReadWriteChannel[_PREDICATE]
-    output: ReadWriteChannel[bool]
+    output: ReadWriteChannel[WriteableChannel[bool]]
     delay_seconds: ReadWriteChannel[float]
 
     async def run_in_memory(self):
-        current = (await self.input.get()).value
+        input_channel = (await self.input.get()).value
+        output_channel = (await self.output.get()).value
+        current = (await input_channel.get()).value
         predicate = (await self.predicate.get()).value
         delay = (await self.delay_seconds.get()).value
         if predicate(current):
             await asyncio.sleep(delay)
-            await self.output.put(True)
+            await output_channel.put(True)
 
 
 @dataclass
