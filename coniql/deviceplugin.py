@@ -6,6 +6,7 @@ from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
 from device.cothread.channel import ReadOnlyCaChannel, ReadWriteCaChannel
+from device.devices.faketriggerbox import in_memory_box_running
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
@@ -171,9 +172,12 @@ def adsim_device_environment():
 
     det = camera('ws415-AD-SIM-01:CAM')
 
+    trigger_box = in_memory_box_running()
+
     plugin = DevicePlugin()
     plugin.register_device(sample_stage, name='sample_stage')
     plugin.register_device(det, name='detector')
+    plugin.register_device(trigger_box, name='trigger_box')
 
     plugin.debug()
     return plugin

@@ -7,26 +7,25 @@ from device.devicetypes.channel import ReadWriteChannel, ReadableChannel, \
     WriteableChannel
 from device.inmemory.channel import InMemoryReadWriteChannel
 
-_PREDICATE = Callable[[float], bool]
-_SIDE_EFFECT = Callable[[], None]
-
 _DEFAULT_CLOCK_SECONDS = 0.1
 
 
 @dataclass
 class Trigger:
     input: ReadWriteChannel[Optional[ReadableChannel[float]]]
-    predicate: ReadWriteChannel[Optional[_PREDICATE]]
     output: ReadWriteChannel[Optional[WriteableChannel[bool]]]
+    min_value: ReadWriteChannel[float]
+    max_value: ReadWriteChannel[float]
     delay_seconds: ReadWriteChannel[float]
 
     async def run_in_memory(self):
         input_channel = (await self.input.get()).value
         output_channel = (await self.output.get()).value
         current = (await input_channel.get()).value
-        predicate = (await self.predicate.get()).value
+        min_value = (await self.min_value.get()).value
+        max_value = (await self.max_value.get()).value
         delay = (await self.delay_seconds.get()).value
-        if predicate(current):
+        if min_value <= current <= max_value:
             await asyncio.sleep(delay)
             await output_channel.put(True)
 
@@ -34,7 +33,8 @@ class Trigger:
 def in_memory_trigger() -> Trigger:
     return Trigger(
         input=InMemoryReadWriteChannel(None),
-        predicate=InMemoryReadWriteChannel(None),
+        min_value=InMemoryReadWriteChannel(0.0),
+        max_value=InMemoryReadWriteChannel(0.0),
         output=InMemoryReadWriteChannel(None),
         delay_seconds=InMemoryReadWriteChannel(0.0)
     )
