@@ -7,10 +7,12 @@ from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
 from coniql.plugin import Plugin
 from device.cothread.channel import ReadOnlyCaChannel, ReadWriteCaChannel
 from device.devicetypes.channel import ReadWriteChannel
-from device.inmemory.channel import InMemoryReadOnlyChannel, InMemoryReadWriteChannel
+from device.inmemory.channel import InMemoryReadOnlyChannel, \
+    InMemoryReadWriteChannel
 from device.devices.goniometer import Goniometer
 from device.devices.motor import Motor
 from device.devices.stage3d import Stage3D
+from device.devices.camera import Camera
 
 ADDRESS_DELIMETER = '.'
 
@@ -30,7 +32,8 @@ class DevicePlugin(Plugin):
             d = {name: d}
         self.channels = {**self.channels, **d}
 
-    def lookup_channel(self, channel_addr: List[str], channels: Optional[Dict[str, Any]] = None) -> ReadWriteChannel:
+    def lookup_channel(self, channel_addr: List[str], channels: Optional[
+        Dict[str, Any]] = None) -> ReadWriteChannel:
         if channels is None:
             channels = self.channels
         nxt = channel_addr[0]
@@ -141,15 +144,36 @@ def adsim_device_environment():
             max=ReadWriteCaChannel(f'{prefix}.HLM')
         )
 
+    def camera(prefix: str) -> Camera:
+        return Camera(
+            exposure_time=ReadWriteCaChannel(f'{prefix}:AcquireTime',
+                                             rbv_suffix='_RBV'),
+            acquire_period=ReadWriteCaChannel(f'{prefix}:AcquirePeriod',
+                                              rbv_suffix='_RBV'),
+            exposures_per_image=ReadWriteCaChannel(f'{prefix}:NumExposures',
+                                                   rbv_suffix='_RBV'),
+            number_of_images=ReadWriteCaChannel(f'{prefix}:NumImages',
+                                                rbv_suffix='_RBV'),
+            image_mode=ReadWriteCaChannel(f'{prefix}:ImageMode',
+                                          rbv_suffix='_RBV'),
+            trigger_mode=ReadWriteCaChannel(f'{prefix}:TriggerMode',
+                                            rbv_suffix='_RBV'),
+            acquire=ReadWriteCaChannel(f'{prefix}:Acquire'),
+            array_counter=ReadWriteCaChannel(f'{prefix}:ArrayCounter',
+                                             rbv_suffix='_RBV'),
+            framerate=ReadOnlyCaChannel(f'{prefix}:ArrayRate_RBV')
+        )
+
     x = motor('ws415-MO-SIM-01:M1')
     y = motor('ws415-MO-SIM-01:M2')
     z = motor('ws415-MO-SIM-01:M3')
+    sample_stage = Stage3D(x, y, z)
+
+    det = camera('ws415-AD-SIM-01:CAM')
 
     plugin = DevicePlugin()
-    plugin.register_device(x, name='x')
-    plugin.register_device(y, name='y')
-    plugin.register_device(z, name='z')
+    plugin.register_device(sample_stage, name='sample_stage')
+    plugin.register_device(det, name='detector')
 
     plugin.debug()
     return plugin
-

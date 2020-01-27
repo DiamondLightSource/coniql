@@ -1,6 +1,9 @@
+from dataclasses import dataclass
+
 from device.devicetypes.channel import ReadWriteChannel, ReadOnlyChannel
 
 
+@dataclass
 class Camera:
     exposure_time: ReadWriteChannel[float]
     acquire_period: ReadWriteChannel[float]
