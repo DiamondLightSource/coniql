@@ -12,8 +12,8 @@ _DEFAULT_CLOCK_SECONDS = 0.1
 
 @dataclass
 class Trigger:
-    input: ReadWriteChannel[Optional[ReadableChannel[float]]]
-    output: ReadWriteChannel[Optional[WriteableChannel[bool]]]
+    input: ReadWriteChannel[ReadableChannel[float]]
+    output: ReadWriteChannel[WriteableChannel[bool]]
     min_value: ReadWriteChannel[float]
     max_value: ReadWriteChannel[float]
     delay_seconds: ReadWriteChannel[float]
@@ -32,10 +32,10 @@ class Trigger:
 
 def in_memory_trigger() -> Trigger:
     return Trigger(
-        input=InMemoryReadWriteChannel(None),
+        input=InMemoryReadWriteChannel(InMemoryReadWriteChannel(0.0)),
         min_value=InMemoryReadWriteChannel(0.0),
         max_value=InMemoryReadWriteChannel(0.0),
-        output=InMemoryReadWriteChannel(None),
+        output=InMemoryReadWriteChannel(InMemoryReadWriteChannel(False)),
         delay_seconds=InMemoryReadWriteChannel(0.0)
     )
 
@@ -49,16 +49,13 @@ class FakeTriggerBox:
 
     async def run_in_memory(self):
         while True:
-            await asyncio.gather([
-                self.trigger_1.run_in_memory,
-                self.trigger_2.run_in_memory
+            print('T')
+            await asyncio.wait([
+                self.trigger_1.run_in_memory(),
+                self.trigger_2.run_in_memory()
             ])
             delay = await self.min_seconds_between_checks.get()
             await asyncio.sleep(delay.value)
-
-    def run_forever(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.run_in_memory())
 
 
 def in_memory_box() -> FakeTriggerBox:
@@ -72,6 +69,8 @@ def in_memory_box() -> FakeTriggerBox:
 
 def in_memory_box_running() -> FakeTriggerBox:
     box = in_memory_box()
+    loop = asyncio.get_event_loop()
+    loop.create_task(box.run_in_memory())
     # box.run_in_memory()
     # TODO: Asyncio task
     return box

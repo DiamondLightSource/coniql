@@ -1,32 +1,15 @@
-import numpy as np
 import asyncio
-
-from typing import Tuple, List, Optional, Dict
-from dataclasses import dataclass, asdict
+from typing import Dict
 
 from scanpointgenerator import Point, LineGenerator, CompoundGenerator
 
-from beamline.scheme.scheme import Scheme, ArmedScheme
-from coniql.deviceplugin import adsim_environment
-from device.devices.camera import Camera
-from device.devices.faketriggerbox import FakeTriggerBox
-from device.devices.positioner import Positioner, PositionerWithStatus
-from device.devices.stage3d import Stage3D
-from device.util import put_all
+from beamline.scanenv import AdSimScanEnvironment, make_env
+from device.devices.positioner import PositionerWithStatus
 
 
 def exposure_delay(exposure_time: float, acquire_period: float) -> float:
     readout_time = acquire_period - exposure_time
     return readout_time / 2
-
-
-@dataclass
-class AdSimScanEnvironment:
-    trigger_box: FakeTriggerBox
-    main_detector: Camera
-    secondary_detector: Optional[Camera]
-    sample_stage: Stage3D
-    axes: Dict[str, PositionerWithStatus]
 
 
 async def prepare_detector(env: AdSimScanEnvironment):
@@ -62,17 +45,7 @@ async def test(env: AdSimScanEnvironment, scan_point_generator):
     await run(env, scan_point_generator)
 
 
-main_env = adsim_environment()
-env = AdSimScanEnvironment(
-    trigger_box=main_env.trigger_box,
-    main_detector=main_env.detector,
-    secondary_detector=None,
-    sample_stage=main_env.stage,
-    axes={
-        'x': main_env.stage.x,
-        'y': main_env.stage.y
-    }
-)
+env = make_env()
 
 xs = LineGenerator("x", "mm", 0.0, 5.0, 32)
 ys = LineGenerator("y", "mm", 0.0, 2.0, 16)
@@ -93,5 +66,3 @@ asyncio.run(job)
 #         acquire_period = await self.main_detector.acquire_period.get()
 #         delay = exposure_delay(exposure_time.value, acquire_period.value)
 #         await self.trigger_box.trigger_1.delay_seconds.put(delay)
-
-
