@@ -12,8 +12,9 @@ mypy = "*"
 graphql-core = "==3.0.1"
 aiohttp = "*"
 numpy = "*"
-caproto = "*"
 cothread = {path = "/home/hgs15624/code/python/cothread"}
+scanpointgenerator = "*"
+annotypes = "*"
 
 [requires]
 python_version = "3.7"

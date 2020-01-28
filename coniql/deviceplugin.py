@@ -6,7 +6,7 @@ from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
 from device.cothread.channel import ReadOnlyCaChannel, ReadWriteCaChannel
-from device.devices.faketriggerbox import in_memory_box_running
+from device.devices.faketriggerbox import in_memory_box_running, FakeTriggerBox
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
@@ -127,7 +127,24 @@ def mock_device_environment() -> DevicePlugin:
     return plugin
 
 
+@dataclasses.dataclass
+class AdSimBeamline:
+    trigger_box: FakeTriggerBox
+    detector: Camera
+    stage: Stage3D
+
+
 def adsim_device_environment():
+    beamline = adsim_environment()
+
+    plugin = DevicePlugin()
+    plugin.register_device(beamline, name='beamline')
+
+    plugin.debug()
+    return plugin
+
+
+def adsim_environment():
     def motor(prefix: str) -> Motor:
         return Motor(
             position=ReadOnlyCaChannel(f'{prefix}.RBV'),
@@ -169,15 +186,11 @@ def adsim_device_environment():
     y = motor('ws415-MO-SIM-01:M2')
     z = motor('ws415-MO-SIM-01:M3')
     sample_stage = Stage3D(x, y, z)
-
     det = camera('ws415-AD-SIM-01:CAM')
-
     trigger_box = in_memory_box_running()
-
-    plugin = DevicePlugin()
-    plugin.register_device(sample_stage, name='sample_stage')
-    plugin.register_device(det, name='detector')
-    plugin.register_device(trigger_box, name='trigger_box')
-
-    plugin.debug()
-    return plugin
+    beamline = AdSimBeamline(
+        trigger_box=trigger_box,
+        detector=det,
+        stage=sample_stage
+    )
+    return beamline

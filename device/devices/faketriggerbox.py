@@ -72,5 +72,6 @@ def in_memory_box() -> FakeTriggerBox:
 
 def in_memory_box_running() -> FakeTriggerBox:
     box = in_memory_box()
-    box.run_in_memory()
+    # box.run_in_memory()
+    # TODO: Asyncio task
     return box

@@ -4,11 +4,11 @@ from typing import Dict, Any, List, TypeVar, Optional
 from datetime import datetime, timedelta
 
 from device.devicetypes.channel import ReadWriteChannel, ReadOnlyChannel, \
-    MonitorableChannel
+    MonitorableChannel, WriteableChannel, ReadableChannel
 from device.devicetypes.result import Readback
 
-_PUT_DICT = Dict[ReadWriteChannel, Any]
-_READBACK_DICT = Dict[ReadOnlyChannel, Readback[Any]]
+_PUT_DICT = Dict[WriteableChannel, Any]
+_READBACK_DICT = Dict[ReadableChannel, Readback[Any]]
 
 
 async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
