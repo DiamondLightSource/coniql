@@ -1,4 +1,5 @@
-from typing import TypeVar, Generic, Iterable, AsyncGenerator, Coroutine, Any
+from typing import TypeVar, Generic, Iterable, AsyncGenerator, Coroutine, Any, \
+    Union
 
 from device.devicetypes.result import Readback
 
@@ -25,9 +26,7 @@ class WriteableChannel(Generic[T]):
         return NotImplemented
 
 
-class ReadOnlyChannel(ReadableChannel[T], MonitorableChannel[T]):
-    pass
+ReadOnlyChannel = Union[ReadableChannel[T], MonitorableChannel[T]]
 
-
-class ReadWriteChannel(ReadOnlyChannel[T], WriteableChannel[T]):
-    pass
+ReadWriteChannel = Union[ReadableChannel[T], MonitorableChannel[T],
+                         WriteableChannel[T]]
