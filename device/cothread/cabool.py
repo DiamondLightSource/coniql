@@ -4,9 +4,8 @@ from device.devicetypes.result import Readback
 
 
 class CaBool(CaChannel[bool]):
-    async def put(self, value: bool, timeout: float = DEFAULT_TIMEOUT) -> \
-            Readback[bool]:
-        return await super().put(int(value), timeout)
+    async def put(self, value: bool) -> Readback[bool]:
+        return await super().put(int(value))
 
     def format_value(self, value):
         return bool(value.real)

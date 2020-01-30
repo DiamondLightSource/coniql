@@ -10,7 +10,7 @@ DEFAULT_TIMEOUT = 10.0  # seconds
 
 class ReadableChannel(Generic[T]):
     """A channel whose value can be read e.g. into a variable"""
-    async def get(self, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
+    async def get(self) -> Readback[T]:
         return NotImplemented
 
 
@@ -22,7 +22,7 @@ class MonitorableChannel(Generic[T]):
 
 class WriteableChannel(Generic[T]):
     """A channel whose value can be mutated"""
-    async def put(self, value: T, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
+    async def put(self, value: T) -> Readback[T]:
         return NotImplemented
 
 

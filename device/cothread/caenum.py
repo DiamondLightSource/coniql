@@ -11,11 +11,10 @@ class CaEnum(CaChannel[str]):
         choices = meta_value.enums
         return IntEnum(meta_value.name, choices)
 
-    async def put(self, value: str, timeout: float = DEFAULT_TIMEOUT) -> \
-            Readback[str]:
+    async def put(self, value: str) -> Readback[str]:
         choices = await self.__choices()
         inp = choices[value].real
-        return await super().put(inp, timeout)
+        return await super().put(inp)
 
     def format_value(self, value):
         choices = await self.__choices()

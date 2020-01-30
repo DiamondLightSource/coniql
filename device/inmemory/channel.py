@@ -19,7 +19,7 @@ class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
     def set_value(self, value: T):
         self.__value = value
 
-    async def get(self, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
+    async def get(self) -> Readback[T]:
         return Readback.ok(self.__value, mutable=False)
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:
@@ -30,6 +30,6 @@ class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
 
 
 class InMemoryReadWriteChannel(InMemoryReadOnlyChannel[T], ReadWriteChannel[T]):
-    async def put(self, value: T, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
+    async def put(self, value: T) -> Readback[T]:
         self.set_value(value)
-        return await self.get(timeout)
+        return await self.get()

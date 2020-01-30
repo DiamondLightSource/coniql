@@ -41,18 +41,20 @@ T = TypeVar('T')
 
 class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
     def __init__(self, pv: str, rbv: Optional[str] = None,
-                 rbv_suffix: Optional[str] = None):
+                 rbv_suffix: Optional[str] = None,
+                 timeout: float = DEFAULT_TIMEOUT):
         rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
-        self.raw = RawCaChannel(CaDef(pv, rbv))
+        self.raw = RawCaChannel(CaDef(pv, rbv), timeout)
+        self.timeout = timeout
 
-    async def put(self, value: T, timeout: float = DEFAULT_TIMEOUT) -> \
+    async def put(self, value: T) -> \
             Readback[T]:
-        await self.raw.put(value, timeout)
-        return await self.get(timeout=timeout)
+        await self.raw.put(value)
+        return await self.get()
 
-    async def get(self, timeout: float = DEFAULT_TIMEOUT) -> Readback[T]:
+    async def get(self) -> Readback[T]:
         try:
-            value = await self.raw.get(timeout)
+            value = await self.raw.get()
             return self.value_to_readback(value)
         except Timedout:
             return Readback.not_connected()
