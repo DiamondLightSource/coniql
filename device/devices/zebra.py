@@ -6,19 +6,19 @@ from device.util import await_value
 
 @dataclass
 class PositionCapture:
-    enc: ReadWriteChannel[int]
-    dir: ReadWriteChannel[int]
-    arm_source: ReadWriteChannel[int]
-    gate_source: ReadWriteChannel[int]
-    gate_input: ReadWriteChannel[int]
+    enc: ReadWriteChannel[str]
+    dir: ReadWriteChannel[str]
+    arm_source: ReadWriteChannel[str]
+    gate_source: ReadWriteChannel[str]
+    gate_input: ReadWriteChannel[str]
     gate_start: ReadWriteChannel[float]
     gate_width: ReadWriteChannel[float]
     num_gates: ReadWriteChannel[int]
     arm: ReadWriteChannel[bool]
     disarm: ReadWriteChannel[bool]
     arm_out: ReadWriteChannel[bool]
-    pulse_source: ReadWriteChannel[int]
-    pulse_input: ReadWriteChannel[int]
+    pulse_source: ReadWriteChannel[str]
+    pulse_input: ReadWriteChannel[str]
     pulse_max: ReadWriteChannel[int]
 
 
@@ -27,15 +27,11 @@ class Pulse:
     input: ReadWriteChannel[int]
     delay: ReadWriteChannel[float]
     width: ReadWriteChannel[float]
-    time_units: ReadWriteChannel[int]
+    time_units: ReadWriteChannel[str]
 
 
 @dataclass
-class Zebra:
-    position_capture: PositionCapture
-
-    # TODO: Investigate lists in device layer...?
-
+class ZebraIO:
     ttl_out_1: ReadWriteChannel[int]
     ttl_out_2: ReadWriteChannel[int]
     ttl_out_3: ReadWriteChannel[int]
@@ -46,6 +42,11 @@ class Zebra:
     enc_copy_3: ReadWriteChannel[int]
     enc_copy_4: ReadWriteChannel[int]
 
+
+@dataclass
+class Zebra:
+    position_capture: PositionCapture
+    io: ZebraIO
     system_reset_process: ReadWriteChannel[int]
 
     def arm(self):
