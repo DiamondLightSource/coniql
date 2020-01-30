@@ -6,15 +6,20 @@ from typing import TypeVar, AsyncGenerator, Coroutine, Any, Generic, Type, \
     Callable, List, Optional
 
 from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel, \
-    DEFAULT_TIMEOUT
+    DEFAULT_TIMEOUT, WriteableChannel, ReadableChannel, MonitorableChannel, \
+    ConnectableChannel
 from device.devicetypes.result import Readback
 
 T = TypeVar('T')
 
 
-class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
+class InMemoryReadOnlyChannel(ReadableChannel[T], MonitorableChannel[T],
+                              ConnectableChannel):
     def __init__(self, value: T):
         self.__value = value
+
+    async def connect(self):
+        print(f'Connected, initial value is {self.value}')
 
     def set_value(self, value: T):
         self.__value = value
@@ -29,7 +34,7 @@ class InMemoryReadOnlyChannel(ReadOnlyChannel[T]):
             yield await queue.get()
 
 
-class InMemoryReadWriteChannel(InMemoryReadOnlyChannel[T], ReadWriteChannel[T]):
+class InMemoryReadWriteChannel(InMemoryReadOnlyChannel[T], WriteableChannel[T]):
     async def put(self, value: T) -> Readback[T]:
         self.set_value(value)
         return await self.get()

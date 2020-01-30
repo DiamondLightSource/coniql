@@ -8,6 +8,11 @@ T = TypeVar('T')
 DEFAULT_TIMEOUT = 10.0  # seconds
 
 
+class ConnectableChannel:
+    async def connect(self):
+        raise NotImplementedError
+
+
 class ReadableChannel(Generic[T]):
     """A channel whose value can be read e.g. into a variable"""
     async def get(self) -> Readback[T]:

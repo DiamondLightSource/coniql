@@ -5,7 +5,9 @@ from typing import List, Dict, Any, Optional
 from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
-from device.cothread.channel import ReadOnlyCaChannel, ReadWriteCaChannel
+from device.cothread.cabool import CaBool
+from device.cothread.caenum import CaEnum
+from device.cothread.channel import CaChannel
 from device.devices.faketriggerbox import in_memory_box_running, FakeTriggerBox
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, \
@@ -147,39 +149,39 @@ def adsim_device_environment():
 def adsim_environment():
     def motor(prefix: str) -> Motor:
         return Motor(
-            position=ReadOnlyCaChannel(f'{prefix}.RBV'),
-            setpoint=ReadWriteCaChannel(f'{prefix}'),
-            stationary=ReadOnlyCaChannel(f'{prefix}.DMOV'),
-            p=ReadWriteCaChannel(f'{prefix}.PCOF'),
-            i=ReadWriteCaChannel(f'{prefix}.ICOF'),
-            d=ReadWriteCaChannel(f'{prefix}.DCOF'),
-            jog_positive=ReadWriteCaChannel(f'{prefix}.TWF'),
-            jog_negative=ReadWriteCaChannel(f'{prefix}.TWR'),
-            step_length=ReadWriteCaChannel(f'{prefix}.TWV'),
-            velocity=ReadWriteCaChannel(f'{prefix}.VELO'),
-            max_velocity=ReadWriteCaChannel(f'{prefix}.VMAX'),
-            min=ReadWriteCaChannel(f'{prefix}.LLM'),
-            max=ReadWriteCaChannel(f'{prefix}.HLM')
+            position=CaChannel(f'{prefix}.RBV'),
+            setpoint=CaChannel(f'{prefix}'),
+            stationary=CaChannel(f'{prefix}.DMOV'),
+            p=CaChannel(f'{prefix}.PCOF'),
+            i=CaChannel(f'{prefix}.ICOF'),
+            d=CaChannel(f'{prefix}.DCOF'),
+            jog_positive=CaBool(f'{prefix}.TWF'),
+            jog_negative=CaBool(f'{prefix}.TWR'),
+            step_length=CaChannel(f'{prefix}.TWV'),
+            velocity=CaChannel(f'{prefix}.VELO'),
+            max_velocity=CaChannel(f'{prefix}.VMAX'),
+            min=CaChannel(f'{prefix}.LLM'),
+            max=CaChannel(f'{prefix}.HLM')
         )
 
     def camera(prefix: str) -> Camera:
         return Camera(
-            exposure_time=ReadWriteCaChannel(f'{prefix}:AcquireTime',
+            exposure_time=CaChannel(f'{prefix}:AcquireTime',
                                              rbv_suffix='_RBV'),
-            acquire_period=ReadWriteCaChannel(f'{prefix}:AcquirePeriod',
+            acquire_period=CaChannel(f'{prefix}:AcquirePeriod',
                                               rbv_suffix='_RBV'),
-            exposures_per_image=ReadWriteCaChannel(f'{prefix}:NumExposures',
+            exposures_per_image=CaChannel(f'{prefix}:NumExposures',
                                                    rbv_suffix='_RBV'),
-            number_of_images=ReadWriteCaChannel(f'{prefix}:NumImages',
+            number_of_images=CaChannel(f'{prefix}:NumImages',
                                                 rbv_suffix='_RBV'),
-            image_mode=ReadWriteCaChannel(f'{prefix}:ImageMode',
+            image_mode=CaEnum(f'{prefix}:ImageMode',
                                           rbv_suffix='_RBV'),
-            trigger_mode=ReadWriteCaChannel(f'{prefix}:TriggerMode',
+            trigger_mode=CaEnum(f'{prefix}:TriggerMode',
                                             rbv_suffix='_RBV'),
-            acquire=ReadWriteCaChannel(f'{prefix}:Acquire'),
-            array_counter=ReadWriteCaChannel(f'{prefix}:ArrayCounter',
+            acquire=CaBool(f'{prefix}:Acquire'),
+            array_counter=CaChannel(f'{prefix}:ArrayCounter',
                                              rbv_suffix='_RBV'),
-            framerate=ReadOnlyCaChannel(f'{prefix}:ArrayRate_RBV')
+            framerate=CaChannel(f'{prefix}:ArrayRate_RBV')
         )
 
     x = motor('ws415-MO-SIM-01:M1')

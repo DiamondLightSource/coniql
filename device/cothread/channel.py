@@ -7,7 +7,7 @@ from coniql._types import ChannelQuality, NumberType, Range, NumberDisplay, \
     DisplayForm, Time, ChannelStatus
 from device.cothread.util import RawCaChannel, CaDef
 from device.devicetypes.channel import DEFAULT_TIMEOUT, WriteableChannel, \
-    ReadableChannel, MonitorableChannel
+    ReadableChannel, MonitorableChannel, ConnectableChannel
 from device.devicetypes.result import Readback
 
 NUMBER_TYPES = {
@@ -39,20 +39,31 @@ EMPTY_DISPLAY = NumberDisplay(EMPTY_RANGE, EMPTY_RANGE, EMPTY_RANGE,
 T = TypeVar('T')
 
 
-class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
+class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T],
+                ConnectableChannel):
     def __init__(self, pv: str, rbv: Optional[str] = None,
                  rbv_suffix: Optional[str] = None,
                  timeout: float = DEFAULT_TIMEOUT):
         rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
         self.raw = RawCaChannel(CaDef(pv, rbv), timeout)
         self.timeout = timeout
+        self._connected = False
 
-    async def put(self, value: T) -> \
-            Readback[T]:
+    async def ensure_connect(self):
+        if not self._connected:
+            await self.connect()
+            self._connected = True
+
+    async def connect(self):
+        self.raw.connect()
+
+    async def put(self, value: T) -> Readback[T]:
+        await self.ensure_connect()
         await self.raw.put(value)
         return await self.get()
 
     async def get(self) -> Readback[T]:
+        await self.ensure_connect()
         try:
             value = await self.raw.get()
             return self.value_to_readback(value)
@@ -60,6 +71,7 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
             return Readback.not_connected()
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:
+        await self.ensure_connect()
         gen = self.raw.monitor()
         async for value in gen:
             yield self.value_to_readback(value)

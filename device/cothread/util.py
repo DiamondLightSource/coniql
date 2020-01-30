@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import TypeVar, Generic, AsyncGenerator
 
 from cothread.aioca import caget_one, FORMAT_CTRL, FORMAT_TIME, caput_one, \
-    camonitor
+    camonitor, connect
 
 from device.devicetypes.channel import DEFAULT_TIMEOUT
 
@@ -27,6 +27,9 @@ class RawCaChannel(Generic[T]):
     def __init__(self, cadef: CaDef, timeout: float = DEFAULT_TIMEOUT):
         self.cadef = cadef
         self.timeout = timeout
+
+    async def connect(self):
+        await connect([self.cadef.pv, self.cadef.rbv])
 
     async def get_meta(self):
         return await caget_one(self.cadef.rbv, format=FORMAT_CTRL,

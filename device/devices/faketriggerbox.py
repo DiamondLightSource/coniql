@@ -49,7 +49,7 @@ class FakeTriggerBox:
 
     async def run_in_memory(self):
         while True:
-            print('T')
+            # print('T')
             await asyncio.wait([
                 self.trigger_1.run_in_memory(),
                 self.trigger_2.run_in_memory()
