@@ -5,9 +5,9 @@ from typing import List, Dict, Any, Optional
 from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
     Readback
 from coniql.plugin import Plugin
-from device.cothread.cabool import CaBool
-from device.cothread.caenum import CaEnum
-from device.cothread.channel import CaChannel
+from device.ca.cabool import CaBool
+from device.ca.caenum import CaEnum
+from device.ca.channel import CaChannel
 from device.devices.faketriggerbox import in_memory_box_running, FakeTriggerBox
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, \

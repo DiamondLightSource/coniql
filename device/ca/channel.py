@@ -5,7 +5,7 @@ from cothread import dbr, Timedout
 
 from coniql._types import ChannelQuality, NumberType, Range, NumberDisplay, \
     DisplayForm, Time, ChannelStatus
-from device.cothread.util import RawCaChannel, CaDef
+from device.ca.util import RawCaChannel, CaDef
 from device.devicetypes.channel import DEFAULT_TIMEOUT, WriteableChannel, \
     ReadableChannel, MonitorableChannel, ConnectableChannel
 from device.devicetypes.result import Readback

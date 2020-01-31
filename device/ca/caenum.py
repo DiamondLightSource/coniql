@@ -2,7 +2,7 @@ import asyncio
 from enum import IntEnum
 from typing import Optional
 
-from device.cothread.channel import CaChannel
+from device.ca.channel import CaChannel
 from device.devicetypes.channel import DEFAULT_TIMEOUT
 from device.devicetypes.result import Readback
 
