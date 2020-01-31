@@ -26,8 +26,9 @@ async def configure_stage(env: AdSimScanEnvironment, scan_point_generator):
 
 
 async def move_to_point(axes: Dict[str, PositionerWithStatus], point: Point):
-    for axis, pos in point.positions.items():
-        await axes[axis].complete_move(pos)
+    moves = [axes[axis].complete_move(pos)
+             for axis, pos in point.positions.items()]
+    return await asyncio.wait(moves)
 
 
 async def run(env: AdSimScanEnvironment, scan_point_generator):
@@ -37,6 +38,7 @@ async def run(env: AdSimScanEnvironment, scan_point_generator):
         print('Scanning point')
         await move_to_point(env.axes, point)
         await env.main_detector.acquire.put(True)
+        await asyncio.sleep(0.1)
 
 
 async def test(env: AdSimScanEnvironment, scan_point_generator):
@@ -47,11 +49,13 @@ async def test(env: AdSimScanEnvironment, scan_point_generator):
 
 env = make_env()
 
-xs = LineGenerator("x", "mm", 0.0, 5.0, 32)
-ys = LineGenerator("y", "mm", 0.0, 2.0, 16)
+xs = LineGenerator("x", "mm", 0.0, 20.0, 8)
+ys = LineGenerator("y", "mm", 0.0, 30.0, 4)
 gen = CompoundGenerator([xs, ys], [], [])
 
+
 job = test(env, gen)
+
 asyncio.run(job)
 
 # class AdSimTriggeringSchemePre:

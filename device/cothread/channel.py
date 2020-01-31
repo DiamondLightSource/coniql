@@ -55,7 +55,7 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T],
             self._connected = True
 
     async def connect(self):
-        self.raw.connect()
+        await self.raw.connect()
 
     async def put(self, value: T) -> Readback[T]:
         await self.ensure_connect()
