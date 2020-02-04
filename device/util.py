@@ -1,6 +1,6 @@
 import asyncio
 
-from typing import Dict, Any, List, TypeVar, Optional
+from typing import Dict, Any, List, TypeVar, Optional, Coroutine, OrderedDict
 from datetime import datetime, timedelta
 
 from device.devicetypes.channel import ReadWriteChannel, ReadOnlyChannel, \
@@ -19,7 +19,8 @@ async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
             for channel, result in zip(channel_values.keys(), results)}
 
 
-async def get_all(channels: List[ReadOnlyChannel]) -> _READBACK_DICT:
+
+async def get_all(channels: List[ReadableChannel]) -> _READBACK_DICT:
     results = await asyncio.gather(*(channel.get() for channel in channels))
     return {channel: result
             for channel, result in zip(channels, results)}
@@ -38,3 +39,20 @@ async def await_value(channel: MonitorableChannel[T], value: T,
         if timeout is not None and datetime.now() > latest_time:
             break
     return None
+
+
+async def asyncio_gather_values(coros: Dict[Any, Coroutine[Any, Any, Any]]) -> \
+Dict[Any, Any]:
+    ts = [wrap_coro(key, coro)() for key, coro in coros.items()]
+    rs = await asyncio.gather(*ts)
+    return {
+        k: v for k, v in rs
+    }
+
+
+def wrap_coro(meta, coro):
+    async def wrapper():
+        coro_result = await coro
+        return meta, coro_result
+
+    return wrapper
