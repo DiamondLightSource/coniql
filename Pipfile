@@ -12,7 +12,7 @@ mypy = "*"
 graphql-core = "==3.0.1"
 aiohttp = "*"
 numpy = "*"
-cothread = {path = "/home/hgs15624/code/python/cothread"}
+cothread = {path = "/scratch/cothread"}
 scanpointgenerator = "*"
 annotypes = "*"
 

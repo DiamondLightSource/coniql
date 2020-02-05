@@ -24,9 +24,11 @@ class CaDef:
 
 
 class RawCaChannel(Generic[T]):
-    def __init__(self, cadef: CaDef, timeout: float = DEFAULT_TIMEOUT):
+    def __init__(self, cadef: CaDef, wait: bool = True,
+                       timeout: float = DEFAULT_TIMEOUT):
         self.cadef = cadef
         self.timeout = timeout
+        self.wait = wait
 
     async def connect(self):
         await connect([self.cadef.pv, self.cadef.rbv])
@@ -41,7 +43,8 @@ class RawCaChannel(Generic[T]):
         return value
 
     async def put(self, value: T):
-        return await caput_one(self.cadef.pv, value, timeout=self.timeout)
+        return await caput_one(self.cadef.pv, value, timeout=self.timeout,
+                               wait=self.wait)
 
     async def monitor(self) -> AsyncGenerator[T, None]:
         q: asyncio.Queue = asyncio.Queue()

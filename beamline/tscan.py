@@ -43,7 +43,7 @@ async def move_to_point(axes, point):
         if vel > max_vel:
             vel = max_vel
         await motor.velocity.put(vel)
-        await motor.complete_move(pos)
+        await motor.setpoint.put(pos)
 
 
 async def run():

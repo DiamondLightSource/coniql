@@ -19,10 +19,3 @@ class Positioner:
 class PositionerWithStatus(Positioner):
     stationary: ReadOnlyChannel[bool] = doc_field(
         "True if the positioner is not currently adjusting to minimize error")
-
-    async def complete_move(self, target_position: float) -> Readback[float]:
-        await self.setpoint.put(target_position)
-        async for readback in self.stationary.monitor():
-            if readback.value:
-                break
-        return await self.position.get()

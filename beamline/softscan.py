@@ -26,7 +26,7 @@ async def configure_stage(env: AdSimScanEnvironment, scan_point_generator):
 
 
 async def move_to_point(axes: Dict[str, PositionerWithStatus], point: Point):
-    moves = [axes[axis].complete_move(pos)
+    moves = [axes[axis].setpoint.put(pos)
              for axis, pos in point.positions.items()]
     return await asyncio.wait(moves)
 

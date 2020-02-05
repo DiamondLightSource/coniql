@@ -43,9 +43,10 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T],
                 ConnectableChannel):
     def __init__(self, pv: str, rbv: Optional[str] = None,
                  rbv_suffix: Optional[str] = None,
+                 wait: bool = True,
                  timeout: float = DEFAULT_TIMEOUT):
         rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
-        self.raw = RawCaChannel(CaDef(pv, rbv), timeout)
+        self.raw: RawCaChannel = RawCaChannel(CaDef(pv, rbv), wait, timeout)
         self.timeout = timeout
         self._connected = False
 

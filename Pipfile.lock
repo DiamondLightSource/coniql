@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "197e1ecfad04ec619f237e872620948b748510ca85af214757ecaa34a1f99e69"
+            "sha256": "3f05606c7f4c28ba071b35b188eb5dd9af4a015db94fcf9add36018f30f47e22"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -61,7 +61,7 @@
             "version": "==3.0.4"
         },
         "cothread": {
-            "path": "/home/hgs15624/code/python/cothread"
+            "path": "/scratch/cothread"
         },
         "graphql-core": {
             "hashes": [
