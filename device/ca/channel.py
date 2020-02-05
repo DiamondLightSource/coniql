@@ -1,11 +1,11 @@
 # import curio
 from typing import AsyncGenerator, TypeVar, Optional
 
-from cothread import dbr, Timedout
+from cothread import dbr, Timedout, aioca
 
 from coniql._types import ChannelQuality, NumberType, Range, NumberDisplay, \
     DisplayForm, Time, ChannelStatus
-from device.ca.util import RawCaChannel, CaDef
+from device.ca.util import camonitor_as_async_generator
 from device.devicetypes.channel import DEFAULT_TIMEOUT, WriteableChannel, \
     ReadableChannel, MonitorableChannel, ConnectableChannel
 from device.devicetypes.result import Readback
@@ -45,8 +45,10 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T],
                  rbv_suffix: Optional[str] = None,
                  wait: bool = True,
                  timeout: float = DEFAULT_TIMEOUT):
-        rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
-        self.raw: RawCaChannel = RawCaChannel(CaDef(pv, rbv), wait, timeout)
+        self.pv = pv
+        self.rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
+        # self.raw: RawCaChannel = RawCaChannel(CaDef(pv, rbv), wait, timeout)
+        self.wait = wait
         self.timeout = timeout
         self._connected = False
 
@@ -56,24 +58,26 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T],
             self._connected = True
 
     async def connect(self):
-        await self.raw.connect()
+        await aioca.connect([self.pv, self.rbv])
 
     async def put(self, value: T) -> Readback[T]:
         await self.ensure_connect()
-        await self.raw.put(value)
+        await aioca.caput_one(self.pv, value,
+                              timeout=self.timeout, wait=self.wait)
         return await self.get()
 
     async def get(self) -> Readback[T]:
         await self.ensure_connect()
         try:
-            value = await self.raw.get()
+            value = await aioca.caget_one(self.rbv, format=aioca.FORMAT_TIME,
+                                          timeout=self.timeout)
             return self.value_to_readback(value)
         except Timedout:
             return Readback.not_connected()
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:
         await self.ensure_connect()
-        gen = self.raw.monitor()
+        gen = camonitor_as_async_generator(self.rbv)
         async for value in gen:
             yield self.value_to_readback(value)
 

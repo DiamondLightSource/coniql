@@ -1,61 +1,21 @@
 import asyncio
-from dataclasses import dataclass
-from typing import TypeVar, Generic, AsyncGenerator
+from typing import AsyncGenerator, Any
 
-from cothread.aioca import caget_one, FORMAT_CTRL, FORMAT_TIME, caput_one, \
-    camonitor, connect
-
-from device.devicetypes.channel import DEFAULT_TIMEOUT
-
-T = TypeVar('T')
-
-@dataclass
-class CaDef:
-    pv: str
-    rbv: str
-
-    @classmethod
-    def for_single_pv(cls, pv: str):
-        return CaDef(pv, pv)
-
-    @classmethod
-    def with_rbv_prefix(cls, pv: str, rbv_prefix: str):
-        return CaDef(pv, f'{pv}{rbv_prefix}')
+from cothread.aioca import FORMAT_TIME, camonitor
 
 
-class RawCaChannel(Generic[T]):
-    def __init__(self, cadef: CaDef, wait: bool = True,
-                       timeout: float = DEFAULT_TIMEOUT):
-        self.cadef = cadef
-        self.timeout = timeout
-        self.wait = wait
+async def camonitor_as_async_generator(pv: str, format=FORMAT_TIME) -> \
+        AsyncGenerator[Any, None]:
+    """runs aioca.camonitor and provides the callback results in the form
+    of an asynchronous generator, which is similar to a stream"""
+    q: asyncio.Queue = asyncio.Queue()
 
-    async def connect(self):
-        await connect([self.cadef.pv, self.cadef.rbv])
+    def queue_callback(value):
+        asyncio.create_task(q.put(value))
 
-    async def get_meta(self):
-        return await caget_one(self.cadef.rbv, format=FORMAT_CTRL,
-                               timeout=self.timeout)
-
-    async def get(self) -> T:
-        value = await caget_one(self.cadef.rbv,
-                                format=FORMAT_TIME, timeout=self.timeout)
-        return value
-
-    async def put(self, value: T):
-        return await caput_one(self.cadef.pv, value, timeout=self.timeout,
-                               wait=self.wait)
-
-    async def monitor(self) -> AsyncGenerator[T, None]:
-        q: asyncio.Queue = asyncio.Queue()
-
-        def queue_callback(value):
-            asyncio.create_task(q.put(value))
-
-        subscription = await camonitor(self.cadef.rbv,
-                                       queue_callback, format=FORMAT_TIME)
-        try:
-            while True:
-                yield await q.get()
-        finally:
-            subscription.close()
+    subscription = await camonitor(pv, queue_callback, format=format)
+    try:
+        while True:
+            yield await q.get()
+    finally:
+        subscription.close()
