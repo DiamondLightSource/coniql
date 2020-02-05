@@ -8,7 +8,8 @@ from coniql.plugin import Plugin
 from device.ca.cabool import CaBool
 from device.ca.caenum import CaEnum
 from device.ca.channel import CaChannel
-from device.devices.faketriggerbox import in_memory_box_running, FakeTriggerBox
+from device.devices.faketriggerbox import in_memory_box_running, FakeTriggerBox, \
+    in_memory_box
 from device.devicetypes.channel import ReadWriteChannel
 from device.inmemory.channel import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
@@ -189,7 +190,7 @@ def adsim_environment():
     z = motor('ws415-MO-SIM-01:M3')
     sample_stage = Stage3D(x, y, z)
     det = camera('ws415-AD-SIM-01:CAM')
-    trigger_box = in_memory_box_running()
+    trigger_box = in_memory_box()
     beamline = AdSimBeamline(
         trigger_box=trigger_box,
         detector=det,
