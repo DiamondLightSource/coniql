@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional, Dict
 
-from coniql.deviceplugin import adsim_environment
+from device.envs import adsim_environment
 from device.devices.camera import Camera
 from device.devices.faketriggerbox import FakeTriggerBox
 from device.devices.motor import Motor
