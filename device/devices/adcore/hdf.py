@@ -16,7 +16,7 @@ class Swmr:
 
 
 @dataclass
-class Hdf5Plugin(AdPlugin):
+class HdfPlugin(AdPlugin):
     file_path: ReadWriteChannel[str]
     file_name: ReadWriteChannel[str]
     suffix: ReadWriteChannel[str]
