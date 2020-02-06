@@ -41,7 +41,7 @@ async def await_value(channel: MonitorableChannel[T], value: T,
 
 
 async def asyncio_gather_values(coros: Dict[Any, Coroutine[Any, Any, Any]]) -> \
-Dict[Any, Any]:
+        Dict[Any, Any]:
     ts = [wrap_coro(key, coro)() for key, coro in coros.items()]
     rs = await asyncio.gather(*ts)
     return {

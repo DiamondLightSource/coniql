@@ -1,5 +1,5 @@
 # import curio
-from typing import AsyncGenerator, TypeVar, Optional
+from typing import AsyncGenerator, TypeVar, Optional, Callable
 
 from cothread import dbr, Timedout, aioca
 
@@ -8,6 +8,7 @@ from coniql._types import ChannelQuality, NumberType, Range, NumberDisplay, \
 from device.channel.ca.util import camonitor_as_async_generator
 from device.channel.channeltypes.channel import DEFAULT_TIMEOUT, WriteableChannel, \
     ReadableChannel, MonitorableChannel, ConnectableChannel
+from device.channel.channeltypes.connect import Connector
 from device.channel.channeltypes.result import Readback
 
 NUMBER_TYPES = {
@@ -39,35 +40,50 @@ EMPTY_DISPLAY = NumberDisplay(EMPTY_RANGE, EMPTY_RANGE, EMPTY_RANGE,
 T = TypeVar('T')
 
 
-class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T],
-                ConnectableChannel):
-    def __init__(self, pv: str, rbv: Optional[str] = None,
-                 rbv_suffix: Optional[str] = None,
-                 wait: bool = True,
+def connector(pv: str, rbv: Optional[str] = None,
+              rbv_suffix: Optional[str] = None,
+              wait: bool = True, timeout: Optional[float] = None) -> \
+        Connector['CaChannel']:
+    t_rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
+    t_timeout = timeout or DEFAULT_TIMEOUT
+
+    async def connect() -> CaChannel[T]:
+        await aioca.connect([pv, rbv])
+        channel: CaChannel = CaChannel(pv, t_rbv, wait, t_timeout)
+        return channel
+
+    return connect
+
+
+def value_to_readback_meta(value):
+    timestamp = value.timestamp
+    time = Time(
+        seconds=int(timestamp),
+        nanoseconds=int((timestamp % 1) * 1e9),
+        userTag=0
+    )
+    status = ChannelStatus(
+        quality=CHANNEL_QUALITY_MAP[value.severity],
+        message="alarm",
+        mutable=True
+    )
+    return time, status
+
+
+class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
+    def __init__(self, pv: str, rbv: str, wait: bool = True,
                  timeout: float = DEFAULT_TIMEOUT):
         self.pv = pv
-        self.rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
-        # self.raw: RawCaChannel = RawCaChannel(CaDef(pv, rbv), wait, timeout)
+        self.rbv = rbv
         self.wait = wait
         self.timeout = timeout
-        self._connected = False
-
-    async def ensure_connect(self):
-        if not self._connected:
-            await self.connect()
-            self._connected = True
-
-    async def connect(self):
-        await aioca.connect([self.pv, self.rbv])
 
     async def put(self, value: T) -> Readback[T]:
-        await self.ensure_connect()
         await aioca.caput_one(self.pv, value,
                               timeout=self.timeout, wait=self.wait)
         return await self.get()
 
     async def get(self) -> Readback[T]:
-        await self.ensure_connect()
         try:
             value = await aioca.caget_one(self.rbv, format=aioca.FORMAT_TIME,
                                           timeout=self.timeout)
@@ -76,28 +92,13 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T],
             return Readback.not_connected()
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:
-        await self.ensure_connect()
         gen = camonitor_as_async_generator(self.rbv)
         async for value in gen:
             yield self.value_to_readback(value)
 
     def value_to_readback(self, value):
-        time, status = self.value_to_readback_meta(value)
+        time, status = value_to_readback_meta(value)
         return Readback(self.format_value(value), time, status)
 
     def format_value(self, value):
         return value.real
-
-    def value_to_readback_meta(self, value):
-        timestamp = value.timestamp
-        time = Time(
-            seconds=int(timestamp),
-            nanoseconds=int((timestamp % 1) * 1e9),
-            userTag=0
-        )
-        status = ChannelStatus(
-            quality=CHANNEL_QUALITY_MAP[value.severity],
-            message="alarm",
-            mutable=True
-        )
-        return time, status

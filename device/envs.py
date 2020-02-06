@@ -1,8 +1,11 @@
 import dataclasses
 
 from coniql.deviceplugin import DevicePlugin
+from device.channel.ca.cabool import CaBool
 from device.channel.ca.caenum import CaEnum
 from device.channel.ca.channel import CaChannel
+from device.channel.inmemory.channel import InMemoryReadOnlyChannel, \
+    InMemoryReadWriteChannel
 from device.devices.camera import Camera
 from device.devices.faketriggerbox import in_memory_box, FakeTriggerBox
 from device.devices.goniometer import Goniometer
@@ -52,7 +55,6 @@ def adsim_device_environment():
 
     plugin.debug()
     return plugin
-
 
 def adsim_environment():
     def motor(prefix: str) -> Motor:
