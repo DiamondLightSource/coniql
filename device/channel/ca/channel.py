@@ -5,10 +5,10 @@ from cothread import dbr, Timedout, aioca
 
 from coniql._types import ChannelQuality, NumberType, Range, NumberDisplay, \
     DisplayForm, Time, ChannelStatus
-from device.ca.util import camonitor_as_async_generator
-from device.devicetypes.channel import DEFAULT_TIMEOUT, WriteableChannel, \
+from device.channel.ca.util import camonitor_as_async_generator
+from device.channel.channeltypes.channel import DEFAULT_TIMEOUT, WriteableChannel, \
     ReadableChannel, MonitorableChannel, ConnectableChannel
-from device.devicetypes.result import Readback
+from device.channel.channeltypes.result import Readback
 
 NUMBER_TYPES = {
     dbr.DBR_CHAR: NumberType.INT8,

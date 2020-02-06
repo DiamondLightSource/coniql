@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from device.devicetypes.channel import ReadWriteChannel, ReadOnlyChannel
+from device.channel.channeltypes.channel import ReadWriteChannel, ReadOnlyChannel
 
 
 @dataclass

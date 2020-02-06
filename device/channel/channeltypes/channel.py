@@ -1,7 +1,6 @@
-from typing import TypeVar, Generic, Iterable, AsyncGenerator, Coroutine, Any, \
-    Union
+from typing import TypeVar, Generic, AsyncGenerator, Union
 
-from device.devicetypes.result import Readback
+from device.channel.channeltypes.result import Readback
 
 
 T = TypeVar('T')

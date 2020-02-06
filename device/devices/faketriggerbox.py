@@ -1,11 +1,9 @@
 import asyncio
-from collections import Callable
 from dataclasses import dataclass
-from typing import Optional
 
-from device.devicetypes.channel import ReadWriteChannel, ReadableChannel, \
+from device.channel.channeltypes.channel import ReadWriteChannel, ReadableChannel, \
     WriteableChannel
-from device.inmemory.channel import InMemoryReadWriteChannel
+from device.channel.inmemory import InMemoryReadWriteChannel
 
 _DEFAULT_CLOCK_SECONDS = 0.1
 

@@ -1,13 +1,10 @@
 # import curio
-import asyncio
 import aiohttp
-from typing import AsyncGenerator, Optional, TypeVar, Dict
+from typing import AsyncGenerator, TypeVar
 
-from coniql._types import ChannelQuality, NumberType, Range, NumberDisplay, \
-    DisplayForm
-from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel, \
+from device.channel.channeltypes.channel import ReadOnlyChannel, ReadWriteChannel, \
     DEFAULT_TIMEOUT, WriteableChannel, ReadableChannel, MonitorableChannel
-from device.devicetypes.result import Readback
+from device.channel.channeltypes.result import Readback
 
 T = TypeVar('T')
 

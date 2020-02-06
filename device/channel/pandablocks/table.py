@@ -1,10 +1,9 @@
 from typing import List, TypeVar
-from dataclasses import dataclass
 
-from device.devicetypes.result import Readback
-from device.pandablocks.channel import PandAFieldChannel, T
-from device.pandablocks.pandablocksclient import PandABlocksClient
-from device.pandablocks.ptable import PandATableSerDes
+from device.channel.channeltypes.result import Readback
+from device.channel.pandablocks.channel import PandAFieldChannel, T
+from device.channel.pandablocks.pandablocksclient import PandABlocksClient
+from device.channel.pandablocks.ptable import PandATableSerDes
 
 _INT_VALUES = List[int]
 

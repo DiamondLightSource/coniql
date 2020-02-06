@@ -1,10 +1,9 @@
-import asyncio
 from enum import IntEnum
 from typing import Optional
 
-from device.ca.channel import CaChannel
-from device.devicetypes.channel import DEFAULT_TIMEOUT
-from device.devicetypes.result import Readback
+from device.channel.ca.channel import CaChannel
+from device.channel.channeltypes.channel import DEFAULT_TIMEOUT
+from device.channel.channeltypes.result import Readback
 
 
 class CaEnum(CaChannel[str]):

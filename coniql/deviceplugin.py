@@ -2,16 +2,15 @@ import dataclasses
 
 from typing import List, Dict, Any, Optional
 
-from coniql._types import Channel, Function, ChannelStatus, ChannelQuality, \
-    Readback
+from coniql._types import Channel, Function
 from coniql.plugin import Plugin
-from device.ca.cabool import CaBool
-from device.ca.caenum import CaEnum
-from device.ca.channel import CaChannel
-from device.devices.faketriggerbox import in_memory_box_running, FakeTriggerBox, \
+from device.channel.ca import CaBool
+from device.channel.ca.caenum import CaEnum
+from device.channel.ca.channel import CaChannel
+from device.devices.faketriggerbox import FakeTriggerBox, \
     in_memory_box
-from device.devicetypes.channel import ReadWriteChannel
-from device.inmemory.channel import InMemoryReadOnlyChannel, \
+from device.channel.channeltypes.channel import ReadWriteChannel
+from device.channel.inmemory import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
 from device.devices.goniometer import Goniometer
 from device.devices.motor import Motor

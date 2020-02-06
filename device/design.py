@@ -3,7 +3,7 @@ from dataclasses import is_dataclass
 from pprint import pprint
 from typing import Dict, Any, List, Coroutine
 
-from device.devicetypes.channel import ReadableChannel, WriteableChannel
+from device.channel.channeltypes.channel import ReadableChannel, WriteableChannel
 from device.util import asyncio_gather_values
 
 _DESIGN = Dict[str, Any]

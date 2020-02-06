@@ -1,11 +1,10 @@
 import asyncio
 
-from typing import Dict, Any, List, TypeVar, Optional, Coroutine, OrderedDict
+from typing import Dict, Any, List, TypeVar, Optional, Coroutine
 from datetime import datetime, timedelta
 
-from device.devicetypes.channel import ReadWriteChannel, ReadOnlyChannel, \
-    MonitorableChannel, WriteableChannel, ReadableChannel
-from device.devicetypes.result import Readback
+from device.channel.channeltypes.channel import MonitorableChannel, WriteableChannel, ReadableChannel
+from device.channel.channeltypes.result import Readback
 
 _PUT_DICT = Dict[WriteableChannel, Any]
 _READBACK_DICT = Dict[ReadableChannel, Readback[Any]]

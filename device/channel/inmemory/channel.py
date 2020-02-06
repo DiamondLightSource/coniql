@@ -1,14 +1,9 @@
-import asyncio
-
 from asyncio import Queue
-from collections import Iterable
-from typing import TypeVar, AsyncGenerator, Coroutine, Any, Generic, Type, \
-    Callable, List, Optional
+from typing import TypeVar, AsyncGenerator
 
-from device.devicetypes.channel import ReadOnlyChannel, ReadWriteChannel, \
-    DEFAULT_TIMEOUT, WriteableChannel, ReadableChannel, MonitorableChannel, \
+from device.channel.channeltypes.channel import WriteableChannel, ReadableChannel, MonitorableChannel, \
     ConnectableChannel
-from device.devicetypes.result import Readback
+from device.channel.channeltypes.result import Readback
 
 T = TypeVar('T')
 

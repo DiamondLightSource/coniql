@@ -1,9 +1,7 @@
-from dataclasses import dataclass
-from typing import TypeVar, Generic, List, Any, Callable, Optional, Dict
+from typing import TypeVar, Callable, Dict
 
 from device.devices.positioner import Positioner
-from device.devicetypes.channel import ReadableChannel
-from device.inmemory.channel import InMemoryReadOnlyChannel, \
+from device.channel.inmemory import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
 
 T = TypeVar('T')

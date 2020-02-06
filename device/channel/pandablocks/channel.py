@@ -2,10 +2,10 @@ import asyncio
 
 from typing import TypeVar, AsyncGenerator
 
-from device.devicetypes.channel import ConnectableChannel, WriteableChannel, \
+from device.channel.channeltypes.channel import ConnectableChannel, WriteableChannel, \
     ReadableChannel, MonitorableChannel
-from device.devicetypes.result import Readback
-from device.pandablocks.pandablocksclient import PandABlocksClient
+from device.channel.channeltypes.result import Readback
+from device.channel.pandablocks.pandablocksclient import PandABlocksClient
 
 
 T = TypeVar('T')
