@@ -1,9 +1,7 @@
 import dataclasses
 
 from coniql.deviceplugin import DevicePlugin
-from device.channel.ca.cabool import CaBool
-from device.channel.ca.caenum import CaEnum
-from device.channel.ca.channel import CaChannel
+from device.channel.ca import channel as cachannel, cabool, caenum
 from device.channel.inmemory.channel import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
 from device.devices.camera import Camera
@@ -11,6 +9,7 @@ from device.devices.faketriggerbox import in_memory_box, FakeTriggerBox
 from device.devices.goniometer import Goniometer
 from device.devices.motor import Motor
 from device.devices.stage3d import Stage3D
+from device.util import asyncio_gather_values
 
 
 def mock_device_environment() -> DevicePlugin:
@@ -56,49 +55,56 @@ def adsim_device_environment():
     plugin.debug()
     return plugin
 
-def adsim_environment():
-    def motor(prefix: str) -> Motor:
-        return Motor(
-            position=CaChannel(f'{prefix}.RBV'),
-            setpoint=CaChannel(f'{prefix}'),
-            stationary=CaChannel(f'{prefix}.DMOV'),
-            p=CaChannel(f'{prefix}.PCOF'),
-            i=CaChannel(f'{prefix}.ICOF'),
-            d=CaChannel(f'{prefix}.DCOF'),
-            jog_positive=CaBool(f'{prefix}.TWF'),
-            jog_negative=CaBool(f'{prefix}.TWR'),
-            step_length=CaChannel(f'{prefix}.TWV'),
-            velocity=CaChannel(f'{prefix}.VELO'),
-            max_velocity=CaChannel(f'{prefix}.VMAX'),
-            min=CaChannel(f'{prefix}.LLM'),
-            max=CaChannel(f'{prefix}.HLM')
+
+async def adsim_environment():
+    async def motor(prefix: str) -> Motor:
+        conns = dict(
+            position=cachannel.connect(f'{prefix}.RBV'),
+            setpoint=cachannel.connect(f'{prefix}'),
+            stationary=cabool.connect(f'{prefix}.DMOV'),
+            p=cachannel.connect(f'{prefix}.PCOF'),
+            i=cachannel.connect(f'{prefix}.ICOF'),
+            d=cachannel.connect(f'{prefix}.DCOF'),
+            jog_positive=cabool.connect(f'{prefix}.TWF'),
+            jog_negative=cabool.connect(f'{prefix}.TWR'),
+            step_length=cachannel.connect(f'{prefix}.TWV'),
+            velocity=cachannel.connect(f'{prefix}.VELO'),
+            max_velocity=cachannel.connect(f'{prefix}.VMAX'),
+            min=cachannel.connect(f'{prefix}.LLM'),
+            max=cachannel.connect(f'{prefix}.HLM')
         )
 
-    def camera(prefix: str) -> Camera:
-        return Camera(
-            exposure_time=CaChannel(f'{prefix}:AcquireTime',
-                                             rbv_suffix='_RBV'),
-            acquire_period=CaChannel(f'{prefix}:AcquirePeriod',
-                                              rbv_suffix='_RBV'),
-            exposures_per_image=CaChannel(f'{prefix}:NumExposures',
-                                                   rbv_suffix='_RBV'),
-            number_of_images=CaChannel(f'{prefix}:NumImages',
-                                                rbv_suffix='_RBV'),
-            image_mode=CaEnum(f'{prefix}:ImageMode',
-                                          rbv_suffix='_RBV'),
-            trigger_mode=CaEnum(f'{prefix}:TriggerMode',
+        channels = await asyncio_gather_values(conns)
+        return Motor(**channels)
+
+    async def camera(prefix: str) -> Camera:
+        conns = dict(
+            exposure_time=cachannel.connect(f'{prefix}:AcquireTime',
                                             rbv_suffix='_RBV'),
-            acquire=CaBool(f'{prefix}:Acquire'),
-            array_counter=CaChannel(f'{prefix}:ArrayCounter',
+            acquire_period=cachannel.connect(f'{prefix}:AcquirePeriod',
                                              rbv_suffix='_RBV'),
-            framerate=CaChannel(f'{prefix}:ArrayRate_RBV')
+            exposures_per_image=cachannel.connect(f'{prefix}:NumExposures',
+                                                  rbv_suffix='_RBV'),
+            number_of_images=cachannel.connect(f'{prefix}:NumImages',
+                                               rbv_suffix='_RBV'),
+            image_mode=caenum.connect(f'{prefix}:ImageMode',
+                                      rbv_suffix='_RBV'),
+            trigger_mode=caenum.connect(f'{prefix}:TriggerMode',
+                                        rbv_suffix='_RBV'),
+            acquire=cabool.connect(f'{prefix}:Acquire'),
+            array_counter=cachannel.connect(f'{prefix}:ArrayCounter',
+                                            rbv_suffix='_RBV'),
+            framerate=cachannel.connect(f'{prefix}:ArrayRate_RBV')
         )
 
-    x = motor('ws415-MO-SIM-01:M1')
-    y = motor('ws415-MO-SIM-01:M2')
-    z = motor('ws415-MO-SIM-01:M3')
+        channels = await asyncio_gather_values(conns)
+        return Camera(**channels)
+
+    x = await motor('ws415-MO-SIM-01:M1')
+    y = await motor('ws415-MO-SIM-01:M2')
+    z = await motor('ws415-MO-SIM-01:M3')
     sample_stage = Stage3D(x, y, z)
-    det = camera('ws415-AD-SIM-01:CAM')
+    det = await camera('ws415-AD-SIM-01:CAM')
     trigger_box = in_memory_box()
     beamline = AdSimBeamline(
         trigger_box=trigger_box,

@@ -5,7 +5,6 @@ from cothread import aioca
 
 from device.channel.ca.channel import CaChannel
 from device.channel.channeltypes.channel import DEFAULT_TIMEOUT
-from device.channel.channeltypes.connect import Connector
 from device.channel.channeltypes.result import Readback
 
 
@@ -24,21 +23,18 @@ class CaEnum(CaChannel[str]):
         return choice.name
 
 
-def connector(pv: str, rbv: Optional[str] = None,
-              rbv_suffix: Optional[str] = None,
-              wait: bool = True, timeout: Optional[float] = None) -> \
-        Connector[CaEnum]:
+async def connect(pv: str, rbv: Optional[str] = None,
+                    rbv_suffix: Optional[str] = None,
+                    wait: bool = True, timeout: Optional[float] = None) -> \
+        CaEnum:
     t_rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
     t_timeout = timeout or DEFAULT_TIMEOUT
 
-    async def connect() -> CaEnum:
-        await aioca.connect([pv, rbv])
-        meta = await aioca.caget(pv, format=aioca.FORMAT_CTRL)
-        choices = choices_from_meta(meta)
-        channel = CaEnum(pv, t_rbv, choices, wait, t_timeout)
-        return channel
-
-    return connect
+    await aioca.connect([pv, t_rbv])
+    meta = await aioca.caget(pv, format=aioca.FORMAT_CTRL)
+    choices = choices_from_meta(meta)
+    channel = CaEnum(pv, t_rbv, choices, wait, t_timeout)
+    return channel
 
 
 def choices_from_meta(meta) -> EnumMeta:
