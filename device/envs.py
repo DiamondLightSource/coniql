@@ -1,10 +1,13 @@
 import dataclasses
+from collections import Coroutine
+from typing import Dict, Callable
 
 from coniql.deviceplugin import DevicePlugin
 from device.channel.ca import channel as cachannel, cabool, caenum
 from device.channel.inmemory.channel import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
-from device.devices.camera import Camera
+from device.devices.adcore.pos import PosPlugin
+from device.devices.camera import Camera, DetectorDriver
 from device.devices.faketriggerbox import in_memory_box, FakeTriggerBox
 from device.devices.goniometer import Goniometer
 from device.devices.motor import Motor
@@ -57,49 +60,6 @@ def adsim_device_environment():
 
 
 async def adsim_environment():
-    async def motor(prefix: str) -> Motor:
-        conns = dict(
-            position=cachannel.connect(f'{prefix}.RBV'),
-            setpoint=cachannel.connect(f'{prefix}'),
-            stationary=cabool.connect(f'{prefix}.DMOV'),
-            p=cachannel.connect(f'{prefix}.PCOF'),
-            i=cachannel.connect(f'{prefix}.ICOF'),
-            d=cachannel.connect(f'{prefix}.DCOF'),
-            jog_positive=cabool.connect(f'{prefix}.TWF'),
-            jog_negative=cabool.connect(f'{prefix}.TWR'),
-            step_length=cachannel.connect(f'{prefix}.TWV'),
-            velocity=cachannel.connect(f'{prefix}.VELO'),
-            max_velocity=cachannel.connect(f'{prefix}.VMAX'),
-            min=cachannel.connect(f'{prefix}.LLM'),
-            max=cachannel.connect(f'{prefix}.HLM')
-        )
-
-        channels = await asyncio_gather_values(conns)
-        return Motor(**channels)
-
-    async def camera(prefix: str) -> Camera:
-        conns = dict(
-            exposure_time=cachannel.connect(f'{prefix}:AcquireTime',
-                                            rbv_suffix='_RBV'),
-            acquire_period=cachannel.connect(f'{prefix}:AcquirePeriod',
-                                             rbv_suffix='_RBV'),
-            exposures_per_image=cachannel.connect(f'{prefix}:NumExposures',
-                                                  rbv_suffix='_RBV'),
-            number_of_images=cachannel.connect(f'{prefix}:NumImages',
-                                               rbv_suffix='_RBV'),
-            image_mode=caenum.connect(f'{prefix}:ImageMode',
-                                      rbv_suffix='_RBV'),
-            trigger_mode=caenum.connect(f'{prefix}:TriggerMode',
-                                        rbv_suffix='_RBV'),
-            acquire=cabool.connect(f'{prefix}:Acquire'),
-            array_counter=cachannel.connect(f'{prefix}:ArrayCounter',
-                                            rbv_suffix='_RBV'),
-            framerate=cachannel.connect(f'{prefix}:ArrayRate_RBV')
-        )
-
-        channels = await asyncio_gather_values(conns)
-        return Camera(**channels)
-
     x = await motor('ws415-MO-SIM-01:M1')
     y = await motor('ws415-MO-SIM-01:M2')
     z = await motor('ws415-MO-SIM-01:M3')
@@ -112,6 +72,71 @@ async def adsim_environment():
         stage=sample_stage
     )
     return beamline
+
+_CHANNEL_COROS = Dict[str, Coroutine]
+
+
+async def motor(prefix: str) -> _CHANNEL_COROS:
+    return dict(
+        position=cachannel.connect(f'{prefix}.RBV'),
+        setpoint=cachannel.connect(f'{prefix}'),
+        stationary=cabool.connect(f'{prefix}.DMOV'),
+        p=cachannel.connect(f'{prefix}.PCOF'),
+        i=cachannel.connect(f'{prefix}.ICOF'),
+        d=cachannel.connect(f'{prefix}.DCOF'),
+        jog_positive=cabool.connect(f'{prefix}.TWF'),
+        jog_negative=cabool.connect(f'{prefix}.TWR'),
+        step_length=cachannel.connect(f'{prefix}.TWV'),
+        velocity=cachannel.connect(f'{prefix}.VELO'),
+        max_velocity=cachannel.connect(f'{prefix}.VMAX'),
+        min=cachannel.connect(f'{prefix}.LLM'),
+        max=cachannel.connect(f'{prefix}.HLM')
+    )
+
+
+async def camera(prefix: str) -> _CHANNEL_COROS:
+    drv = await detector_driver(prefix)
+    return dict(
+        **drv,
+        exposure_time=cachannel.connect(f'{prefix}:AcquireTime',
+                                        rbv_suffix='_RBV'),
+        acquire_period=cachannel.connect(f'{prefix}:AcquirePeriod',
+                                         rbv_suffix='_RBV')
+    )
+
+
+async def detector_driver(prefix: str) -> _CHANNEL_COROS:
+    return dict(
+        exposures_per_image=cachannel.connect(f'{prefix}:NumExposures',
+                                              rbv_suffix='_RBV'),
+        number_of_images=cachannel.connect(f'{prefix}:NumImages',
+                                           rbv_suffix='_RBV'),
+        image_mode=caenum.connect(f'{prefix}:ImageMode',
+                                  rbv_suffix='_RBV'),
+        trigger_mode=caenum.connect(f'{prefix}:TriggerMode',
+                                    rbv_suffix='_RBV'),
+        acquire=cabool.connect(f'{prefix}:Acquire'),
+        array_counter=cachannel.connect(f'{prefix}:ArrayCounter',
+                                        rbv_suffix='_RBV'),
+        framerate=cachannel.connect(f'{prefix}:ArrayRate_RBV')
+    )
+
+
+async def pos_plugin(prefix: str) -> _CHANNEL_COROS:
+    return dict(
+
+    )
+
+
+async def ad_plugin(prefix: str) -> _CHANNEL_COROS:
+    return dict(
+        array_port=cachannel.connect()
+    )
+
+
+async def build_from_coros(coros: _CHANNEL_COROS, device_constructor: Callable):
+    channels = await asyncio_gather_values(coros)
+    return device_constructor(**channels)
 
 
 @dataclasses.dataclass
