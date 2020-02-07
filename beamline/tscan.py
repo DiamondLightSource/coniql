@@ -14,7 +14,7 @@ def exposure_delay(exposure_time: float, acquire_period: float) -> float:
 
 async def prepare_detector(env: TrainingRig):
     print('Preparing detector')
-    await env.main_detector.camera.array_counter.put(0)
+    await env.detector.camera.array_counter.put(0)
 
 
 async def configure_stage(env: TrainingRig, scan_point_generator):
@@ -39,8 +39,8 @@ async def run(env: TrainingRig, scan_point_generator):
     print('Starting scan')
     for point in scan_point_generator.iterator():
         print('Scanning point')
-        await move_to_point(env.axes, point)
-        await env.main_detector.camera.acquire.put(True)
+        await move_to_point(env, point)
+        await env.detector.camera.acquire.put(True)
         await asyncio.sleep(0.1)
 
 
