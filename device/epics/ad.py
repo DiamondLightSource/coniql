@@ -47,14 +47,14 @@ def detector_driver_layout(prefix: str):
 
 
 async def hdf_plugin(prefix: str) -> HdfPlugin:
-    properties = plugin_properties(prefix)
-    callback = plugin_callback(prefix)
-    counters = plugin_counters(prefix)
+    properties = await plugin_properties(prefix)
+    callback = await plugin_callback(prefix)
+    counters = await plugin_counters(prefix)
 
     hdf = await connect_channels(hdf_plugin_layout(prefix))
     swmr_child = await swmr(prefix)
     return HdfPlugin(swmr=swmr_child, properties=properties, callback=callback,
-                     counters=counters, **hdf)
+                     counters=counters, **hdf, **ad_plugin_layout(prefix))
 
 
 def hdf_plugin_layout(prefix: str):
@@ -121,7 +121,7 @@ def plugin_callback_layout(prefix: str):
 
 
 async def plugin_counters(prefix: str) -> PluginCounters:
-    layout = plugin_callback_layout(prefix)
+    layout = plugin_counters_layout(prefix)
     return await device_from_layout(layout, PluginCounters)
 
 

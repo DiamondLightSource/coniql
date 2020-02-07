@@ -1,10 +1,12 @@
 from dataclasses import dataclass
 
 from coniql.deviceplugin import DevicePlugin
+from device.devices.addetector import AdDetector
 from device.devices.camera import Camera
 from device.devices.faketriggerbox import in_memory_box, FakeTriggerBox
 from device.devices.stage3d import Stage3D
 from device.epics.ad import camera
+from device.epics.addets import ad_detector
 from device.epics.motor import motor
 
 
@@ -21,7 +23,7 @@ def adsim_device_environment():
 @dataclass
 class AdSimBeamline:
     trigger_box: FakeTriggerBox
-    detector: Camera
+    detector: AdDetector
     stage: Stage3D
 
 
@@ -30,7 +32,7 @@ async def adsim_environment(machine_name: str) -> AdSimBeamline:
     y = await motor(f'{machine_name}-MO-SIM-01:M2')
     z = await motor(f'{machine_name}-MO-SIM-01:M3')
     sample_stage = Stage3D(x, y, z)
-    det = await camera(f'{machine_name}-AD-SIM-01:CAM')
+    det = await ad_detector(f'{machine_name}-AD-SIM-01')
     trigger_box = in_memory_box()
     beamline = AdSimBeamline(
         trigger_box=trigger_box,

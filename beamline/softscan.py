@@ -14,7 +14,7 @@ def exposure_delay(exposure_time: float, acquire_period: float) -> float:
 
 async def prepare_detector(env: AdSimScanEnvironment):
     print('Preparing detector')
-    await env.main_detector.array_counter.put(0)
+    await env.main_detector.camera.array_counter.put(0)
 
 
 async def configure_stage(env: AdSimScanEnvironment, scan_point_generator):
@@ -37,7 +37,7 @@ async def run(env: AdSimScanEnvironment, scan_point_generator):
     for point in scan_point_generator.iterator():
         print('Scanning point')
         await move_to_point(env.axes, point)
-        await env.main_detector.acquire.put(True)
+        await env.main_detector.camera.acquire.put(True)
         await asyncio.sleep(0.1)
 
 
