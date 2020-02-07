@@ -1,7 +1,7 @@
 # import curio
 from typing import AsyncGenerator, TypeVar, Optional
 
-from cothread import Timedout, aioca
+from aioca._aioca import caget_one, FORMAT_TIME, connect, caput_one
 
 from device.channel.ca.util import camonitor_as_async_generator, \
     value_to_readback_meta
@@ -26,7 +26,7 @@ class CaField:
         self.timeout = timeout or DEFAULT_TIMEOUT
 
     async def create_channel(self) -> 'CaChannel':
-        await aioca.connect([self.pv, self.rbv])
+        await connect([self.pv, self.rbv])
         return CaChannel(self.pv, self.rbv, self.wait, self.timeout)
 
 
@@ -38,18 +38,18 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
         self.timeout = timeout
 
     async def put(self, value: T) -> Readback[T]:
-        await aioca.caput_one(self.pv, value,
+        await caput_one(self.pv, value,
                               timeout=self.timeout,
                               wait=self.wait)
         return await self.get()
 
     async def get(self) -> Readback[T]:
         try:
-            value = await aioca.caget_one(self.rbv,
-                                          format=aioca.FORMAT_TIME,
-                                          timeout=self.timeout)
+            value = await caget_one(self.rbv,
+                                    format=FORMAT_TIME,
+                                    timeout=self.timeout)
             return self.value_to_readback(value)
-        except Timedout:
+        except Exception:  # TODO: Make more specific when aioca changes
             return Readback.not_connected()
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:

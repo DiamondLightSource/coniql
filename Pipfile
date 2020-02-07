@@ -12,7 +12,7 @@ mypy = "*"
 graphql-core = "==3.0.1"
 aiohttp = "*"
 numpy = "*"
-cothread = {path = "/scratch/cothread"}
+aioca = {git = 'https://gitlab.diamond.ac.uk/vid18871/aioca.git'}
 scanpointgenerator = "*"
 annotypes = "*"
 

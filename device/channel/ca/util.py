@@ -1,8 +1,7 @@
 import asyncio
 from typing import AsyncGenerator, Any, Tuple
 
-from cothread import dbr
-from cothread.aioca import FORMAT_TIME, camonitor
+from aioca import FORMAT_TIME, camonitor, _dbr as dbr
 
 from coniql._types import NumberType, ChannelQuality, Range, NumberDisplay, \
     DisplayForm, Time, ChannelStatus

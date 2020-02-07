@@ -1,7 +1,7 @@
 from enum import IntEnum, EnumMeta
 from typing import Optional
 
-from cothread import aioca
+import aioca
 
 from device.channel.ca.channel import CaChannel, CaField
 from device.channel.channeltypes.channel import DEFAULT_TIMEOUT

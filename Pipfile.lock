@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "3f05606c7f4c28ba071b35b188eb5dd9af4a015db94fcf9add36018f30f47e22"
+            "sha256": "2426be0926a5ddb065e3fa87042de32a3392bd2dc8e8ced42ace9a95fbb501a4"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,10 @@
         ]
     },
     "default": {
+        "aioca": {
+            "git": "https://gitlab.diamond.ac.uk/vid18871/aioca.git",
+            "ref": "4e8cfbafc58021866fca622386d57015f76d3cd7"
+        },
         "aiohttp": {
             "hashes": [
                 "sha256:1e984191d1ec186881ffaed4581092ba04f7c61582a177b187d3a2f07ed9719e",
@@ -59,9 +63,6 @@
                 "sha256:fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"
             ],
             "version": "==3.0.4"
-        },
-        "cothread": {
-            "path": "/scratch/cothread"
         },
         "graphql-core": {
             "hashes": [

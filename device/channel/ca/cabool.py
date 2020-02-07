@@ -1,9 +1,4 @@
-from typing import Optional
-
-from cothread import aioca
-
 from device.channel.ca.channel import CaChannel, CaField
-from device.channel.channeltypes.channel import DEFAULT_TIMEOUT
 from device.channel.channeltypes.result import Readback
 
 
