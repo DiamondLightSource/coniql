@@ -45,34 +45,3 @@ def mock_device_environment() -> DevicePlugin:
     plugin.debug()
     return plugin
 
-
-def adsim_device_environment():
-    beamline = adsim_environment()
-
-    plugin = DevicePlugin()
-    plugin.register_device(beamline, name='beamline')
-
-    plugin.debug()
-    return plugin
-
-
-async def adsim_environment():
-    x = await motor('ws415-MO-SIM-01:M1')
-    y = await motor('ws415-MO-SIM-01:M2')
-    z = await motor('ws415-MO-SIM-01:M3')
-    sample_stage = Stage3D(x, y, z)
-    det = await camera('ws415-AD-SIM-01:CAM')
-    trigger_box = in_memory_box()
-    beamline = AdSimBeamline(
-        trigger_box=trigger_box,
-        detector=det,
-        stage=sample_stage
-    )
-    return beamline
-
-
-@dataclasses.dataclass
-class AdSimBeamline:
-    trigger_box: FakeTriggerBox
-    detector: Camera
-    stage: Stage3D
