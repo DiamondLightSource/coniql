@@ -53,7 +53,7 @@ async def test(env: TrainingRig, scan_point_generator):
 env = asyncio.run(p47_environment())
 
 xs = LineGenerator("x", "mm", 0.0, 20.0, 8)
-ys = LineGenerator("y", "mm", 0.0, 30.0, 4)
+ys = LineGenerator("theta", "mm", 0.0, 360.0, 4)
 gen = CompoundGenerator([xs, ys], [], [])
 
 
