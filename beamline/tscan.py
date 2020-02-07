@@ -1,69 +1,62 @@
 import asyncio
 from typing import Dict
 
-from scanpointgenerator import LineGenerator, CompoundGenerator, Point
+from scanpointgenerator import Point, LineGenerator, CompoundGenerator
 
-from beamline.scanenv import make_env, AdSimScanEnvironment
+from beamline.beamlines.trainingrig import p47_environment, TrainingRig
 from device.devices.positioner import PositionerWithStatus
 
-xs = LineGenerator("x", "mm", 0.0, 5.0, 32)
-ys = LineGenerator("y", "mm", 0.0, 2.0, 16)
-gen = CompoundGenerator([ys, xs], [], [], duration=0.01)
-gen.prepare()
-env = make_env()
 
-det = env.main_detector
-duration = gen.get_point(0).duration
+def exposure_delay(exposure_time: float, acquire_period: float) -> float:
+    readout_time = acquire_period - exposure_time
+    return readout_time / 2
 
 
-async def configure_detector():
-    await det.exposure_time.put(duration)
-    await det.array_counter.put(0)
+async def prepare_detector(env: TrainingRig):
+    print('Preparing detector')
+    await env.main_detector.camera.array_counter.put(0)
 
 
-async def configure_motors():
-    first = gen.get_point(0)
-    await move_to_point(env.axes, first)
+async def configure_stage(env: TrainingRig, scan_point_generator):
+    stage = env.sample_stage
+    scan_point_generator.prepare()
+    first = scan_point_generator.get_point(0)
+    print('Moving to starting position')
+    await move_to_point(env, first)
 
 
-async def configure_triggers():
-    await env.trigger_box.min_seconds_between_checks.put(0.005)
-    readout = env.sample_stage.x.position
-    trigger = env.main_detector.acquire
-    await env.trigger_box.trigger_1.input.put(readout)
-    await env.trigger_box.trigger_1.output.put(trigger)
-
-
-async def move_to_point(axes, point):
+async def move_to_point(env: TrainingRig, point: Point):
+    stage = env.sample_stage
+    jobs = []
     for axis, pos in point.positions.items():
-        motor = axes[axis]
-        current_pos = (await motor.position.get()).value
-        max_vel = (await motor.max_velocity.get()).value
-        vel = abs(pos - current_pos) / point.duration
-        if vel > max_vel:
-            vel = max_vel
-        await motor.velocity.put(vel)
-        await motor.setpoint.put(pos)
+        motor = stage.__dict__[axis]
+        jobs.append(motor.setpoint.put(pos))
+    return await asyncio.wait(jobs)
 
 
-async def run():
+async def run(env: TrainingRig, scan_point_generator):
+    scan_point_generator.prepare()
     print('Starting scan')
-    for point in gen.iterator():
+    for point in scan_point_generator.iterator():
         print('Scanning point')
-        trigger = env.trigger_box.trigger_1
-        await trigger.min_value.put(point.lower['x'])
-        await trigger.max_value.put(point.upper['x'])
         await move_to_point(env.axes, point)
+        await env.main_detector.camera.acquire.put(True)
+        await asyncio.sleep(0.1)
 
 
-async def test():
-    await configure_detector()
-    await configure_motors()
-    await configure_triggers()
-    await run()
+async def test(env: TrainingRig, scan_point_generator):
+    await prepare_detector(env)
+    await configure_stage(env, scan_point_generator)
+    await run(env, scan_point_generator)
 
-job = test()
-loop = asyncio.get_event_loop()
-loop.create_task(job)
-loop.run_forever()
-#  TODO: Move things in parallel like malcolm, use enums like malcolm
+
+env = asyncio.run(p47_environment())
+
+xs = LineGenerator("x", "mm", 0.0, 20.0, 8)
+ys = LineGenerator("y", "mm", 0.0, 30.0, 4)
+gen = CompoundGenerator([xs, ys], [], [])
+
+
+job = test(env, gen)
+
+asyncio.run(job)
