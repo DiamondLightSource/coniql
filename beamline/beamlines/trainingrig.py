@@ -37,7 +37,7 @@ async def training_rig_environment(beamline_prefix: str) -> TrainingRig:
     x = await motor(f'{beamline_prefix}-MO-MAP-01:STAGE:X')
     theta = await motor(f'{beamline_prefix}-MO-MAP-01:STAGE:A')
     sample_stage = TomoStage(x, theta)
-    det = await ad_detector(f'{beamline_prefix}-EA-DET-01')
+    det = await ad_detector(f'{beamline_prefix}-EA-DET-01', cam_prefix='DET')
     panda_det = await ad_panda(f'{beamline_prefix}-MO-PANDA-01')
     beamline = TrainingRig(
         detector=det,
