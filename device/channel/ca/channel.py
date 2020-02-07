@@ -15,9 +15,23 @@ from device.channel.channeltypes.result import Readback
 T = TypeVar('T')
 
 
+class CaField:
+    def __init__(self, pv: str, pv_prefix: Optional[str] = None,
+                 rbv: Optional[str] = None, rbv_suffix: Optional[str] = None,
+                 wait: bool = True, timeout: Optional[float] = None):
+        pv_prefix = pv_prefix or ''
+        self.pv = f'{pv_prefix}{pv}'
+        self.rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
+        self.wait = wait
+        self.timeout = timeout or DEFAULT_TIMEOUT
+
+    async def create_channel(self) -> 'CaChannel':
+        await aioca.connect([self.pv, self.rbv])
+        return CaChannel(self.pv, self.rbv, self.wait, self.timeout)
+
+
 class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
-    def __init__(self, pv: str, rbv: str, wait: bool = True,
-                 timeout: float = DEFAULT_TIMEOUT):
+    def __init__(self, pv: str, rbv: str, wait: bool, timeout: float):
         self.pv = pv
         self.rbv = rbv
         self.wait = wait
@@ -25,12 +39,14 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
 
     async def put(self, value: T) -> Readback[T]:
         await aioca.caput_one(self.pv, value,
-                              timeout=self.timeout, wait=self.wait)
+                              timeout=self.timeout,
+                              wait=self.wait)
         return await self.get()
 
     async def get(self) -> Readback[T]:
         try:
-            value = await aioca.caget_one(self.rbv, format=aioca.FORMAT_TIME,
+            value = await aioca.caget_one(self.rbv,
+                                          format=aioca.FORMAT_TIME,
                                           timeout=self.timeout)
             return self.value_to_readback(value)
         except Timedout:
@@ -47,14 +63,3 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
 
     def format_value(self, value):
         return value.real
-
-
-async def connect(pv: str, rbv: Optional[str] = None,
-                  rbv_suffix: Optional[str] = None,
-                  wait: bool = True, timeout: Optional[float] = None) -> \
-        CaChannel:
-    t_rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
-    t_timeout = timeout or DEFAULT_TIMEOUT
-    await aioca.connect([pv, t_rbv])
-    channel: CaChannel = CaChannel(pv, t_rbv, wait, t_timeout)
-    return channel

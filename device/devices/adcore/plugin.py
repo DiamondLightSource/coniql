@@ -6,14 +6,14 @@ from device.channel.channeltypes.channel import ReadWriteChannel, \
 
 @dataclass
 class PluginCallback:
-    enabled: ReadWriteChannel[str]
+    status: ReadWriteChannel[str]
     min_time: ReadWriteChannel[float]
     blocking: ReadWriteChannel[str]
 
 
 @dataclass
 class PluginCounters:
-    arrays: ReadWriteChannel[int]
+    array_counter: ReadWriteChannel[int]
     array_rate: ReadOnlyChannel[float]
     queue_size: ReadOnlyChannel[int]
     queue_usage: ReadOnlyChannel[int]

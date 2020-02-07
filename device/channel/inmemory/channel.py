@@ -1,20 +1,15 @@
 from asyncio import Queue
 from typing import TypeVar, AsyncGenerator
 
-from device.channel.channeltypes.channel import WriteableChannel, ReadableChannel, MonitorableChannel, \
-    ConnectableChannel
+from device.channel.channeltypes.channel import WriteableChannel, ReadableChannel, MonitorableChannel
 from device.channel.channeltypes.result import Readback
 
 T = TypeVar('T')
 
 
-class InMemoryReadOnlyChannel(ReadableChannel[T], MonitorableChannel[T],
-                              ConnectableChannel):
+class InMemoryReadOnlyChannel(ReadableChannel[T], MonitorableChannel[T]):
     def __init__(self, value: T):
         self.__value = value
-
-    async def connect(self):
-        print(f'Connected, initial value is {self.value}')
 
     def set_value(self, value: T):
         self.__value = value

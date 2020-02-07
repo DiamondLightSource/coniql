@@ -20,5 +20,6 @@ class DutyCyclable:
     acquire_period: ReadWriteChannel[float]
 
 
-class Camera(DetectorDriver, DutyCyclable):
+@dataclass
+class Camera(DutyCyclable, DetectorDriver):
     pass

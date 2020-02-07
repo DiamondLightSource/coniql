@@ -14,6 +14,9 @@ class Swmr:
     flush_on_nth_frame: ReadWriteChannel[int]
     nd_attribute_flush: ReadWriteChannel[int]
 
+    async def flush_now(self):
+        await self.flush.put(True)
+
 
 @dataclass
 class HdfPlugin(AdPlugin):

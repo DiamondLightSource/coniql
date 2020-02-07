@@ -8,5 +8,5 @@ from device.devices.adcore.hdf import HdfPlugin
 @dataclass
 class AdPandA:
     driver: DetectorDriver
-    pos: PosPlugin
+    # pos: PosPlugin
     hdf: HdfPlugin
