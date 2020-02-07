@@ -39,3 +39,4 @@ class AdPlugin:
     array_port: ReadWriteChannel[str]
     callback: PluginCallback
     counters: PluginCounters
+    properties: PluginProperties
