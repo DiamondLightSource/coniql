@@ -2,7 +2,7 @@ from device.channel.ca.cabool import CaBool
 from device.channel.ca.channel import CaField
 from device.devices.motor import Motor
 from device.devices.pmac import ProfileBuild, ProfilePart, Axis, Axes, \
-    TrajectoryScanStatus, TrajDriverStatus, PmacTrajectory, Pmac
+    TrajectoryScanStatus, TrajDriverStatus, PmacTrajectory, Pmac, AxisMotors
 from device.epics.util import device_from_layout, connect_channels
 from device.util import asyncio_gather_values
 
@@ -109,7 +109,7 @@ def trajectory_driver_status_channels(prefix: str):
     )
 
 
-async def trajectory(prefix: str) -> PmacTrajectory:
+async def trajectory(prefix: str, axis_motors: AxisMotors) -> PmacTrajectory:
     channels = await connect_channels(trajectory_channels(prefix))
     children = await asyncio_gather_values(dict(
         profile_build=profile_build(prefix),
@@ -120,7 +120,7 @@ async def trajectory(prefix: str) -> PmacTrajectory:
         driver_status=trajectory_driver_status(prefix),
         **channels
     ))
-    return PmacTrajectory(**children)
+    return PmacTrajectory(**children, axis_motors=axis_motors)
 
 
 def trajectory_channels(prefix: str):
@@ -130,10 +130,10 @@ def trajectory_channels(prefix: str):
     )
 
 
-async def pmac(prefix: str) -> Pmac:
+async def pmac(prefix: str, axis_motors: AxisMotors) -> Pmac:
     channels = await connect_channels(pmac_channels(prefix))
     children = await asyncio_gather_values(dict(
-        trajectory=trajectory(prefix),
+        trajectory=trajectory(prefix, axis_motors),
         **channels
     ))
     return Pmac(**children)

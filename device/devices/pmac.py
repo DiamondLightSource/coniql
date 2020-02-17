@@ -2,10 +2,12 @@ import asyncio
 import numpy as np
 
 from dataclasses import dataclass
-from typing import Optional, Any, List, Dict
+from typing import Optional, Any, List, Dict, TypeVar, Generic
 
+from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
+from device.devices.motor import Motor
 from device.pmacutil.velocityprofile import VelocityArrays
 
 
@@ -36,16 +38,28 @@ class Axis:
 
 @dataclass
 class Axes:
-    a: Axis
-    b: Axis
-    c: Axis
-    u: Axis
-    v: Axis
-    w: Axis
-    x: Axis
-    y: Axis
-    z: Axis
+    a: Axis = doc_field("axis a")
+    b: Axis = doc_field("axis b")
+    c: Axis = doc_field("axis c")
+    u: Axis = doc_field("axis u")
+    v: Axis = doc_field("axis v")
+    w: Axis = doc_field("axis w")
+    x: Axis = doc_field("axis x")
+    y: Axis = doc_field("axis y")
+    z: Axis = doc_field("axis z")
 
+
+@dataclass
+class AxisMotors:
+    a: Optional[Motor] = doc_field("axis a", None)
+    b: Optional[Motor] = doc_field("axis b", None)
+    c: Optional[Motor] = doc_field("axis c", None)
+    u: Optional[Motor] = doc_field("axis u", None)
+    v: Optional[Motor] = doc_field("axis v", None)
+    w: Optional[Motor] = doc_field("axis w", None)
+    x: Optional[Motor] = doc_field("axis x", None)
+    y: Optional[Motor] = doc_field("axis y", None)
+    z: Optional[Motor] = doc_field("axis z", None)
 
 
 @dataclass
@@ -85,6 +99,7 @@ class PmacTrajectory:
     profile_execution: ProfilePart
 
     axes: Axes
+    axis_motors: AxisMotors  # TODO: Better separation!
 
     scan_status: TrajectoryScanStatus
     driver_status: TrajDriverStatus
@@ -93,9 +108,9 @@ class PmacTrajectory:
     profile_abort: ReadOnlyChannel[bool]
 
     async def write_profile(self, arrays: VelocityArrays,
-                      axes: Dict[str, int],
-                      cs_port: Optional[str] = None, velocity_mode = None,
-                      user_programs = None):
+                            axes: Dict[str, int],
+                            cs_port: Optional[str] = None, velocity_mode=None,
+                            user_programs=None):
         # make sure a matching trajectory program is installed on the pmac
         # if child.trajectoryProgVersion.value != TRAJECTORY_PROGRAM_NUM:
         #     raise (
@@ -113,7 +128,8 @@ class PmacTrajectory:
         # for axis in CS_AXIS_NAMES:
         #     if locals()[axis.lower()] is not None:
         #         use_axes.append(axis)
-        use_axes = {self.axes.__dict__[axis_name]: n for axis_name, n in axes.keys()}
+        use_axes = {self.axes.__dict__[axis_name]: n for axis_name, n in
+                    axes.keys()}
         if cs_port is not None:
             # This is a build
             action = self.build_profile
@@ -133,13 +149,19 @@ class PmacTrajectory:
         # Fill in the arrays
         num_points = len(arrays.time)
         await asyncio.wait([
-            self.profile_build.num_points_to_build.put(num_points),
-            self.profile_build.time_array.put(arrays.time),
-            self.profile_build.velocity_mode.put(_zeros_or_right_length(velocity_mode, num_points)),
-            self.profile_build.user_programs.put(_zeros_or_right_length(user_programs, num_points))
-        ] + [
-            axis.max_points.put(max_p) for axis, max_p in use_axes.items()
-        ])
+                               self.profile_build.num_points_to_build.put(
+                                   num_points),
+                               self.profile_build.time_array.put(arrays.time),
+                               self.profile_build.velocity_mode.put(
+                                   _zeros_or_right_length(velocity_mode,
+                                                          num_points)),
+                               self.profile_build.user_programs.put(
+                                   _zeros_or_right_length(user_programs,
+                                                          num_points))
+                           ] + [
+                               axis.max_points.put(max_p) for axis, max_p in
+                               use_axes.items()
+                           ])
         # Write the profile
         action()
         # Record how many points we have now written in total
