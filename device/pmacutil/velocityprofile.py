@@ -1,4 +1,6 @@
+from dataclasses import dataclass
 from math import sqrt, fabs
+from typing import List
 
 import numpy as np
 
@@ -460,5 +462,5 @@ class VelocityProfile:
         velocity_array = np.around(velocity_array, 12)
         time_array = np.around(time_array, 12)
         return list(time_array), list(velocity_array)
-# All this makes the time array and velocity array (seen above) which are
-# then written to the pmac
+        # All this makes the time array and velocity array (seen above) which
+        # are then written to the pmac
