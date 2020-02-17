@@ -1,7 +1,12 @@
+import asyncio
+import numpy as np
+
 from dataclasses import dataclass
+from typing import Optional, Any, List, Dict
 
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
+from device.pmacutil.velocityprofile import VelocityArrays
 
 
 @dataclass
@@ -16,6 +21,10 @@ class ProfilePart:
 class ProfileBuild(ProfilePart):
     max_points: ReadWriteChannel[int]
     num_points_to_build: ReadWriteChannel[int]
+
+    time_array: ReadWriteChannel[List[float]]
+    velocity_mode: ReadWriteChannel[List[int]]
+    user_programs: ReadWriteChannel[List[int]]
 
 
 @dataclass
@@ -36,6 +45,7 @@ class Axes:
     x: Axis
     y: Axis
     z: Axis
+
 
 
 @dataclass
@@ -59,6 +69,13 @@ class TrajDriverStatus:
     status: ReadOnlyChannel[str]
 
 
+# expected trajectory program number
+TRAJECTORY_PROGRAM_NUM = 2
+
+# The maximum number of points in a single trajectory scan
+MAX_NUM_POINTS = 4000000
+
+
 @dataclass
 class PmacTrajectory:
     coordinate_system_name: ReadWriteChannel[str]
@@ -75,6 +92,60 @@ class PmacTrajectory:
     percentage_complete: ReadOnlyChannel[float]
     profile_abort: ReadOnlyChannel[bool]
 
+    async def write_profile(self, arrays: VelocityArrays,
+                      axes: Dict[str, int],
+                      cs_port: Optional[str] = None, velocity_mode = None,
+                      user_programs = None):
+        # make sure a matching trajectory program is installed on the pmac
+        # if child.trajectoryProgVersion.value != TRAJECTORY_PROGRAM_NUM:
+        #     raise (
+        #         IncompatibleError(
+        #             "pmac trajectory program {} detected. "
+        #             "Malcolm requires {}".format(
+        #                 child.trajectoryProgVersion.value,
+        #                 TRAJECTORY_PROGRAM_NUM
+        #             )
+        #         )
+        #     ) TODO: Add channels for this
+
+        # The axes taking part in the scan
+        # use_axes = []
+        # for axis in CS_AXIS_NAMES:
+        #     if locals()[axis.lower()] is not None:
+        #         use_axes.append(axis)
+        use_axes = {self.axes.__dict__[axis_name]: n for axis_name, n in axes.keys()}
+        if cs_port is not None:
+            # This is a build
+            action = self.build_profile
+            # self.total_points = 0
+            await self.profile_build.max_points.put_value(MAX_NUM_POINTS)
+            try:
+                self.coordinate_system_name.put_value(cs_port)
+            except ValueError as e:
+                raise ValueError(
+                    "Cannot set CS to %s, did you use a compound_motor_block "
+                    "for a raw motor?\n%s" % (cs_port, e))
+            await asyncio.wait([axis.use.put(True) for axis in use_axes])
+        else:
+            # This is an append
+            action = self.append_points
+
+        # Fill in the arrays
+        num_points = len(arrays.time)
+        await asyncio.wait([
+            self.profile_build.num_points_to_build.put(num_points),
+            self.profile_build.time_array.put(arrays.time),
+            self.profile_build.velocity_mode.put(_zeros_or_right_length(velocity_mode, num_points)),
+            self.profile_build.user_programs.put(_zeros_or_right_length(user_programs, num_points))
+        ] + [
+            axis.max_points.put(max_p) for axis, max_p in use_axes.items()
+        ])
+        # Write the profile
+        action()
+        # Record how many points we have now written in total
+
+        # self.total_points += num_points
+
     def build_profile(self):
         await self.profile_build.trigger.put(True)
 
@@ -86,6 +157,16 @@ class PmacTrajectory:
 
     def abort(self):
         await self.profile_abort.put(False)
+
+
+def _zeros_or_right_length(array, num_points):
+    if array is None:
+        array = np.zeros(num_points, np.int32)
+    else:
+        assert len(array) == num_points, \
+            "Array %s should be %d points long" % (
+                array, num_points)
+    return array
 
 
 @dataclass

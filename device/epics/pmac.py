@@ -110,6 +110,7 @@ def trajectory_driver_status_channels(prefix: str):
 
 
 async def trajectory(prefix: str) -> PmacTrajectory:
+    channels = await connect_channels(trajectory_channels(prefix))
     children = await asyncio_gather_values(dict(
         profile_build=profile_build(prefix),
         points_append=points_append(prefix),
@@ -117,7 +118,7 @@ async def trajectory(prefix: str) -> PmacTrajectory:
         axes=axes(prefix),
         scan_status=trajectory_scan_status(prefix),
         driver_status=trajectory_driver_status(prefix),
-        **connect_channels(trajectory_channels(prefix))
+        **channels
     ))
     return PmacTrajectory(**children)
 
@@ -130,4 +131,4 @@ def trajectory_channels(prefix: str):
 
 
 async def pmac(prefix: str) -> Pmac:
-    return Pmac(trajectory(prefix))
+    return Pmac(await trajectory(prefix))
