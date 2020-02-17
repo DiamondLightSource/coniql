@@ -172,3 +172,7 @@ def _zeros_or_right_length(array, num_points):
 @dataclass
 class Pmac:
     trajectory: PmacTrajectory
+    i10: ReadOnlyChannel[int]
+
+    def servo_frequency(self) -> float:
+        return 8388608000.0 / await self.i10.get().value

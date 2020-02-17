@@ -131,4 +131,15 @@ def trajectory_channels(prefix: str):
 
 
 async def pmac(prefix: str) -> Pmac:
-    return Pmac(await trajectory(prefix))
+    channels = await connect_channels(pmac_channels(prefix))
+    children = await asyncio_gather_values(dict(
+        trajectory=trajectory(prefix),
+        **channels
+    ))
+    return Pmac(**children)
+
+
+def pmac_channels(prefix: str):
+    return dict(
+        i10=CaField(f'{prefix}:I10')
+    )
