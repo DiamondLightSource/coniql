@@ -21,7 +21,12 @@ def motor_channels(prefix: str):
         velocity=CaField(f'{prefix}.VELO'),
         max_velocity=CaField(f'{prefix}.VMAX'),
         min=CaField(f'{prefix}.LLM'),
-        max=CaField(f'{prefix}.HLM')
+        max=CaField(f'{prefix}.HLM'),
+        acceleration_time=CaField(f'{prefix}.ACCL'),
+        output=CaField(f'{prefix}.OUT'),
+        resolution=CaField(f'{prefix}.MRES'),
+        offset=CaField(f'{prefix}.OFF'),
+        units=CaField(f'{prefix}.EGU'),
     )
 
 

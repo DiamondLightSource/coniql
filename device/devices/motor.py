@@ -13,3 +13,11 @@ class Motor(PositionerWithStatus, Joggable, PidController, MinLimitable, MaxLimi
     velocity: ReadWriteChannel[float] = doc_field("Velocity of the motor")
     max_velocity: ReadWriteChannel[float] = doc_field("Velocity limit of the "
                                                       "motor")
+    acceleration_time: ReadWriteChannel[float] = doc_field("Time to reach "
+                                                           "max_velocity")
+    output: ReadWriteChannel[str] = doc_field("Output specification, "
+                                              "freeform string")
+    resolution: ReadWriteChannel[float] = doc_field("Resolution of this motor")
+    offset: ReadWriteChannel[float] = doc_field("User-defined offset")
+    units: ReadWriteChannel[str] = doc_field("Engineering units used by "
+                                             "this record")

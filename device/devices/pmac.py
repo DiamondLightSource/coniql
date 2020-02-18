@@ -2,7 +2,8 @@ import asyncio
 import numpy as np
 
 from dataclasses import dataclass
-from typing import Optional, Any, List, Dict, TypeVar, Generic
+from typing import Optional, Any, List, Dict, TypeVar, Generic, Set, Generator, \
+    Tuple
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
@@ -61,6 +62,14 @@ class AxisMotors:
     y: Optional[Motor] = doc_field("axis y", None)
     z: Optional[Motor] = doc_field("axis z", None)
 
+    def __getitem__(self, item):
+        return self.__dict__[item]
+
+    def available_axes(self) -> Generator[Tuple[str, Motor], None, None]:  # TODO: Temporary to work with pmaac child part
+        for name, motor in self.__dict__.items():
+            if motor is not None:
+                yield name, motor
+
 
 @dataclass
 class TrajectoryScanStatus:
@@ -107,7 +116,8 @@ class PmacTrajectory:
     percentage_complete: ReadOnlyChannel[float]
     profile_abort: ReadOnlyChannel[bool]
 
-    async def write_profile(self, arrays: VelocityArrays,
+    async def write_profile(self, time_array: List[float],
+                            velocity_array: List[float],
                             axes: Dict[str, int],
                             cs_port: Optional[str] = None, velocity_mode=None,
                             user_programs=None):
@@ -128,11 +138,12 @@ class PmacTrajectory:
         # for axis in CS_AXIS_NAMES:
         #     if locals()[axis.lower()] is not None:
         #         use_axes.append(axis)
+        # time_array, velocity_array = arrays
         use_axes = {self.axes.__dict__[axis_name]: n for axis_name, n in
                     axes.keys()}
         if cs_port is not None:
             # This is a build
-            action = self.build_profile
+            action = self.build_profile()
             # self.total_points = 0
             await self.profile_build.max_points.put_value(MAX_NUM_POINTS)
             try:
@@ -144,14 +155,14 @@ class PmacTrajectory:
             await asyncio.wait([axis.use.put(True) for axis in use_axes])
         else:
             # This is an append
-            action = self.append_points
+            action = self.append_points()
 
         # Fill in the arrays
-        num_points = len(arrays.time)
+        num_points = len(time_array)
         await asyncio.wait([
                                self.profile_build.num_points_to_build.put(
                                    num_points),
-                               self.profile_build.time_array.put(arrays.time),
+                               self.profile_build.time_array.put(time_array),
                                self.profile_build.velocity_mode.put(
                                    _zeros_or_right_length(velocity_mode,
                                                           num_points)),
@@ -163,21 +174,21 @@ class PmacTrajectory:
                                use_axes.items()
                            ])
         # Write the profile
-        action()
+        await action
         # Record how many points we have now written in total
 
         # self.total_points += num_points
 
-    def build_profile(self):
+    async def build_profile(self):
         await self.profile_build.trigger.put(True)
 
-    def append_points(self):
+    async def append_points(self):
         await self.points_append.trigger.put(True)
 
-    def execute_profile(self):
+    async def execute_profile(self):
         await self.profile_execution.trigger.put(True)
 
-    def abort(self):
+    async def abort(self):
         await self.profile_abort.put(False)
 
 
@@ -196,5 +207,6 @@ class Pmac:
     trajectory: PmacTrajectory
     i10: ReadOnlyChannel[int]
 
-    def servo_frequency(self) -> float:
-        return 8388608000.0 / await self.i10.get().value
+    async def servo_frequency(self) -> float:
+        i10 = (await self.i10.get()).value
+        return 8388608000.0 / i10

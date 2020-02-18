@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from math import sqrt, fabs
-from typing import List
+from typing import List, Tuple
 
 import numpy as np
+
+VelocityArrays = Tuple[List[float], List[float]]
 
 HAT = 1
 INVERSE_HAT = 2
@@ -431,7 +433,7 @@ class VelocityProfile:
         self.t_total = self.tv2 + self.settle_time
         self.quantized = True
 
-    def make_arrays(self):
+    def make_arrays(self) -> VelocityArrays:
         """
         Convert the time and velocity properties to arrays for consumption
         by pmac/util.py

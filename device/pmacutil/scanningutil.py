@@ -1,7 +1,7 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
 
 
-class DatasetType(IntEnum):
+class DatasetType(Enum):
     """NeXus type of a produced dataset"""
     #: Detector data, like the 2D data from an imaging detector
     PRIMARY = "primary"

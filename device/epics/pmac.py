@@ -17,6 +17,9 @@ def profile_build_channels(prefix: str):
         max_points=CaField(f'{prefix}:ProfileNumPoints', rbv_suffix='_RBV'),
         num_points_to_build=CaField(f'{prefix}:ProfilePointsToBuild',
                                     rbv_suffix='_RBV'),
+        time_array=CaField(f'{prefix}:ProfileTimeArray'),
+        velocity_mode=CaField(f'{prefix}:VelocityMode'),
+        user_programs=CaField(f'{prefix}:UserArray'),
         **profile_part_channels(f'{prefix}:ProfileBuild')
     )
 
@@ -49,7 +52,7 @@ def profile_part_channels(prefix: str):
 
 
 async def axis(prefix: str) -> Axis:
-    layout = profile_build_channels(prefix)
+    layout = axis_channels(prefix)
     return await device_from_layout(layout, Axis)
 
 
@@ -66,12 +69,12 @@ async def axes(prefix: str) -> Axes:
         a=axis(f'{prefix}:A'),
         b=axis(f'{prefix}:B'),
         c=axis(f'{prefix}:C'),
-        u=axis(f'{prefix}:D'),
-        v=axis(f'{prefix}:E'),
-        w=axis(f'{prefix}:F'),
-        x=axis(f'{prefix}:G'),
-        y=axis(f'{prefix}:H'),
-        z=axis(f'{prefix}:I'),
+        u=axis(f'{prefix}:U'),
+        v=axis(f'{prefix}:V'),
+        w=axis(f'{prefix}:W'),
+        x=axis(f'{prefix}:X'),
+        y=axis(f'{prefix}:Y'),
+        z=axis(f'{prefix}:Z'),
     ))
     return Axes(**children)
 
@@ -118,24 +121,31 @@ async def trajectory(prefix: str, axis_motors: AxisMotors) -> PmacTrajectory:
         axes=axes(prefix),
         scan_status=trajectory_scan_status(prefix),
         driver_status=trajectory_driver_status(prefix),
-        **channels
     ))
+    children = dict(
+        **channels,
+        **children
+    )
     return PmacTrajectory(**children, axis_motors=axis_motors)
 
 
 def trajectory_channels(prefix: str):
     return dict(
         percentage_complete=CaField(f'{prefix}:TscanPercent_RBV'),
-        profile_abort=CaBool(f'{prefix}:ProfileAbort')
+        profile_abort=CaBool(f'{prefix}:ProfileAbort'),
+        coordinate_system_name=CaField(f'{prefix}:ProfileCsName')
     )
 
 
 async def pmac(prefix: str, axis_motors: AxisMotors) -> Pmac:
     channels = await connect_channels(pmac_channels(prefix))
     children = await asyncio_gather_values(dict(
-        trajectory=trajectory(prefix, axis_motors),
-        **channels
+        trajectory=trajectory(prefix, axis_motors)
     ))
+    children = dict(
+        **children,
+        **channels
+    )
     return Pmac(**children)
 
 
