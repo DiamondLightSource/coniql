@@ -9,9 +9,10 @@ from enum import IntEnum
 from scanpointgenerator import CompoundGenerator, Point
 
 from device.devices.pmac import Pmac
-from device.pmacutil.pmacutil import MIN_TIME, MIN_INTERVAL, cs_axis_mapping, \
+from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
     point_velocities, points_joined, profile_between_points
+from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL
 from device.pmacutil.scanningutil import MinTurnaroundInfo, MotionTrigger, \
     ParameterTweakInfo, RunProgressInfo
 
@@ -243,9 +244,9 @@ class PmacChildPart:
         # Reset GPIOs
         # TODO: we might need to put this in pause if the PandA logic doesn't
         # copy with a trigger staying high
-        self.pmac.writeProfile(csPort=cs_port, timeArray=[MIN_TIME],
-                               userPrograms=[UserPrograms.ZERO_PROGRAM])
-        self.pmac.executeProfile()
+        await self.pmac.trajectory.write_profile(cs_port=cs_port, time_array=[MIN_TIME],
+                               user_programs=[UserPrograms.ZERO_PROGRAM])
+        await self.pmac.trajectory.execute_profile()
         await self.move_to_start(completed_steps)
         # if motion_axes:
         #     # Start off the move to the start
@@ -265,7 +266,7 @@ class PmacChildPart:
         for info in self.axis_mapping.values():
             self.profile[info.cs_axis.lower()] = []
         self.calculate_generator_profile(completed_steps, do_run_up=True)
-        self.write_profile_points(cs_port)
+        await self.write_profile_points(cs_port)
         # Wait for the motors to have got to the start
         # context.wait_all_futures(fs)
 

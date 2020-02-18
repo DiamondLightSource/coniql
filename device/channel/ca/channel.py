@@ -21,7 +21,7 @@ class CaField:
                  wait: bool = True, timeout: Optional[float] = None):
         pv_prefix = pv_prefix or ''
         self.pv = f'{pv_prefix}{pv}'
-        self.rbv = rbv or f'{pv}{rbv_suffix}' if rbv is not None else None or pv
+        self.rbv = rbv or f'{pv}{rbv_suffix}' if rbv_suffix is not None else None or pv
         self.wait = wait
         self.timeout = timeout or DEFAULT_TIMEOUT
 
@@ -44,13 +44,13 @@ class CaChannel(ReadableChannel[T], WriteableChannel[T], MonitorableChannel[T]):
         return await self.get()
 
     async def get(self) -> Readback[T]:
-        try:
-            value = await caget_one(self.rbv,
-                                    format=FORMAT_TIME,
-                                    timeout=self.timeout)
-            return self.value_to_readback(value)
-        except Exception:  # TODO: Make more specific when aioca changes
-            return Readback.not_connected()
+        # try:
+        value = await caget_one(self.rbv,
+                                format=FORMAT_TIME,
+                                timeout=self.timeout)
+        return self.value_to_readback(value)
+        # except Exception:  # TODO: Make more specific when aioca changes
+        #     return Readback.not_connected()
 
     async def monitor(self) -> AsyncGenerator[Readback[T], None]:
         gen = camonitor_as_async_generator(self.rbv)

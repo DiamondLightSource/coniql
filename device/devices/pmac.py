@@ -35,6 +35,7 @@ class Axis:
     use: ReadWriteChannel[bool]
     num_points: ReadOnlyChannel[int]
     max_points: ReadOnlyChannel[int]
+    positions: ReadOnlyChannel[List[float]]
 
 
 @dataclass
@@ -116,11 +117,12 @@ class PmacTrajectory:
     percentage_complete: ReadOnlyChannel[float]
     profile_abort: ReadOnlyChannel[bool]
 
-    async def write_profile(self, time_array: List[float],
-                            velocity_array: List[float],
-                            axes: Dict[str, int],
+    async def write_profile(self,
+                            time_array: List[float],
+                            velocity_array: Optional[List[float]] = None,
                             cs_port: Optional[str] = None, velocity_mode=None,
-                            user_programs=None):
+                            user_programs=None,
+                            positions: Optional[Dict[str, List[float]]] = None):
         # make sure a matching trajectory program is installed on the pmac
         # if child.trajectoryProgVersion.value != TRAJECTORY_PROGRAM_NUM:
         #     raise (
@@ -139,20 +141,24 @@ class PmacTrajectory:
         #     if locals()[axis.lower()] is not None:
         #         use_axes.append(axis)
         # time_array, velocity_array = arrays
+        positions = positions or {}
         use_axes = {self.axes.__dict__[axis_name]: n for axis_name, n in
-                    axes.keys()}
+                    positions.items()}
+        # use_axes = [self.axes.__dict__[axis_name] for axis_name in positions.keys()]
         if cs_port is not None:
             # This is a build
             action = self.build_profile()
             # self.total_points = 0
-            await self.profile_build.max_points.put_value(MAX_NUM_POINTS)
+            await self.profile_build.max_points.put(MAX_NUM_POINTS)
             try:
-                self.coordinate_system_name.put_value(cs_port)
+                await self.coordinate_system_name.put(cs_port)
             except ValueError as e:
                 raise ValueError(
                     "Cannot set CS to %s, did you use a compound_motor_block "
                     "for a raw motor?\n%s" % (cs_port, e))
-            await asyncio.wait([axis.use.put(True) for axis in use_axes])
+            jobs = [axis.use.put(True) for axis in use_axes.keys()]
+            if jobs:
+                await asyncio.wait(jobs)
         else:
             # This is an append
             action = self.append_points()
@@ -169,8 +175,9 @@ class PmacTrajectory:
                                self.profile_build.user_programs.put(
                                    _zeros_or_right_length(user_programs,
                                                           num_points))
-                           ] + [
-                               axis.max_points.put(max_p) for axis, max_p in
+                           ]
+                           + [
+                               axis.positions.put(positions) for axis, positions in
                                use_axes.items()
                            ])
         # Write the profile
@@ -180,13 +187,13 @@ class PmacTrajectory:
         # self.total_points += num_points
 
     async def build_profile(self):
-        await self.profile_build.trigger.put(True)
+        await self.profile_build.trigger.put('Build')
 
     async def append_points(self):
-        await self.points_append.trigger.put(True)
+        await self.points_append.trigger.put('Append')
 
     async def execute_profile(self):
-        await self.profile_execution.trigger.put(True)
+        await self.profile_execution.trigger.put('Execute')
 
     async def abort(self):
         await self.profile_abort.put(False)

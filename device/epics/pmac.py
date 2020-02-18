@@ -1,5 +1,7 @@
 from device.channel.ca.cabool import CaBool
+from device.channel.ca.castring import CaString
 from device.channel.ca.channel import CaField
+from device.channel.ca.caenum import CaEnum
 from device.devices.motor import Motor
 from device.devices.pmac import ProfileBuild, ProfilePart, Axis, Axes, \
     TrajectoryScanStatus, TrajDriverStatus, PmacTrajectory, Pmac, AxisMotors
@@ -44,10 +46,10 @@ def profile_execution_channels(prefix: str):
 
 def profile_part_channels(prefix: str):
     return dict(
-        trigger=CaBool(f'{prefix}'),
-        status=CaField(f'{prefix}Status_RBV'),
-        state=CaField(f'{prefix}State_RBV'),
-        message=CaField(f'{prefix}Message_RBV')
+        trigger=CaEnum(f'{prefix}'),
+        status=CaString(f'{prefix}Status_RBV'),
+        state=CaString(f'{prefix}State_RBV'),
+        message=CaString(f'{prefix}Message_RBV')
     )
 
 
@@ -60,7 +62,8 @@ def axis_channels(prefix: str):
     return dict(
         use=CaBool(f'{prefix}:UseAxis'),
         num_points=CaField(f'{prefix}:NoOfPts'),
-        max_points=CaField(f'{prefix}:Positions.NELM')
+        max_points=CaField(f'{prefix}:Positions.NELM'),
+        positions=CaField(f'{prefix}:Positions')
     )
 
 
@@ -86,10 +89,10 @@ async def trajectory_scan_status(prefix: str) -> TrajectoryScanStatus:
 
 def trajectory_scan_status_channels(prefix: str):
     return dict(
-        buffer_a_address=CaField(f'{prefix}:BufferAAddress_RBV'),
-        buffer_b_address=CaField(f'{prefix}:BufferBAddress_RBV'),
+        buffer_a_address=CaString(f'{prefix}:BufferAAddress_RBV'),
+        buffer_b_address=CaString(f'{prefix}:BufferBAddress_RBV'),
         num_points_in_buffer=CaField(f'{prefix}:BufferLength_RBV'),
-        current_buffer=CaField(f'{prefix}:CurrentBuffer_RBV'),
+        current_buffer=CaString(f'{prefix}:CurrentBuffer_RBV'),
         current_index=CaField(f'{prefix}:CurrentIndex_RBV'),
         points_scanned=CaField(f'{prefix}:TotalPoints_RBV'),
         status=CaField(f'{prefix}:TrajectoryStatus_RBV'),
@@ -133,7 +136,7 @@ def trajectory_channels(prefix: str):
     return dict(
         percentage_complete=CaField(f'{prefix}:TscanPercent_RBV'),
         profile_abort=CaBool(f'{prefix}:ProfileAbort'),
-        coordinate_system_name=CaField(f'{prefix}:ProfileCsName')
+        coordinate_system_name=CaEnum(f'{prefix}:ProfileCsName', rbv_suffix='_RBV')
     )
 
 

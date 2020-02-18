@@ -1,5 +1,7 @@
 from device.channel.ca.cabool import CaBool
 from device.channel.ca.channel import CaField
+from device.channel.ca.caenum import CaEnum
+from device.channel.ca.castring import CaString
 from device.devices.motor import Motor
 from device.epics.util import device_from_layout
 
@@ -23,10 +25,12 @@ def motor_channels(prefix: str):
         min=CaField(f'{prefix}.LLM'),
         max=CaField(f'{prefix}.HLM'),
         acceleration_time=CaField(f'{prefix}.ACCL'),
-        output=CaField(f'{prefix}.OUT'),
+        output=CaString(f'{prefix}.OUT'),
         resolution=CaField(f'{prefix}.MRES'),
         offset=CaField(f'{prefix}.OFF'),
-        units=CaField(f'{prefix}.EGU'),
+        units=CaString(f'{prefix}.EGU'),
+        cs_port=CaEnum(f'{prefix}:CsPort', rbv_suffix='_RBV'),
+        cs_axis=CaString(f'{prefix}:CsAxis', rbv_suffix='_RBV'),
     )
 
 

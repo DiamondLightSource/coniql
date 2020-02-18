@@ -2,34 +2,24 @@
 from __future__ import division
 
 from collections import Counter
-
-from annotypes import TYPE_CHECKING, Array, Sequence
-from scanpointgenerator import Point, CompoundGenerator, StaticPointGenerator
-import numpy as np
-
 from typing import Dict
+
+import numpy as np
+from annotypes import TYPE_CHECKING, Sequence
+from scanpointgenerator import Point, CompoundGenerator, StaticPointGenerator
 
 # from malcolm.core import Context
 # from malcolm.modules import builtin, scanning
 # from .infos import MotorInfo
-from device.devices.motor import Motor
 from device.devices.pmac import AxisMotors
-from device.pmacutil.scanningutil import MotionTriggerInfo, MotionTrigger
+from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL
+from device.pmacutil.scanningutil import MotionTrigger
 from device.pmacutil.velocityprofile import VelocityProfile
 
 if TYPE_CHECKING:
-    from typing import Tuple, Dict, Set, List
+    from typing import Dict, Set, List
 
     Profiles = Dict[str, List[float]]
-
-# All possible PMAC CS axis assignment
-CS_AXIS_NAMES = list("ABCUVWXYZ")
-
-# Minimum move time for a whole profile
-MIN_TIME = 0.002
-# minimum time between points in a profile
-MIN_INTERVAL = 0.002
-
 
 class MotorInfo:
     def __init__(self,
@@ -132,7 +122,7 @@ async def cs_axis_mapping(axis_motors: AxisMotors,
         # * (child.maxVelocityPercent.value / 100.0)
 
         acceleration = float(max_velocity) / acceleration_time
-        cs = (await motor.output.get()).value
+        cs = await motor.cs()
         if cs:
             cs_port, cs_axis = cs.split(",", 1)
         else:

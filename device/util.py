@@ -1,6 +1,6 @@
 import asyncio
 
-from typing import Dict, Any, List, TypeVar, Optional, Coroutine
+from typing import Dict, Any, List, TypeVar, Optional, Coroutine, Iterable
 from datetime import datetime, timedelta
 
 from device.channel.channeltypes.channel import MonitorableChannel, WriteableChannel, ReadableChannel
@@ -17,6 +17,11 @@ async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
     return {channel: result
             for channel, result in zip(channel_values.keys(), results)}
 
+
+async def get_all_values(channels: List[ReadableChannel]) -> Iterable[Any]:
+    results = await asyncio.gather(*(channel.get() for channel in channels))
+    async for readback in results:
+        yield readback.value
 
 
 async def get_all(channels: List[ReadableChannel]) -> _READBACK_DICT:
