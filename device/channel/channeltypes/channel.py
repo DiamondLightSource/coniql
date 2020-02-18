@@ -1,4 +1,5 @@
 from typing import TypeVar, Generic, AsyncGenerator, Union
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.result import Readback
 
@@ -13,25 +14,29 @@ class ChannelFactory(Generic[TChannel]):
         raise NotImplementedError
 
 
-class ReadableChannel(Generic[TValue]):
+class ReadableChannel(Protocol[TValue]):
     """A channel whose value can be read e.g. into a variable"""
     async def get(self) -> Readback[TValue]:
         return NotImplemented
 
 
-class MonitorableChannel(Generic[TValue]):
+class MonitorableChannel(Protocol[TValue]):
     """A channel whose value can be continuously monitored"""
     async def monitor(self) -> AsyncGenerator[Readback[TValue], None]:
         yield NotImplemented
 
 
-class WriteableChannel(Generic[TValue]):
+class WriteableChannel(Protocol[TValue]):
     """A channel whose value can be mutated"""
     async def put(self, value: TValue) -> Readback[TValue]:
         return NotImplemented
 
 
-ReadOnlyChannel = Union[ReadableChannel[TValue], MonitorableChannel[TValue]]
+class ReadWriteChannel(Protocol[TValue], ReadableChannel[TValue],
+                       WriteableChannel[TValue], MonitorableChannel[TValue]):
+    pass
 
-ReadWriteChannel = Union[ReadableChannel[TValue], MonitorableChannel[TValue],
-                         WriteableChannel[TValue]]
+
+class ReadOnlyChannel(Protocol[TValue], ReadableChannel[TValue],
+                      MonitorableChannel[TValue]):
+    pass
