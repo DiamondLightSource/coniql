@@ -18,16 +18,8 @@ async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
             for channel, result in zip(channel_values.keys(), results)}
 
 
-async def get_all_values(channels: List[HasValue]) -> Iterable[Any]:
-    results = await asyncio.gather(*(channel.get() for channel in channels))
-    async for readback in results:
-        yield readback.value
-
-
 async def get_all(channels: List[HasValue]) -> _READBACK_DICT:
-    results = await asyncio.gather(*(channel.get() for channel in channels))
-    return {channel: result
-            for channel, result in zip(channels, results)}
+    return await asyncio.gather(*(channel.get() for channel in channels))
 
 
 T = TypeVar('T')

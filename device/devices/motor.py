@@ -1,14 +1,11 @@
-import asyncio
 from dataclasses import dataclass
 
 from coniql.util import doc_field
+from device.channel.channeltypes.channel import ReadWriteChannel
 from device.devices.joggable import Joggable
 from device.devices.limitable import MaxLimitable, MinLimitable
 from device.devices.pidcontroller import PidController
 from device.devices.positioner import PositionerWithStatus
-from device.channel.channeltypes.channel import ReadWriteChannel
-from device.pmacutil.pmacconst import CS_AXIS_NAMES
-from device.util import get_all_values
 
 
 @dataclass
