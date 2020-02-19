@@ -3,11 +3,11 @@ import asyncio
 from typing import Dict, Any, List, TypeVar, Optional, Coroutine, Iterable
 from datetime import datetime, timedelta
 
-from device.channel.channeltypes.channel import MonitorableChannel, WriteableChannel, ReadableChannel
+from device.channel.channeltypes.channel import CanMonitorValue, CanPutValue, HasValue
 from device.channel.channeltypes.result import Readback
 
-_PUT_DICT = Dict[WriteableChannel, Any]
-_READBACK_DICT = Dict[ReadableChannel, Readback[Any]]
+_PUT_DICT = Dict[CanPutValue, Any]
+_READBACK_DICT = Dict[HasValue, Readback[Any]]
 
 
 async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
@@ -18,13 +18,13 @@ async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
             for channel, result in zip(channel_values.keys(), results)}
 
 
-async def get_all_values(channels: List[ReadableChannel]) -> Iterable[Any]:
+async def get_all_values(channels: List[HasValue]) -> Iterable[Any]:
     results = await asyncio.gather(*(channel.get() for channel in channels))
     async for readback in results:
         yield readback.value
 
 
-async def get_all(channels: List[ReadableChannel]) -> _READBACK_DICT:
+async def get_all(channels: List[HasValue]) -> _READBACK_DICT:
     results = await asyncio.gather(*(channel.get() for channel in channels))
     return {channel: result
             for channel, result in zip(channels, results)}
@@ -34,7 +34,7 @@ T = TypeVar('T')
 
 
 # TODO: Generic predicate handling!
-async def await_value(channel: MonitorableChannel[T], value: T,
+async def await_value(channel: CanMonitorValue[T], value: T,
                       timeout: Optional[float] = None) -> Optional[Readback[T]]:
     latest_time = datetime.now() + timedelta(seconds=timeout or 0)
     async for readback in channel.monitor():

@@ -47,7 +47,7 @@ async def test(env: AdSimScanEnvironment, scan_point_generator):
     await run(env, scan_point_generator)
 
 
-env = asyncio.run(make_env())
+env = make_env()
 
 xs = LineGenerator("x", "mm", 0.0, 20.0, 8)
 ys = LineGenerator("y", "mm", 0.0, 30.0, 4)

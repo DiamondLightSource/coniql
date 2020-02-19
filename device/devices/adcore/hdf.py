@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from device.channel.channeltypes.channel import ReadWriteChannel, \
-    ReadOnlyChannel, WriteableChannel
+    ReadOnlyChannel, CanPutValue
 from device.devices.adcore.plugin import AdPlugin
 
 
@@ -10,7 +10,7 @@ class Swmr:
     mode: ReadWriteChannel[str]
     active: ReadWriteChannel[bool]
     position_mode: ReadWriteChannel[str]
-    flush: WriteableChannel[bool]
+    flush: CanPutValue[bool]
     flush_on_nth_frame: ReadWriteChannel[int]
     nd_attribute_flush: ReadWriteChannel[int]
 

@@ -1,7 +1,7 @@
 from asyncio import Queue
 from typing import TypeVar, AsyncGenerator
 
-from device.channel.channeltypes.channel import WriteableChannel, ReadableChannel, MonitorableChannel
+from device.channel.channeltypes.channel import CanPutValue, HasValue, CanMonitorValue
 from device.channel.channeltypes.result import Readback
 
 T = TypeVar('T')

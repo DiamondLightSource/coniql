@@ -1,8 +1,8 @@
 import asyncio
 from dataclasses import dataclass
 
-from device.channel.channeltypes.channel import ReadWriteChannel, ReadableChannel, \
-    WriteableChannel
+from device.channel.channeltypes.channel import ReadWriteChannel, HasValue, \
+    CanPutValue
 from device.channel.inmemory.channel import InMemoryReadWriteChannel
 
 _DEFAULT_CLOCK_SECONDS = 0.1

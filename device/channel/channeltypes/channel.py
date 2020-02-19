@@ -1,42 +1,48 @@
 from typing import TypeVar, Generic, AsyncGenerator, Union
 from typing_extensions import Protocol
 
-from device.channel.channeltypes.result import Readback
+from coniql._types import ChannelStatus, Time
 
-
-TChannel = TypeVar('TChannel')
 TValue = TypeVar('TValue')
 DEFAULT_TIMEOUT = 10.0  # seconds
 
 
-class ChannelFactory(Generic[TChannel]):
-    async def create_channel(self) -> TChannel:
-        raise NotImplementedError
-
-
-class ReadableChannel(Protocol[TValue]):
-    """A channel whose value can be read e.g. into a variable"""
-    async def get(self) -> Readback[TValue]:
+class HasValue(Protocol[TValue]):
+    async def get(self) -> TValue:
         return NotImplemented
 
 
-class MonitorableChannel(Protocol[TValue]):
-    """A channel whose value can be continuously monitored"""
-    async def monitor(self) -> AsyncGenerator[Readback[TValue], None]:
+class HasStatus(Protocol):
+    async def get_status(self) -> ChannelStatus:
+        return NotImplemented
+
+
+class HasTimestamp(Protocol):
+    async def get_timestamp(self) -> Time:
+        return NotImplemented
+
+
+class CanMonitorValue(Protocol[TValue]):
+    async def monitor_value(self) -> AsyncGenerator[TValue, None]:
         yield NotImplemented
 
 
-class WriteableChannel(Protocol[TValue]):
-    """A channel whose value can be mutated"""
-    async def put(self, value: TValue) -> Readback[TValue]:
+class CanMonitorStatus(Protocol):
+    async def monitor_status(self) -> AsyncGenerator[ChannelStatus, None]:
+        yield NotImplemented
+
+
+class CanPutValue(Protocol[TValue]):
+    async def put(self, value: TValue) -> bool:
         return NotImplemented
 
 
-class ReadWriteChannel(Protocol[TValue], ReadableChannel[TValue],
-                       WriteableChannel[TValue], MonitorableChannel[TValue]):
+class ReadOnlyChannel(HasValue[TValue], HasTimestamp, HasStatus,
+                      CanMonitorStatus, CanMonitorValue[TValue],
+                      Protocol[TValue]):
     pass
 
 
-class ReadOnlyChannel(Protocol[TValue], ReadableChannel[TValue],
-                      MonitorableChannel[TValue]):
+class ReadWriteChannel(ReadOnlyChannel[TValue], CanPutValue[TValue],
+                       Protocol[TValue]):
     pass
