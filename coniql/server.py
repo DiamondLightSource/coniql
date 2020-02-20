@@ -11,7 +11,7 @@ from graphql_ws_next.aiohttp import AiohttpConnectionContext
 from coniql import EPICS7_BASE
 from coniql.template import render_graphiql
 from coniql.schema import ConiqlSchema
-from device.envs import mock_device_environment, adsim_device_environment
+from beamline.beamlines.adsim import adsim_device_environment
 
 
 async def get_query(request):

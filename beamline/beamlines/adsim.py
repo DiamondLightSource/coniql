@@ -1,3 +1,5 @@
+import asyncio
+
 from dataclasses import dataclass
 
 from coniql.deviceplugin import DevicePlugin
@@ -9,7 +11,7 @@ from device.epics.motor import motor
 
 
 def adsim_device_environment():
-    beamline = adsim_environment('ws415')
+    beamline = asyncio.run(adsim_environment('ws415'))
 
     plugin = DevicePlugin()
     plugin.register_device(beamline, name='beamline')
