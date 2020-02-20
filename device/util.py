@@ -3,23 +3,20 @@ import asyncio
 from typing import Dict, Any, List, TypeVar, Optional, Coroutine, Iterable
 from datetime import datetime, timedelta
 
-from device.channel.channeltypes.channel import CanMonitorValue, CanPutValue, HasValue
-from device.channel.channeltypes.result import Readback
-
-_PUT_DICT = Dict[CanPutValue, Any]
-_READBACK_DICT = Dict[HasValue, Readback[Any]]
+from device.channel.channeltypes.channel import CanMonitorValue, CanPutValue, \
+    HasValue
 
 
-async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
-    results = await asyncio.gather(*(channel.put(value)
-                                     for channel, value in
-                                     channel_values.items()))
-    return {channel: result
-            for channel, result in zip(channel_values.keys(), results)}
-
-
-async def get_all(channels: List[HasValue]) -> _READBACK_DICT:
-    return await asyncio.gather(*(channel.get() for channel in channels))
+# async def put_all(channel_values: _PUT_DICT) -> _READBACK_DICT:
+#     results = await asyncio.gather(*(channel.put(value)
+#                                      for channel, value in
+#                                      channel_values.items()))
+#     return {channel: result
+#             for channel, result in zip(channel_values.keys(), results)}
+#
+#
+# async def get_all(channels: List[HasValue]) -> _READBACK_DICT:
+#     return await asyncio.gather(*(channel.get() for channel in channels))
 
 
 T = TypeVar('T')

@@ -1,7 +1,6 @@
 from typing import List, TypeVar
 
-from device.channel.channeltypes.result import Readback
-from device.channel.pandablocks.channel import PandAFieldChannel, T
+from device.channel.pandablocks.channel import PandAFieldChannel
 from device.channel.pandablocks.pandablocksclient import PandABlocksClient
 from device.channel.pandablocks.ptable import PandATableSerDes
 
@@ -16,13 +15,13 @@ class PandATableChannel(PandAFieldChannel[TTable]):
         super().__init__(client, block_name, field_name)
         self.serdes = serdes
 
-    async def put(self, value: TTable) -> Readback[TTable]:
+    async def put(self, value: TTable) -> bool:
         int_values = self.serdes.list_from_table(value)
         return await self.client.set_table(self.block_name,
                                            self.field_name, int_values)
 
-    async def get(self) -> Readback[T]:
+    async def get(self) -> TTable:
         int_values = await self.client.get_table_fields(self.block_name,
                                                         self.field_name)
         value = self.serdes.table_from_list(int_values)
-        return Readback.ok(value)
+        return value
