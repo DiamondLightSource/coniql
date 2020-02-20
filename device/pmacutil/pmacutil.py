@@ -117,8 +117,8 @@ async def cs_axis_mapping(axis_motors: AxisMotors,
     for name in axes_to_move:
         motor = axis_motors[name]
 
-        max_velocity = (await motor.max_velocity.get()).value
-        acceleration_time = (await motor.acceleration_time.get()).value
+        max_velocity = await motor.max_velocity.get()
+        acceleration_time = await motor.acceleration_time.get()
         # * (child.maxVelocityPercent.value / 100.0)
 
         acceleration = float(max_velocity) / acceleration_time
@@ -132,10 +132,10 @@ async def cs_axis_mapping(axis_motors: AxisMotors,
                 name, cs_axis)
         cs_ports.add(cs_port)
 
-        resolution = (await motor.resolution.get()).value
-        offset = (await motor.offset.get()).value
-        current_position = (await motor.position.get()).value
-        units = (await motor.units.get()).value
+        resolution = await motor.resolution.get()
+        offset = await motor.offset.get()
+        current_position = await motor.position.get()
+        units = await motor.units.get()
 
         axis_mapping[name] = MotorInfo(
             cs_axis=cs_axis,

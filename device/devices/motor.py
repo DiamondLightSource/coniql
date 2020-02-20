@@ -32,8 +32,8 @@ class PmacMotor(Motor):
         "Coordinate system axis of this motor")
 
     async def cs(self):
-        cs_port = (await self.cs_port.get()).value
-        cs_axis = (await self.cs_axis.get()).value
+        cs_port = await self.cs_port.get()
+        cs_axis = await self.cs_axis.get()
         return f'{cs_port},{cs_axis}'
         # value = (await self.output.get()).value
         #

@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
-from device.devices.motor import Motor
+from device.devices.motor import Motor, PmacMotor
 
 
 @dataclass
 class TomoStage:
-    x: Motor
-    theta: Motor
+    x: PmacMotor
+    theta: PmacMotor

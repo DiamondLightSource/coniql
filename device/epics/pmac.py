@@ -8,6 +8,8 @@ from device.devices.pmac import ProfileBuild, ProfilePart, Axis, Axes, \
 
 def profile_build(prefix: str) -> ProfileBuild:
     return ProfileBuild(
+        **profile_part_layout(f'{prefix}:ProfileBuild'),
+
         max_points=CaChannel(f'{prefix}:ProfileNumPoints', rbv_suffix='_RBV'),
         num_points_to_build=CaChannel(f'{prefix}:ProfilePointsToBuild',
                                       rbv_suffix='_RBV'),
@@ -18,15 +20,21 @@ def profile_build(prefix: str) -> ProfileBuild:
 
 
 def points_append(prefix: str) -> ProfilePart:
-    return profile_part(prefix)
+    return profile_part(f'{prefix}:ProfileAppend')
 
 
 def profile_execution(prefix: str) -> ProfilePart:
-    return ProfilePart(prefix)
+    return profile_part(f'{prefix}:ProfileExecute')
 
 
 def profile_part(prefix: str) -> ProfilePart:
     return ProfilePart(
+        **profile_part_layout(prefix)
+    )
+
+
+def profile_part_layout(prefix: str):
+    return dict(
         trigger=CaEnum(f'{prefix}'),
         status=CaString(f'{prefix}Status_RBV'),
         state=CaString(f'{prefix}State_RBV'),

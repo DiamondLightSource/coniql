@@ -4,6 +4,7 @@ from scanpointgenerator import LineGenerator, CompoundGenerator
 
 from beamline.beamlines.trainingrig import p47_environment
 from device.pmacutil.pmacchildpart import PmacChildPart
+from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 
 env = asyncio.run(p47_environment())
 
