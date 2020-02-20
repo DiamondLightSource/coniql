@@ -23,6 +23,9 @@ class Motor(PositionerWithStatus, Joggable, PidController, MinLimitable,
     units: ReadWriteChannel[str] = doc_field("Engineering units used by "
                                              "this record")
 
+
+@dataclass
+class PmacMotor(Motor):
     cs_port: ReadWriteChannel[str] = doc_field(
         "Coordinate system port of this motor")
     cs_axis: ReadWriteChannel[str] = doc_field(

@@ -2,11 +2,25 @@ from device.channel.ca.bool import CaBool
 from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
 from device.channel.ca.string import CaString
-from device.devices.motor import Motor
+from device.devices.motor import Motor, PmacMotor
 
 
 def motor(prefix: str) -> Motor:
     return Motor(
+        **motor_layout(prefix)
+    )
+
+
+def pmac_motor(prefix: str) -> PmacMotor:
+    return PmacMotor(
+        **motor_layout(prefix),
+        cs_port=CaEnum(f'{prefix}:CsPort', rbv_suffix='_RBV'),
+        cs_axis=CaString(f'{prefix}:CsAxis', rbv_suffix='_RBV'),
+    )
+
+
+def motor_layout(prefix: str):
+    return dict(
         setpoint=CaChannel(f'{prefix}'),
         position=CaChannel(f'{prefix}.RBV'),
         stationary=CaBool(f'{prefix}.DMOV'),
@@ -25,6 +39,4 @@ def motor(prefix: str) -> Motor:
         resolution=CaChannel(f'{prefix}.MRES'),
         offset=CaChannel(f'{prefix}.OFF'),
         units=CaString(f'{prefix}.EGU'),
-        cs_port=CaEnum(f'{prefix}:CsPort', rbv_suffix='_RBV'),
-        cs_axis=CaString(f'{prefix}:CsAxis', rbv_suffix='_RBV'),
     )

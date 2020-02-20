@@ -11,7 +11,7 @@ from device.epics.motor import motor
 
 
 def adsim_device_environment():
-    beamline = asyncio.run(adsim_environment('ws415'))
+    beamline = adsim_environment('ws415')
 
     plugin = DevicePlugin()
     plugin.register_device(beamline, name='beamline')
@@ -27,7 +27,7 @@ class AdSimBeamline:
     stage: Stage3D
 
 
-async def adsim_environment(machine_name: str) -> AdSimBeamline:
+def adsim_environment(machine_name: str) -> AdSimBeamline:
     x = motor(f'{machine_name}-MO-SIM-01:M1')
     y = motor(f'{machine_name}-MO-SIM-01:M2')
     z = motor(f'{machine_name}-MO-SIM-01:M3')
@@ -39,5 +39,5 @@ async def adsim_environment(machine_name: str) -> AdSimBeamline:
         detector=det,
         stage=sample_stage
     )
-    await setup(beamline)
+    asyncio.get_event_loop().create_task(setup(beamline))
     return beamline
