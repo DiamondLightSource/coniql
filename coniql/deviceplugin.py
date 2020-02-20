@@ -17,17 +17,15 @@ class DevicePlugin(Plugin):
     def __init__(self):
         self.channels = {}
 
-    def register_device(self, device: Any, name: Optional[str] = None):
+    def register_device(self, device: Any, name: str):
         """Registers a device and its channels and subdevices with the plugin"""
-        d = dataclasses.asdict(device)
-        if name is not None:
-            d = {name: d}
-        self.channels = {**self.channels, **d}
+        self.channels[name] = device
 
-    def lookup_channel(self, channel_addr: List[str], channels: Optional[
-        Dict[str, Any]] = None) -> ReadWriteChannel:
+    def lookup_channel(self, channel_addr: List[str], channels = None) -> ReadWriteChannel:
         if channels is None:
-            channels = self.channels
+            return self.lookup_channel(channel_addr, self.channels)
+        if dataclasses.is_dataclass(channels):
+            channels = channels.__dict__
         nxt = channel_addr[0]
         if len(channel_addr) == 1:
             return channels[nxt]

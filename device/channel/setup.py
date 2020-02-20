@@ -21,13 +21,12 @@ def gather_setup_tasks(device_tree: Any,
                        tasks: Optional[_TASKS] = None) -> _TASKS:
     tasks = tasks or []
     if dataclasses.is_dataclass(device_tree):
-        # Convert to dict for easier traversal
-        return gather_setup_tasks(dataclasses.asdict(device_tree))
+        # No setup logic in device, keep going
+        child_tasks = [gather_setup_tasks(child, tasks) for child in
+                 device_tree.__dict__.values()]
+        return reduce(lambda x, y: x + y, child_tasks)
     elif isinstance(device_tree, CanSetup):
         # We have reached something with some setup logic
         return tasks + [device_tree.setup()]
-    elif isinstance(device_tree, Dict):
-        # No setup logic here, keep traversing
-        child_tasks = [gather_setup_tasks(child)
-                       for child in device_tree.values()]
-        return tasks + reduce(lambda x, y: x + y, child_tasks)
+    else:
+        return tasks
