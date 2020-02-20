@@ -8,7 +8,8 @@ from enum import IntEnum
 # Number of seconds that a trajectory tick is
 from scanpointgenerator import CompoundGenerator, Point
 
-from device.devices.pmac import Pmac
+from device.devices.pmac import Pmac, PmacTrajectory
+from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
     point_velocities, points_joined, profile_between_points
@@ -52,9 +53,10 @@ PROFILE_POINTS = 10000
 
 
 class PmacChildPart:
-    def __init__(self, pmac: Pmac):
+    def __init__(self, traj: PmacTrajectoryPart, pmac: Pmac):
         # type: (...) -> None
         # super(PmacChildPart, self).__init__(name, mri, initial_visibility)
+        self.traj = traj
         self.pmac = pmac
         # Axis information stored from validate
         self.axis_mapping = None  # type: Dict[str, MotorInfo]
@@ -108,7 +110,7 @@ class PmacChildPart:
         # child = context.block_view(self.mri)
         # Check that we can move all the requested axes
         available = set(map(lambda t: t[0],
-                            self.pmac.trajectory.axis_motors.available_axes()))
+                            self.traj.axis_motors.available_axes()))
         motion_axes = get_motion_axes(generator, axesToMove)
         assert available.issuperset(motion_axes), \
             "Some of the requested axes %s are not on the motor list %s" % (
@@ -178,7 +180,7 @@ class PmacChildPart:
 
     async def move_to_point(self, point: Point):
         jobs = []
-        for name, motor in self.pmac.trajectory.axis_motors.available_axes():
+        for name, motor in self.traj.axis_motors.available_axes():
             if name in point.positions:
                 pos = point.positions[name]
                 jobs.append(motor.setpoint.put(pos))
@@ -222,7 +224,7 @@ class PmacChildPart:
         self.min_interval = MIN_INTERVAL
 
         # Work out the cs_port we should be using
-        layout_table = self.pmac.trajectory.axis_motors
+        layout_table = self.traj.axis_motors
         if motion_axes:
             self.axis_mapping = await cs_axis_mapping(layout_table, motion_axes)
             # Check units for everything in the axis mapping
@@ -244,9 +246,9 @@ class PmacChildPart:
         # Reset GPIOs
         # TODO: we might need to put this in pause if the PandA logic doesn't
         # copy with a trigger staying high
-        await self.pmac.trajectory.write_profile(cs_port=cs_port, time_array=[MIN_TIME],
+        await self.traj.write_profile(cs_port=cs_port, time_array=[MIN_TIME],
                                user_programs=[UserPrograms.ZERO_PROGRAM])
-        await self.pmac.trajectory.execute_profile()
+        await self.traj.execute_profile()
         await self.move_to_start(completed_steps)
         # if motion_axes:
         #     # Start off the move to the start
@@ -282,14 +284,14 @@ class PmacChildPart:
 
             # TODO: we should return at the end of the last point for PostRun
             # child.executeProfile()
-            await self.pmac.trajectory.execute_profile()
+            await self.traj.execute_profile()
 
     async def on_abort(self):
         if self.generator:
             # child = context.block_view(self.mri)
             # TODO: if we abort during move to start, what happens?
             # child.abortProfile()
-            await self.pmac.trajectory.abort()
+            await self.traj.abort()
 
     def update_step(self, scanned):
         # scanned is an index into the completed_steps_lookup, so a
@@ -352,7 +354,7 @@ class PmacChildPart:
                 v = np.array(v, np.float64)
             args[k] = v
 
-        await self.pmac.trajectory.write_profile(**args)
+        await self.traj.write_profile(**args)
 
     def get_user_program(self, point_type):
         # type: (PointType) -> int

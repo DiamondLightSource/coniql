@@ -14,7 +14,7 @@ gen = CompoundGenerator([xs, ys], [], [])
 
 async def job():
     pmac = env.pmac
-    child_part = PmacChildPart(pmac)
+    child_part = PmacChildPart(PmacTrajectoryPart(pmac), pmac)
     gen.prepare()
     num_points = len(list(gen.iterator()))
     await child_part.on_configure(0, num_points, None, gen, ['x', 'a'])

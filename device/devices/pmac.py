@@ -1,15 +1,11 @@
-import asyncio
-import numpy as np
-
 from dataclasses import dataclass
-from typing import Optional, Any, List, Dict, TypeVar, Generic, Set, Generator, \
+from typing import Optional, List, Generator, \
     Tuple
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
 from device.devices.motor import Motor
-from device.pmacutil.velocityprofile import VelocityArrays
 
 
 @dataclass
@@ -93,13 +89,6 @@ class TrajDriverStatus:
     status: ReadOnlyChannel[str]
 
 
-# expected trajectory program number
-TRAJECTORY_PROGRAM_NUM = 2
-
-# The maximum number of points in a single trajectory scan
-MAX_NUM_POINTS = 4000000
-
-
 @dataclass
 class PmacTrajectory:
     coordinate_system_name: ReadWriteChannel[str]
@@ -117,75 +106,6 @@ class PmacTrajectory:
     percentage_complete: ReadOnlyChannel[float]
     profile_abort: ReadOnlyChannel[bool]
 
-    async def write_profile(self,
-                            time_array: List[float],
-                            velocity_array: Optional[List[float]] = None,
-                            cs_port: Optional[str] = None, velocity_mode=None,
-                            user_programs=None,
-                            positions: Optional[Dict[str, List[float]]] = None):
-        # make sure a matching trajectory program is installed on the pmac
-        # if child.trajectoryProgVersion.value != TRAJECTORY_PROGRAM_NUM:
-        #     raise (
-        #         IncompatibleError(
-        #             "pmac trajectory program {} detected. "
-        #             "Malcolm requires {}".format(
-        #                 child.trajectoryProgVersion.value,
-        #                 TRAJECTORY_PROGRAM_NUM
-        #             )
-        #         )
-        #     ) TODO: Add channels for this
-
-        # The axes taking part in the scan
-        # use_axes = []
-        # for axis in CS_AXIS_NAMES:
-        #     if locals()[axis.lower()] is not None:
-        #         use_axes.append(axis)
-        # time_array, velocity_array = arrays
-        positions = positions or {}
-        use_axes = {self.axes.__dict__[axis_name]: n for axis_name, n in
-                    positions.items()}
-        # use_axes = [self.axes.__dict__[axis_name] for axis_name in positions.keys()]
-        if cs_port is not None:
-            # This is a build
-            action = self.build_profile()
-            # self.total_points = 0
-            await self.profile_build.max_points.put(MAX_NUM_POINTS)
-            try:
-                await self.coordinate_system_name.put(cs_port)
-            except ValueError as e:
-                raise ValueError(
-                    "Cannot set CS to %s, did you use a compound_motor_block "
-                    "for a raw motor?\n%s" % (cs_port, e))
-            jobs = [axis.use.put(True) for axis in use_axes.keys()]
-            if jobs:
-                await asyncio.wait(jobs)
-        else:
-            # This is an append
-            action = self.append_points()
-
-        # Fill in the arrays
-        num_points = len(time_array)
-        await asyncio.wait([
-                               self.profile_build.num_points_to_build.put(
-                                   num_points),
-                               self.profile_build.time_array.put(time_array),
-                               self.profile_build.velocity_mode.put(
-                                   _zeros_or_right_length(velocity_mode,
-                                                          num_points)),
-                               self.profile_build.user_programs.put(
-                                   _zeros_or_right_length(user_programs,
-                                                          num_points))
-                           ]
-                           + [
-                               axis.positions.put(positions) for axis, positions in
-                               use_axes.items()
-                           ])
-        # Write the profile
-        await action
-        # Record how many points we have now written in total
-
-        # self.total_points += num_points
-
     async def build_profile(self):
         await self.profile_build.trigger.put('Build')
 
@@ -197,16 +117,6 @@ class PmacTrajectory:
 
     async def abort(self):
         await self.profile_abort.put(False)
-
-
-def _zeros_or_right_length(array, num_points):
-    if array is None:
-        array = np.zeros(num_points, np.int32)
-    else:
-        assert len(array) == num_points, \
-            "Array %s should be %d points long" % (
-                array, num_points)
-    return array
 
 
 @dataclass
