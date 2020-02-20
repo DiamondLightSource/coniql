@@ -42,7 +42,7 @@ class PmacTrajectoryPart:
         #         use_axes.append(axis)
         # time_array, velocity_array = arrays
         positions = positions or {}
-        use_axes = {traj.axes.__dict__[axis_name]: n for axis_name, n in
+        use_axes = {traj.axes[axis_name]: n for axis_name, n in
                     positions.items()}
         # use_axes = [self.axes.__dict__[axis_name] for axis_name in positions.keys()]
         if cs_port is not None:

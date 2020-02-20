@@ -1,11 +1,12 @@
 from dataclasses import dataclass
 from typing import Optional, List, Generator, \
-    Tuple
+    Tuple, Generic, TypeVar
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
 from device.devices.motor import Motor
+from device.pmacutil.pmacconst import CS_AXIS_NAMES
 
 
 @dataclass
@@ -26,7 +27,7 @@ class ProfileBuild(ProfilePart):
     user_programs: ReadWriteChannel[List[int]]
 
 
-@dataclass
+@dataclass(unsafe_hash=True)
 class Axis:
     use: ReadWriteChannel[bool]
     num_points: ReadOnlyChannel[int]
@@ -34,17 +35,43 @@ class Axis:
     positions: ReadOnlyChannel[List[float]]
 
 
+T = TypeVar('T')
+
+
 @dataclass
-class Axes:
-    a: Axis = doc_field("axis a")
-    b: Axis = doc_field("axis b")
-    c: Axis = doc_field("axis c")
-    u: Axis = doc_field("axis u")
-    v: Axis = doc_field("axis v")
-    w: Axis = doc_field("axis w")
-    x: Axis = doc_field("axis x")
-    y: Axis = doc_field("axis y")
-    z: Axis = doc_field("axis z")
+class CsAxisMapping(Generic[T]):
+    a: T
+    b: T
+    c: T
+    u: T
+    v: T
+    w: T
+    x: T
+    y: T
+    z: T
+
+    def __getitem__(self, item: str):
+        # TODO: Should be case sensitive
+        item = item.lower()
+        names = [c.lower() for c in CS_AXIS_NAMES]
+        if item in names:
+            return self.__dict__[item]
+        else:
+            raise KeyError(f'{item} not a valid CS axis')
+
+
+@dataclass
+class Axes(CsAxisMapping[Axis]):
+    pass
+    # a: Axis = doc_field("axis a")
+    # b: Axis = doc_field("axis b")
+    # c: Axis = doc_field("axis c")
+    # u: Axis = doc_field("axis u")
+    # v: Axis = doc_field("axis v")
+    # w: Axis = doc_field("axis w")
+    # x: Axis = doc_field("axis x")
+    # y: Axis = doc_field("axis y")
+    # z: Axis = doc_field("axis z")
 
 
 @dataclass

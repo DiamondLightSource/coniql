@@ -12,8 +12,9 @@ from device.devices.pmac import Pmac, PmacTrajectory
 from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
-    point_velocities, points_joined, profile_between_points
-from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL
+    point_velocities, points_joined, profile_between_points, \
+    PmacTrajectoryProfile
+from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, CS_AXIS_NAMES
 from device.pmacutil.scanningutil import MinTurnaroundInfo, MotionTrigger, \
     ParameterTweakInfo, RunProgressInfo
 
@@ -76,7 +77,7 @@ class PmacChildPart:
         self.output_triggers = None
         # Profile points that haven't been sent yet
         # {timeArray/velocityMode/userPrograms/a/b/c/u/v/w/x/y/z: [elements]}
-        self.profile = {}
+        self.profile = PmacTrajectoryProfile.empty()
         # accumulated intervals since the last PVT point used by sparse
         # trajectory logic
         self.time_since_last_pvt = 0
@@ -259,14 +260,14 @@ class PmacChildPart:
         self.steps_up_to = completed_steps + steps_to_do
         self.completed_steps_lookup = []
         # Reset the profiles that still need to be sent
-        self.profile = dict(
-            timeArray=[],
-            velocityMode=[],
-            userPrograms=[],
-        )
+        # self.profile = dict(
+        #     timeArray=[],
+        #     velocityMode=[],
+        #     userPrograms=[],
+        # )
         self.time_since_last_pvt = 0
-        for info in self.axis_mapping.values():
-            self.profile[info.cs_axis.lower()] = []
+        # for info in self.axis_mapping.values():
+        #     self.profile[info.cs_axis.lower()] = []
         self.calculate_generator_profile(completed_steps, do_run_up=True)
         await self.write_profile_points(cs_port)
         # Wait for the motors to have got to the start
@@ -312,11 +313,11 @@ class PmacChildPart:
             # If we got to the end, there might be some leftover points that
             # need to be appended to finish
             if not self.loading and self.end_index == self.steps_up_to and \
-                    self.profile["time_array"]:
+                    self.profile.time_array:
                 self.loading = True
                 self.calculate_generator_profile(self.end_index)
                 self.write_profile_points()
-                assert not self.profile["time_array"], \
+                assert not self.profile.time_array, \
                     "Why do we still have points? %s" % self.profile
                 self.loading = False
 
@@ -331,30 +332,65 @@ class PmacChildPart:
         if cs_port is not None:
             args["cs_port"] = cs_port
 
-        for k, v in self.profile.items():
-            # store the remnant back in the array
-            self.profile[k] = v[PROFILE_POINTS:]
-            v = v[:PROFILE_POINTS]
-            if k == "time_array":
-                overflow = 0.0
-                time_array_ticks = []
-                for t in v:
-                    ticks = t / TICK_S
-                    overflow += (ticks % 1)
-                    ticks = int(ticks)
-                    if overflow > 0.5:
-                        overflow -= 1
-                        ticks += 1
-                    time_array_ticks.append(ticks)
-                # TODO: overflow discarded overy 10000 points, is it a problem?
-                v = np.array(time_array_ticks, np.int32)
-            elif k in ("velocity_mode", "user_programs"):
-                v = np.array(v, np.int32)
-            else:
-                v = np.array(v, np.float64)
-            args[k] = v
+        # Time array
+        overflow = 0.0
+        time_array_ticks = []
+        for t in self.profile.time_array:
+            ticks = t / TICK_S
+            overflow += (ticks % 1)
+            ticks = int(ticks)
+            if overflow > 0.5:
+                overflow -= 1
+                ticks += 1
+            time_array_ticks.append(ticks)
+        # TODO: overflow discarded overy 10000 points, is it a problem?
+        self.profile.time_array = time_array_ticks  # np.array(time_array_ticks, np.int32)
 
-        await self.traj.write_profile(**args)
+
+        # Velocity Mode
+        # self.profile.velocity_mode = np.array(
+        #     self.profile.velocity_mode, np.int32)
+        # self.profile.user_programs = np.array(
+        #     self.profile.user_programs, np.int32)
+
+
+
+        # for k, v in self.profile.items():
+        #     # store the remnant back in the array
+        #     self.profile[k] = v[PROFILE_POINTS:]
+        #     v = v[:PROFILE_POINTS]
+        #     if k == "time_array":
+        #         overflow = 0.0
+        #         time_array_ticks = []
+        #         for t in v:
+        #             ticks = t / TICK_S
+        #             overflow += (ticks % 1)
+        #             ticks = int(ticks)
+        #             if overflow > 0.5:
+        #                 overflow -= 1
+        #                 ticks += 1
+        #             time_array_ticks.append(ticks)
+        #         # TODO: overflow discarded overy 10000 points, is it a problem?
+        #         v = np.array(time_array_ticks, np.int32)
+        #     elif k in ("velocity_mode", "user_programs"):
+        #         v = np.array(v, np.int32)
+        #     else:
+        #         v = np.array(v, np.float64)
+        #     args[k] = v
+
+        positions = {}
+
+        for n in CS_AXIS_NAMES:
+            if self.profile.axes[n]:
+                positions[n.lower()] = self.profile.axes[n]
+
+        await self.traj.write_profile(
+            time_array=self.profile.time_array,
+            velocity_array=self.profile.velocity_mode,
+            cs_port=cs_port,
+            user_programs=self.profile.user_programs,
+            positions=positions
+        )
 
     def get_user_program(self, point_type):
         # type: (PointType) -> int
@@ -407,11 +443,11 @@ class PmacChildPart:
             time_intervals.append(t - prev_time)
             prev_time = t
 
-        self.profile["time_array"] += time_intervals
-        self.profile["velocity_mode"] += \
+        self.profile.time_array += time_intervals
+        self.profile.velocity_mode += \
             [VelocityModes.PREV_TO_CURRENT] * num_intervals
         user_program = self.get_user_program(PointType.TURNAROUND)
-        self.profile["user_programs"] += [user_program] * num_intervals
+        self.profile.user_programs += [user_program] * num_intervals
         self.completed_steps_lookup += [completed_steps] * num_intervals
 
         # Do this for each axis' velocity and time arrays
@@ -457,14 +493,14 @@ class PmacChildPart:
                           completed_step, axis_points):
         # Add padding if the move time exceeds the max pmac move time
         if time_point > MAX_MOVE_TIME:
-            assert self.profile["time_array"], \
+            assert self.profile.time_array, \
                 "Can't stretch the first point of a profile"
             nsplit = int(time_point / MAX_MOVE_TIME + 1)
             for _ in range(nsplit):
-                self.profile["time_array"].append(time_point / nsplit)
+                self.profile.time_array.append(time_point / nsplit)
             for _ in range(nsplit - 1):
-                self.profile["velocity_mode"].append(VelocityModes.PREV_TO_NEXT)
-                self.profile["user_programs"].append(UserPrograms.NO_PROGRAM)
+                self.profile.velocity_mode.append(VelocityModes.PREV_TO_NEXT)
+                self.profile.user_programs.append(UserPrograms.NO_PROGRAM)
             for k, v in axis_points.items():
                 cs_axis = self.axis_mapping[k].cs_axis.lower()
                 last_point = self.profile[cs_axis][-1]
@@ -477,11 +513,11 @@ class PmacChildPart:
                 self.completed_steps_lookup.append(last_completed_step)
         else:
             # Add point
-            self.profile["time_array"].append(time_point)
+            self.profile.time_array.append(time_point)
 
         # Set the requested point
-        self.profile["velocity_mode"].append(velocity_mode)
-        self.profile["user_programs"].append(user_program)
+        self.profile.velocity_mode.append(velocity_mode)
+        self.profile.user_programs.append(user_program)
         self.completed_steps_lookup.append(completed_step)
         for k, v in axis_points.items():
             cs_axis = self.axis_mapping[k].cs_axis.lower()
@@ -603,7 +639,7 @@ class PmacChildPart:
             # Strictly less than so we always add one more point to the time
             # array so we can always stretch points in a subsequent add with
             # the values already in the profiles
-            if len(self.profile["time_array"]) > PROFILE_POINTS:
+            if len(self.profile.time_array) > PROFILE_POINTS:
                 self.end_index = i + 1
                 return
 
@@ -655,9 +691,9 @@ class PmacChildPart:
                 next_point.lower[axis_name]
 
         # Change the last point to be a live frame
-        self.profile["velocity_mode"][-1] = VelocityModes.PREV_TO_CURRENT
+        self.profile.velocity_mode[-1] = VelocityModes.PREV_TO_CURRENT
         user_program = self.get_user_program(PointType.START_OF_ROW)
-        self.profile["user_programs"][-1] = user_program
+        self.profile.user_programs[-1] = user_program
 
     def is_same_velocity(self, p1, p2):
         result = False
