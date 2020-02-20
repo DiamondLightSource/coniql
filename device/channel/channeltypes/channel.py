@@ -23,7 +23,7 @@ class HasTimestamp(Protocol):
 
 
 class CanMonitorValue(Protocol[TValue]):
-    async def monitor_value(self) -> AsyncGenerator[TValue, None]:
+    async def monitor(self) -> AsyncGenerator[TValue, None]:
         yield NotImplemented
 
 

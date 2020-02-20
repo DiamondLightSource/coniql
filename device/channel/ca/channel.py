@@ -54,7 +54,7 @@ class CaChannel(Generic[T]):
                          format=FORMAT_TIME,
                          timeout=self.timeout)
 
-    async def monitor_value(self) -> AsyncGenerator[T, None]:
+    async def monitor(self) -> AsyncGenerator[T, None]:
         gen = await self.camonitor()
         async for value in gen:
             yield value.real
