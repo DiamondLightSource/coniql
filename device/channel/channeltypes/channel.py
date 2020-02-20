@@ -1,7 +1,7 @@
 from typing import TypeVar, Generic, AsyncGenerator, Union
 from typing_extensions import Protocol
 
-from coniql._types import ChannelStatus, Time
+from coniql._types import ChannelStatus, Time, Readback
 
 TValue = TypeVar('TValue')
 DEFAULT_TIMEOUT = 10.0  # seconds
@@ -12,13 +12,8 @@ class HasValue(Protocol[TValue]):
         return NotImplemented
 
 
-class HasStatus(Protocol):
-    async def get_status(self) -> ChannelStatus:
-        return NotImplemented
-
-
-class HasTimestamp(Protocol):
-    async def get_timestamp(self) -> Time:
+class HasReadback(Protocol):
+    async def get_readback(self) -> Readback:
         return NotImplemented
 
 
@@ -27,8 +22,8 @@ class CanMonitorValue(Protocol[TValue]):
         yield NotImplemented
 
 
-class CanMonitorStatus(Protocol):
-    async def monitor_status(self) -> AsyncGenerator[ChannelStatus, None]:
+class CanMonitorReadback(Protocol):
+    async def monitor_readback(self) -> AsyncGenerator[Readback, None]:
         yield NotImplemented
 
 
@@ -37,8 +32,8 @@ class CanPutValue(Protocol[TValue]):
         return NotImplemented
 
 
-class ReadOnlyChannel(HasValue[TValue], HasTimestamp, HasStatus,
-                      CanMonitorStatus, CanMonitorValue[TValue],
+class ReadOnlyChannel(HasValue[TValue], HasReadback,
+                      CanMonitorReadback, CanMonitorValue[TValue],
                       Protocol[TValue]):
     pass
 

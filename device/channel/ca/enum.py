@@ -13,8 +13,7 @@ class CaEnum(CaChannel[str]):
         meta = await caget_one(self.pv, format=FORMAT_CTRL)
         self.choices = choices_from_meta(meta)
 
-    async def get(self) -> str:
-        value = await self.caget()
+    def format_value(self, value) -> str:
         choice = self.choices(value.real)
         return choice.name
 

@@ -3,7 +3,9 @@ from typing_extensions import Protocol
 
 from aioca._aioca import caget_one, FORMAT_TIME, caput_one, connect
 
-from device.channel.ca.util import camonitor_as_async_generator
+from coniql._types import Readback
+from device.channel.ca.util import camonitor_as_async_generator, \
+    value_to_readback_meta
 
 T = TypeVar('T')
 
@@ -42,17 +44,29 @@ class CaChannel(Generic[T]):
 
     async def caput(self, value):
         return await caput_one(self.pv, value,
-                         timeout=self.timeout,
-                         wait=self.wait)
+                               timeout=self.timeout,
+                               wait=self.wait)
 
     async def get(self) -> T:
         value = await self.caget()
+        return self.format_value(value)
+
+    async def get_readback(self) -> Readback:
+        value = await self.caget()
+        time, status = value_to_readback_meta(value)
+        return Readback(
+            value=self.format_value(value),
+            time=time,
+            status=status
+        )
+
+    def format_value(self, value) -> T:
         return value.real
 
     async def caget(self):
         return await caget_one(self.rbv,
-                         format=FORMAT_TIME,
-                         timeout=self.timeout)
+                               format=FORMAT_TIME,
+                               timeout=self.timeout)
 
     async def monitor(self) -> AsyncGenerator[T, None]:
         gen = await self.camonitor()

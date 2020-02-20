@@ -1,9 +1,8 @@
 from typing_extensions import Protocol
 
-from device.channel.ca.channel import CaChannel
+from device.channel.ca.channel import CaChannel, T
 
 
 class CaString(CaChannel[str]):
-    async def get(self) -> str:
-        value = await self.caget()
+    def format_value(self, value) -> str:
         return str(value)

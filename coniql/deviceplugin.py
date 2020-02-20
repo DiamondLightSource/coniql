@@ -42,8 +42,8 @@ class DevicePlugin(Plugin):
 
     async def read_channel(self, channel_id: str, timeout: float):
         channel = self.lookup_channel(parse_channel_address(channel_id))
-        readback = await channel.get()
-        return readback.to_gql_readback()
+        readback = await channel.get_readback()
+        return readback
 
     async def get_channel(self, channel_id: str) -> Channel:
         """Get the current structure of a Channel"""

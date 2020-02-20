@@ -120,6 +120,11 @@ class ChannelStatus:
     def ok(cls, mutable: bool = False):
         return cls(ChannelQuality.VALID, "", mutable)
 
+    @classmethod
+    def not_connected(cls):
+        status = ChannelStatus(ChannelQuality.UNDEFINED, 'disconnected', False)
+        return Readback(None, None, status)
+
 
 @dataclass
 class Time:
