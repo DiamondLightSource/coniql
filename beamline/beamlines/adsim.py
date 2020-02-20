@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from coniql.deviceplugin import DevicePlugin
+from device.channel.setup import setup
 from device.devices.addetector import AdDetector
 from device.devices.stage3d import Stage3D
 from device.epics.addets import ad_detector
@@ -24,7 +25,7 @@ class AdSimBeamline:
     stage: Stage3D
 
 
-def adsim_environment(machine_name: str) -> AdSimBeamline:
+async def adsim_environment(machine_name: str) -> AdSimBeamline:
     x = motor(f'{machine_name}-MO-SIM-01:M1')
     y = motor(f'{machine_name}-MO-SIM-01:M2')
     z = motor(f'{machine_name}-MO-SIM-01:M3')
@@ -36,4 +37,5 @@ def adsim_environment(machine_name: str) -> AdSimBeamline:
         detector=det,
         stage=sample_stage
     )
+    await setup(beamline)
     return beamline

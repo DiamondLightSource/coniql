@@ -33,8 +33,8 @@ class CaChannel(Generic[T]):
         self.wait = wait
         self.timeout = timeout or 5
 
-    def __await__(self):
-        return connect([self.pv, self.rbv]).__await__()
+    async def setup(self):
+        return await connect([self.pv, self.rbv])
 
     async def put(self, value: T) -> bool:
         await self.caput(value)

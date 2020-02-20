@@ -16,8 +16,8 @@ class AdSimScanEnvironment:
     axes: Dict[str, Motor]
 
 
-def make_env():
-    main_env = adsim_environment('ws415')
+async def make_env():
+    main_env = await adsim_environment('ws415')
     env = AdSimScanEnvironment(
         # trigger_box=main_env.trigger_box,
         main_detector=main_env.detector,
