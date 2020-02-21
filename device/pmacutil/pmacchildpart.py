@@ -178,6 +178,8 @@ class PmacChildPart:
             acceleration_distance = motor_info.ramp_distance(0, velocity)
             starting_pos.positions[axis_name] = first_point.lower[
                                                     axis_name] - acceleration_distance
+        await self.move_to_point(starting_pos)
+
 
     async def move_to_point(self, point: Point):
         jobs = []
@@ -298,7 +300,7 @@ class PmacChildPart:
             # child.abortProfile()
             await self.pmac.trajectory.abort()
 
-    def update_step(self, scanned):
+    async def update_step(self, scanned):
         # scanned is an index into the completed_steps_lookup, so a
         # "how far through the pmac trajectory" rather than a generator
         # scan step
@@ -311,7 +313,7 @@ class PmacChildPart:
                     len(self.completed_steps_lookup) - scanned < PROFILE_POINTS:
                 self.loading = True
                 self.calculate_generator_profile(self.end_index)
-                self.write_profile_points()
+                await self.write_profile_points()
                 self.loading = False
 
             # If we got to the end, there might be some leftover points that
@@ -320,7 +322,7 @@ class PmacChildPart:
                     self.profile.time_array:
                 self.loading = True
                 self.calculate_generator_profile(self.end_index)
-                self.write_profile_points()
+                await self.write_profile_points()
                 assert not self.profile.time_array, \
                     "Why do we still have points? %s" % self.profile
                 self.loading = False

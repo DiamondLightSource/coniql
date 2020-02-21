@@ -8,9 +8,9 @@ from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 
 env = asyncio.run(p47_environment())
 
-xs = LineGenerator("x", "mm", 0.0, 20.0, 8)
-ys = LineGenerator("a", "mm", 0.0, 360.0, 4)
-gen = CompoundGenerator([xs, ys], [], [])
+xs = LineGenerator("x", "mm", 1.0, 2.0, 8)
+ys = LineGenerator("a", "mm", 5.0, 15.0, 4)
+gen = CompoundGenerator([xs, ys], [], [], duration=0.5)
 
 
 async def job():
@@ -19,6 +19,18 @@ async def job():
     gen.prepare()
     num_points = len(list(gen.iterator()))
     await child_part.on_configure(0, num_points, None, gen, ['x', 'a'])
-    # await child_part.on_run()
+    await child_part.on_run()
+    # print(f'ptb: {await pmac.trajectory.profile_build.num_points_to_build.get()}')
+    # await pa(pmac.trajectory.profile_build.time_array, 'time')
+    # await pa(pmac.trajectory.profile_build.velocity_mode, 'vmode')
+    # await pa(pmac.trajectory.profile_build.user_programs, 'userp')
+    # await pa(pmac.trajectory.axes.a.positions, 'a')
+    # await pa(pmac.trajectory.axes.x.positions, 'x')
+
+
+
+async def pa(chan, name):
+    arr = await chan.get()
+    print(f'{name}, length={len(arr)}: {arr}')
 
 asyncio.run(job())
