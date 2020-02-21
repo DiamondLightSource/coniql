@@ -19,6 +19,6 @@ async def job():
     gen.prepare()
     num_points = len(list(gen.iterator()))
     await child_part.on_configure(0, num_points, None, gen, ['x', 'a'])
-    await child_part.on_run()
+    # await child_part.on_run()
 
 asyncio.run(job())

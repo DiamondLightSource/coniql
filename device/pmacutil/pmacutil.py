@@ -3,7 +3,7 @@ from __future__ import division
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict, List, TypeVar
+from typing import Dict, List, TypeVar, Optional
 
 import numpy as np
 from annotypes import TYPE_CHECKING, Sequence
@@ -26,15 +26,14 @@ if TYPE_CHECKING:
 @dataclass
 class PmacTrajectoryProfile:
     time_array: List[float]
-    user_programs: List[int]
-    velocity_mode: List[int]
-    axes: CsAxisMapping[List[float]]
+    user_programs: Optional[List[int]] = None
+    velocity_mode: Optional[List[float]] = None
+    axes: CsAxisMapping[List[float]] = CsAxisMapping(
+        [], [], [], [], [], [], [], [], [])
 
     @classmethod
     def empty(cls):
-        return PmacTrajectoryProfile([], [], [], CsAxisMapping(
-            [], [], [], [], [], [], [], [], []
-        ))
+        return PmacTrajectoryProfile([], [], [])
 
     def __getitem__(self, item):
         return self.axes.__getitem__(item)

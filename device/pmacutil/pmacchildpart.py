@@ -194,7 +194,8 @@ class PmacChildPart:
                            steps_to_do: int,
                            part_info: Any,
                            generator: CompoundGenerator,
-                           axesToMove: List[str],  # type: scanning.hooks.AAxesToMove
+                           axesToMove: List[str],
+                           # type: scanning.hooks.AAxesToMove
                            ):
         # context.unsubscribe_all()
         # child = context.block_view(self.mri)
@@ -247,8 +248,11 @@ class PmacChildPart:
         # Reset GPIOs
         # TODO: we might need to put this in pause if the PandA logic doesn't
         # copy with a trigger staying high
-        await self.traj.write_profile(cs_port=cs_port, time_array=[MIN_TIME],
-                               user_programs=[UserPrograms.ZERO_PROGRAM])
+        clean_profile = PmacTrajectoryProfile(
+            time_array=[MIN_TIME],
+            user_programs=[UserPrograms.ZERO_PROGRAM.real]
+        )
+        await self.traj.write_profile(clean_profile, cs_port)
         await self.pmac.trajectory.execute_profile()
         await self.move_to_start(completed_steps)
         # if motion_axes:
@@ -346,14 +350,11 @@ class PmacChildPart:
         # TODO: overflow discarded overy 10000 points, is it a problem?
         self.profile.time_array = time_array_ticks  # np.array(time_array_ticks, np.int32)
 
-
         # Velocity Mode
         # self.profile.velocity_mode = np.array(
         #     self.profile.velocity_mode, np.int32)
         # self.profile.user_programs = np.array(
         #     self.profile.user_programs, np.int32)
-
-
 
         # for k, v in self.profile.items():
         #     # store the remnant back in the array
@@ -378,18 +379,13 @@ class PmacChildPart:
         #         v = np.array(v, np.float64)
         #     args[k] = v
 
-        positions = {}
-
-        for n in CS_AXIS_NAMES:
-            if self.profile.axes[n]:
-                positions[n.lower()] = self.profile.axes[n]
+        positions = {
+            n.lower(): self.profile.axes[n] for n in CS_AXIS_NAMES
+        }
 
         await self.traj.write_profile(
-            time_array=self.profile.time_array,
-            velocity_array=self.profile.velocity_mode,
-            cs_port=cs_port,
-            user_programs=self.profile.user_programs,
-            positions=positions
+            self.profile,
+            cs_port
         )
 
     def get_user_program(self, point_type):
