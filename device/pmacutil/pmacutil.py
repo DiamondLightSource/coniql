@@ -2,6 +2,7 @@
 from __future__ import division
 
 from collections import Counter
+from dataclasses import dataclass
 from typing import Dict
 
 import numpy as np
@@ -11,6 +12,7 @@ from scanpointgenerator import Point, CompoundGenerator, StaticPointGenerator
 # from malcolm.core import Context
 # from malcolm.modules import builtin, scanning
 # from .infos import MotorInfo
+from device.devices.motor import MotorCs
 from device.devices.pmac import AxisMotors
 from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL
 from device.pmacutil.scanningutil import MotionTrigger
@@ -22,30 +24,17 @@ if TYPE_CHECKING:
     Profiles = Dict[str, List[float]]
 
 
+@dataclass
 class MotorInfo:
-    def __init__(self,
-                 cs_axis,  # type: str
-                 cs_port,  # type: str
-                 acceleration,  # type: float
-                 resolution,  # type: float
-                 offset,  # type: float
-                 max_velocity,  # type: float
-                 current_position,  # type: float
-                 scannable,  # type: str
-                 velocity_settle,  # type: float
-                 units  # type: str
-                 ):
-        # type: (...) -> None
-        self.cs_axis = cs_axis
-        self.cs_port = cs_port
-        self.acceleration = acceleration
-        self.resolution = resolution
-        self.offset = offset
-        self.max_velocity = max_velocity
-        self.current_position = current_position
-        self.scannable = scannable
-        self.velocity_settle = velocity_settle
-        self.units = units
+    cs: MotorCs
+    acceleration: float
+    resolution: float
+    offset: float
+    max_velocity: float
+    current_position: float
+    scannable: str
+    velocity_settle: float
+    units: str
 
     def acceleration_time(self, v1, v2):
         # The time taken to ramp from v1 to pad_velocity
@@ -123,15 +112,11 @@ async def cs_axis_mapping(axis_motors: AxisMotors,
         # * (child.maxVelocityPercent.value / 100.0)
 
         acceleration = float(max_velocity) / acceleration_time
-        cs = await motor.cs()
-        if cs:
-            cs_port, cs_axis = cs.split(",", 1)
-        else:
-            cs_port, cs_axis = "", ""
-        assert cs_axis in CS_AXIS_NAMES, \
+        cs = await motor.cs() or MotorCs.empty()
+        assert cs.axis in CS_AXIS_NAMES, \
             "Can only scan 1-1 mappings, %r is %r" % (
-                name, cs_axis)
-        cs_ports.add(cs_port)
+                name, cs.axis)
+        cs_ports.add(cs.port)
 
         resolution = await motor.resolution.get()
         offset = await motor.offset.get()
@@ -139,8 +124,7 @@ async def cs_axis_mapping(axis_motors: AxisMotors,
         units = await motor.units.get()
 
         axis_mapping[name] = MotorInfo(
-            cs_axis=cs_axis,
-            cs_port=cs_port,
+            cs=cs,
             acceleration=acceleration,
             resolution=resolution,
             offset=offset,
@@ -158,7 +142,7 @@ async def cs_axis_mapping(axis_motors: AxisMotors,
     assert len(cs_ports) == 1, \
         "Requested axes %s are in multiple CS numbers %s" % (
             axes_to_move, list(cs_ports))
-    cs_axis_counts = Counter([x.cs_axis for x in axis_mapping.values()])
+    cs_axis_counts = Counter([x.cs.axis for x in axis_mapping.values()])
     # Any cs_axis defs that are used for more that one raw motor
     overlap = [k for k, v in cs_axis_counts.items() if v > 1]
     assert not overlap, \
