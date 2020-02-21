@@ -2,8 +2,7 @@
 from __future__ import division
 
 from collections import Counter
-from dataclasses import dataclass
-from typing import Dict, List, TypeVar, Optional
+from typing import Dict
 
 import numpy as np
 from annotypes import TYPE_CHECKING, Sequence
@@ -12,7 +11,7 @@ from scanpointgenerator import Point, CompoundGenerator, StaticPointGenerator
 # from malcolm.core import Context
 # from malcolm.modules import builtin, scanning
 # from .infos import MotorInfo
-from device.devices.pmac import AxisMotors, CsAxisMapping
+from device.devices.pmac import AxisMotors
 from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL
 from device.pmacutil.scanningutil import MotionTrigger
 from device.pmacutil.velocityprofile import VelocityProfile
@@ -21,22 +20,6 @@ if TYPE_CHECKING:
     from typing import Dict, Set, List
 
     Profiles = Dict[str, List[float]]
-
-
-@dataclass
-class PmacTrajectoryProfile:
-    time_array: List[float]
-    user_programs: Optional[List[int]] = None
-    velocity_mode: Optional[List[float]] = None
-    axes: CsAxisMapping[List[float]] = CsAxisMapping(
-        [], [], [], [], [], [], [], [], [])
-
-    @classmethod
-    def empty(cls):
-        return PmacTrajectoryProfile([], [], [])
-
-    def __getitem__(self, item):
-        return self.axes.__getitem__(item)
 
 
 class MotorInfo:

@@ -2,7 +2,9 @@ import numpy as np
 
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import List
+from typing import List, Optional
+
+from device.devices.pmac import CsAxisMapping
 
 
 class VelocityMode(IntEnum):
@@ -30,7 +32,16 @@ class PointType(IntEnum):
 
 
 @dataclass
-class Profile:
+class PmacTrajectoryProfile:
     time_array: List[float]
-    velocity_modes: List[VelocityMode]
-    user_programs: List[UserProgram]
+    user_programs: Optional[List[int]] = None
+    velocity_mode: Optional[List[float]] = None
+    axes: CsAxisMapping[List[float]] = CsAxisMapping(
+        [], [], [], [], [], [], [], [], [])
+
+    @classmethod
+    def empty(cls):
+        return PmacTrajectoryProfile([], [], [])
+
+    def __getitem__(self, item):
+        return self.axes.__getitem__(item)

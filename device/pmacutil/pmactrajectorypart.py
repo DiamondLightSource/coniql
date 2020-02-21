@@ -7,7 +7,7 @@ from device.devices.pmac import Pmac
 
 # expected trajectory program number
 from device.pmacutil.pmacconst import CS_AXIS_NAMES
-from device.pmacutil.pmacutil import PmacTrajectoryProfile
+from device.pmacutil.profile import PmacTrajectoryProfile
 
 TRAJECTORY_PROGRAM_NUM = 2
 

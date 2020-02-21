@@ -12,8 +12,8 @@ from device.devices.pmac import Pmac, PmacTrajectory
 from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
-    point_velocities, points_joined, profile_between_points, \
-    PmacTrajectoryProfile
+    point_velocities, points_joined, profile_between_points
+from device.pmacutil.profile import PmacTrajectoryProfile
 from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, CS_AXIS_NAMES
 from device.pmacutil.scanningutil import MinTurnaroundInfo, MotionTrigger, \
     ParameterTweakInfo, RunProgressInfo
