@@ -77,7 +77,7 @@ class MotorInfo:
 
 async def cs_port_with_motors_in(layout_table: AxisMotors) -> str:
     for _, motor in layout_table.available_axes():
-        cs = (await motor.output.get()).value
+        cs = await motor.cs()
         if cs:
             cs_port, cs_axis = cs.split(",", 1)
             if cs_axis in CS_AXIS_NAMES:
