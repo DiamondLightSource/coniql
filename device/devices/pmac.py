@@ -135,5 +135,5 @@ class Pmac:
         return 8388608000.0 / i10
 
     async def layout(self):
-        return
+        return NotImplemented
 
