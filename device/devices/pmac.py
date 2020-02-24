@@ -75,27 +75,6 @@ class Axes(CsAxisMapping[Axis]):
 
 
 @dataclass
-class AxisMotors:
-    a: Optional[Motor] = doc_field("axis a", None)
-    b: Optional[Motor] = doc_field("axis b", None)
-    c: Optional[Motor] = doc_field("axis c", None)
-    u: Optional[Motor] = doc_field("axis u", None)
-    v: Optional[Motor] = doc_field("axis v", None)
-    w: Optional[Motor] = doc_field("axis w", None)
-    x: Optional[Motor] = doc_field("axis x", None)
-    y: Optional[Motor] = doc_field("axis y", None)
-    z: Optional[Motor] = doc_field("axis z", None)
-
-    def __getitem__(self, item):
-        return self.__dict__[item]
-
-    def available_axes(self) -> Generator[Tuple[str, Motor], None, None]:  # TODO: Temporary to work with pmaac child part
-        for name, motor in self.__dict__.items():
-            if motor is not None:
-                yield name, motor
-
-
-@dataclass
 class TrajectoryScanStatus:
     buffer_a_address: ReadOnlyChannel[int]
     buffer_b_address: ReadOnlyChannel[int]
@@ -125,7 +104,7 @@ class PmacTrajectory:
     profile_execution: ProfilePart
 
     axes: Axes
-    axis_motors: AxisMotors  # TODO: Better separation!
+    # axis_motors: AxisMotors  # TODO: Better separation!
 
     scan_status: TrajectoryScanStatus
     driver_status: TrajDriverStatus
@@ -152,5 +131,5 @@ class Pmac:
     i10: ReadOnlyChannel[int]
 
     async def servo_frequency(self) -> float:
-        i10 = (await self.i10.get()).value
+        i10 = await self.i10.get()
         return 8388608000.0 / i10
