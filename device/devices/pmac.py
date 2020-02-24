@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional, List, Generator, \
-    Tuple, Generic, TypeVar
+    Tuple, Generic, TypeVar, Iterator
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
-from device.devices.motor import Motor
+from device.devices.motor import Motor, PmacMotor
 from device.pmacutil.pmacconst import CS_AXIS_NAMES
 
 
@@ -125,9 +125,20 @@ class PmacTrajectory:
         await self.profile_abort.put(False)
 
 
+@dataclas
+class PmacMotors:
+    axis_1: PmacMotor
+    axis_2: PmacMotor
+
+    def iterator(self) -> Iterator[PmacMotor]:
+        return *[axis_1, axis_2]
+
+
 @dataclass
 class Pmac:
     trajectory: PmacTrajectory
+    motors: PmacMotors
+
     i10: ReadOnlyChannel[int]
 
     async def servo_frequency(self) -> float:
@@ -136,4 +147,3 @@ class Pmac:
 
     async def layout(self):
         return NotImplemented
-
