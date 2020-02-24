@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel
+from device.channel.multi import get_all
 from device.devices.joggable import Joggable
 from device.devices.limitable import MaxLimitable, MinLimitable
 from device.devices.pidcontroller import PidController
@@ -25,6 +26,16 @@ class Motor(PositionerWithStatus, Joggable, PidController, MinLimitable,
 
 
 @dataclass
+class MotorCs:
+    port: str
+    axis: str
+
+    @classmethod
+    def empty(cls):
+        return MotorCs('', '')
+
+
+@dataclass
 class PmacMotor(Motor):
     cs_port: ReadWriteChannel[str] = doc_field(
         "Coordinate system port of this motor")
@@ -32,14 +43,6 @@ class PmacMotor(Motor):
         "Coordinate system axis of this motor")
 
     async def cs(self):
-        cs_port = await self.cs_port.get()
-        cs_axis = await self.cs_axis.get()
-        return f'{cs_port},{cs_axis}'
-        # value = (await self.output.get()).value
-        #
-        #
-        # split = value.split("(")[1].rstrip(")").split(",")
-        # cs_port = split[0].strip()
-        # cs_axis = CS_AXIS_NAMES[int(split[1].strip()) - 1]
-        # result = "%s,%s" % (cs_port, cs_axis)
-        # return result
+        cs_port, cs_axis = await get_all(
+            self.cs_port, self.cs_axis)
+        return MotorCs(cs_port, cs_axis)

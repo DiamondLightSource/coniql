@@ -239,7 +239,7 @@ class PmacChildPart:
             #         axis_name, motor_info.units, generator.units[axis_name])
             # Guaranteed to have an entry in axis_mapping otherwise
             # cs_axis_mapping would fail, so pick its cs_port
-            cs_port = list(self.axis_mapping.values())[0].cs_port
+            cs_port = list(self.axis_mapping.values())[0].cs.port
         else:
             # No axes to move, but if told to output triggers we still need to
             # do something
@@ -485,7 +485,7 @@ class PmacChildPart:
                 prev_velocity = this_velocity
 
                 position += part_position
-                self.profile[motor_info.cs_axis.lower()].append(position)
+                self.profile[motor_info.cs.axis.lower()].append(position)
 
     def add_profile_point(self, time_point, velocity_mode, user_program,
                           completed_step, axis_points):
@@ -500,7 +500,7 @@ class PmacChildPart:
                 self.profile.velocity_mode.append(VelocityModes.PREV_TO_NEXT)
                 self.profile.user_programs.append(UserPrograms.NO_PROGRAM)
             for k, v in axis_points.items():
-                cs_axis = self.axis_mapping[k].cs_axis.lower()
+                cs_axis = self.axis_mapping[k].cs.axis.lower()
                 last_point = self.profile[cs_axis][-1]
                 per_section = float(v - last_point) / nsplit
                 for i in range(1, nsplit):
@@ -518,7 +518,7 @@ class PmacChildPart:
         self.profile.user_programs.append(user_program)
         self.completed_steps_lookup.append(completed_step)
         for k, v in axis_points.items():
-            cs_axis = self.axis_mapping[k].cs_axis.lower()
+            cs_axis = self.axis_mapping[k].cs.axis.lower()
             self.profile[cs_axis].append(v)
 
     def add_generator_point_pair(self, point, point_num, points_are_joined):
@@ -685,7 +685,7 @@ class PmacChildPart:
         # calculate_profile_from_velocities fails when the turnaround is 2
         # points only
         for axis_name, motor_info in self.axis_mapping.items():
-            self.profile[motor_info.cs_axis.lower()][-1] = \
+            self.profile[motor_info.cs.axis.lower()][-1] = \
                 next_point.lower[axis_name]
 
         # Change the last point to be a live frame
