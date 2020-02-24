@@ -152,5 +152,8 @@ class Pmac:
     i10: ReadOnlyChannel[int]
 
     async def servo_frequency(self) -> float:
-        i10 = (await self.i10.get()).value
+        i10 = await self.i10.get()
         return 8388608000.0 / i10
+
+    async def layout(self):
+        return
