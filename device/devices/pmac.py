@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Optional, List, Generator, \
-    Tuple, Generic, TypeVar
+    Tuple, Generic, TypeVar, Iterator, Dict, Iterable
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
-from device.devices.motor import Motor
-from device.pmacutil.pmacconst import CS_AXIS_NAMES
+from device.devices.motor import Motor, PmacMotor
+from device.pmacutil.pmacconst import CS_AXIS_NAMES, CsAxis
 
 
 @dataclass
@@ -75,27 +75,6 @@ class Axes(CsAxisMapping[Axis]):
 
 
 @dataclass
-class AxisMotors:
-    a: Optional[Motor] = doc_field("axis a", None)
-    b: Optional[Motor] = doc_field("axis b", None)
-    c: Optional[Motor] = doc_field("axis c", None)
-    u: Optional[Motor] = doc_field("axis u", None)
-    v: Optional[Motor] = doc_field("axis v", None)
-    w: Optional[Motor] = doc_field("axis w", None)
-    x: Optional[Motor] = doc_field("axis x", None)
-    y: Optional[Motor] = doc_field("axis y", None)
-    z: Optional[Motor] = doc_field("axis z", None)
-
-    def __getitem__(self, item):
-        return self.__dict__[item]
-
-    def available_axes(self) -> Generator[Tuple[str, Motor], None, None]:  # TODO: Temporary to work with pmaac child part
-        for name, motor in self.__dict__.items():
-            if motor is not None:
-                yield name, motor
-
-
-@dataclass
 class TrajectoryScanStatus:
     buffer_a_address: ReadOnlyChannel[int]
     buffer_b_address: ReadOnlyChannel[int]
@@ -125,7 +104,7 @@ class PmacTrajectory:
     profile_execution: ProfilePart
 
     axes: Axes
-    axis_motors: AxisMotors  # TODO: Better separation!
+    # axis_motors: AxisMotors  # TODO: Better separation!
 
     scan_status: TrajectoryScanStatus
     driver_status: TrajDriverStatus
@@ -146,9 +125,33 @@ class PmacTrajectory:
         await self.profile_abort.put(False)
 
 
+CsAxisMapping = Dict[CsAxis, PmacMotor]
+CsAxisMappings = Dict[str, CsAxisMapping]
+
+
+@dataclass
+class PmacMotors:
+    axis_1: PmacMotor
+    axis_2: PmacMotor
+
+    def iterator(self) -> Iterable[PmacMotor]:
+        return [self.axis_1, self.axis_2]
+
+    async def cs_axis_mappings(self) -> CsAxisMappings:
+        mappings: CsAxisMappings = {}
+        for motor in self.iterator():
+            cs = await motor.cs()
+            if cs.port not in mappings:
+                mappings[cs.port] = {}
+            mappings[cs.port][cs.axis] = motor
+        return mappings
+
+
 @dataclass
 class Pmac:
     trajectory: PmacTrajectory
+    motors: PmacMotors
+
     i10: ReadOnlyChannel[int]
 
     async def servo_frequency(self) -> float:
@@ -156,4 +159,4 @@ class Pmac:
         return 8388608000.0 / i10
 
     async def layout(self):
-        return
+        return NotImplemented
