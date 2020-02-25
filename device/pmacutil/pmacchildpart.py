@@ -183,7 +183,8 @@ class PmacChildPart:
 
     async def move_to_point(self, point: Point):
         jobs = []
-        for name, motor in self.pmac.trajectory.axis_motors.available_axes():
+        for motor in self.pmac.motors.iterator():
+            name = await motor.scannable_name.get()
             if name in point.positions:
                 pos = point.positions[name]
                 jobs.append(motor.setpoint.put(pos))
