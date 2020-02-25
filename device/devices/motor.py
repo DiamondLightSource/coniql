@@ -42,7 +42,7 @@ class PmacMotor(Motor):
     cs_axis: ReadWriteChannel[str] = doc_field(
         "Coordinate system axis of this motor")
 
-    async def cs(self):
+    async def cs(self) -> MotorCs:
         cs_port, cs_axis = await get_all(
             self.cs_port, self.cs_axis)
         return MotorCs(cs_port, cs_axis)

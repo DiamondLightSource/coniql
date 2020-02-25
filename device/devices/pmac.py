@@ -1,12 +1,12 @@
 from dataclasses import dataclass
 from typing import Optional, List, Generator, \
-    Tuple, Generic, TypeVar, Iterator
+    Tuple, Generic, TypeVar, Iterator, Dict, Iterable
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
 from device.devices.motor import Motor, PmacMotor
-from device.pmacutil.pmacconst import CS_AXIS_NAMES
+from device.pmacutil.pmacconst import CS_AXIS_NAMES, CsAxis
 
 
 @dataclass
@@ -125,13 +125,26 @@ class PmacTrajectory:
         await self.profile_abort.put(False)
 
 
-@dataclas
+CsAxisMapping = Dict[CsAxis, PmacMotor]
+CsAxisMappings = Dict[str, CsAxisMapping]
+
+
+@dataclass
 class PmacMotors:
     axis_1: PmacMotor
     axis_2: PmacMotor
 
-    def iterator(self) -> Iterator[PmacMotor]:
-        return *[axis_1, axis_2]
+    def iterator(self) -> Iterable[PmacMotor]:
+        return [self.axis_1, self.axis_2]
+
+    async def cs_axis_mappings(self) -> CsAxisMappings:
+        mappings: CsAxisMappings = {}
+        for motor in self.iterator():
+            cs = await motor.cs()
+            if cs.port not in mappings:
+                mappings[cs.port] = {}
+            mappings[cs.port][cs.axis] = motor
+        return mappings
 
 
 @dataclass
