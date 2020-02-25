@@ -2,11 +2,11 @@ import asyncio
 
 from scanpointgenerator import LineGenerator, CompoundGenerator
 
-from beamline.beamlines.trainingrig import p47_environment
+from beamline.beamlines.trainingrig import p49_environment
 from device.pmacutil.pmacchildpart import PmacChildPart
 from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 
-env = asyncio.run(p47_environment())
+env = asyncio.run(p49_environment())
 
 xs = LineGenerator("x", "mm", 1.0, 2.0, 8)
 ys = LineGenerator("a", "mm", 5.0, 15.0, 4)

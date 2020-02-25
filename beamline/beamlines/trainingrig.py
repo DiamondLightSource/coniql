@@ -38,6 +38,10 @@ async def p47_environment():
     return await training_rig_environment('BL47P')
 
 
+async def p49_environment():
+    return await training_rig_environment('BL49P')
+
+
 async def training_rig_environment(beamline_prefix: str) -> TrainingRig:
     x = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:X')
     theta = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:A')
