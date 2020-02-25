@@ -7,7 +7,7 @@ from device.channel.setup import setup
 from device.devices.addetector import AdDetector
 from device.devices.adpanda import AdPandA
 from device.devices.camera import Camera
-from device.devices.pmac import Pmac, AxisMotors
+from device.devices.pmac import Pmac, PmacMotors
 from device.devices.stage3d import Stage3D
 from device.devices.tomostage import TomoStage
 from device.epics.ad import camera
@@ -43,13 +43,13 @@ async def p49_environment():
 
 
 async def training_rig_environment(beamline_prefix: str) -> TrainingRig:
-    x = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:X')
-    theta = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:A')
+    x = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:X', 'x')
+    theta = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:A', 'a')
     sample_stage = TomoStage(x, theta)
     det = ad_detector(f'{beamline_prefix}-EA-DET-01', cam_prefix='DET')
     panda_det = ad_panda(f'{beamline_prefix}-MO-PANDA-01')
-    axis_motors = AxisMotors(x=x, a=theta)
-    pmc = pmac(f'{beamline_prefix}-MO-BRICK-01', axis_motors)
+    motors = PmacMotors(x, theta)
+    pmc = pmac(f'{beamline_prefix}-MO-BRICK-01', motors)
     beamline = TrainingRig(
         detector=det,
         panda_position_detector=panda_det,

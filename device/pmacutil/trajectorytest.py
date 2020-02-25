@@ -2,11 +2,11 @@ import asyncio
 
 from scanpointgenerator import LineGenerator, CompoundGenerator
 
-from beamline.beamlines.trainingrig import p49_environment
+from beamline.beamlines.trainingrig import p49_environment, p47_environment
 from device.pmacutil.pmacchildpart import PmacChildPart
 from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 
-env = asyncio.run(p49_environment())
+env = asyncio.run(p47_environment())
 
 xs = LineGenerator("x", "mm", 1.0, 2.0, 8)
 ys = LineGenerator("a", "mm", 5.0, 15.0, 4)
@@ -19,7 +19,8 @@ async def job():
     gen.prepare()
     num_points = len(list(gen.iterator()))
     await child_part.on_configure(0, num_points, None, gen, ['x', 'a'])
-    await child_part.on_run()
+    # await child_part.on_run()
+
     # print(f'ptb: {await pmac.trajectory.profile_build.num_points_to_build.get()}')
     # await pa(pmac.trajectory.profile_build.time_array, 'time')
     # await pa(pmac.trajectory.profile_build.velocity_mode, 'vmode')

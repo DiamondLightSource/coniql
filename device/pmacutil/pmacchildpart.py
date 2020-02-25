@@ -228,9 +228,9 @@ class PmacChildPart:
         self.min_interval = MIN_INTERVAL
 
         # Work out the cs_port we should be using
-        layout_table = self.pmac.trajectory.axis_motors
+        # layout_table = self.pmac.trajectory.axis_motors
         if motion_axes:
-            self.axis_mapping = await cs_axis_mapping(layout_table, motion_axes)
+            self.axis_mapping = await cs_axis_mapping(self.pmac.motors, axesToMove)
             # Check units for everything in the axis mapping
             # TODO: reinstate this when GDA does it properly
             # for axis_name, motor_info in sorted(self.axis_mapping.items()):
@@ -245,7 +245,7 @@ class PmacChildPart:
             # do something
             self.axis_mapping = {}
             # Pick the first cs we find that has an axis assigned
-            cs_port = await cs_port_with_motors_in(layout_table)
+            cs_port = await cs_port_with_motors_in(pmac.motors)
 
         # Reset GPIOs
         # TODO: we might need to put this in pause if the PandA logic doesn't

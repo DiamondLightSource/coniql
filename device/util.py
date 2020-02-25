@@ -23,15 +23,15 @@ T = TypeVar('T')
 
 
 # TODO: Generic predicate handling!
-async def await_value(channel: CanMonitorValue[T], value: T,
-                      timeout: Optional[float] = None) -> Optional[Readback[T]]:
-    latest_time = datetime.now() + timedelta(seconds=timeout or 0)
-    async for readback in channel.monitor():
-        if readback.value == value:
-            return readback
-        if timeout is not None and datetime.now() > latest_time:
-            break
-    return None
+# async def await_value(channel: CanMonitorValue[T], value: T,
+#                       timeout: Optional[float] = None) -> Optional[Readback[T]]:
+#     latest_time = datetime.now() + timedelta(seconds=timeout or 0)
+#     async for readback in channel.monitor():
+#         if readback.value == value:
+#             return readback
+#         if timeout is not None and datetime.now() > latest_time:
+#             break
+#     return None
 
 
 async def asyncio_gather_values(coros: Dict[Any, Coroutine[Any, Any, Any]]) -> \

@@ -3,7 +3,7 @@ from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
 from device.channel.ca.string import CaString
 from device.devices.pmac import ProfileBuild, ProfilePart, Axis, Axes, \
-    TrajectoryScanStatus, TrajDriverStatus, PmacTrajectory, Pmac, AxisMotors
+    TrajectoryScanStatus, TrajDriverStatus, PmacTrajectory, Pmac, PmacMotors
 
 
 def profile_build(prefix: str) -> ProfileBuild:
@@ -88,9 +88,8 @@ def trajectory_driver_status(prefix: str) -> TrajDriverStatus:
     )
 
 
-def trajectory(prefix: str, axis_motors: AxisMotors) -> PmacTrajectory:
+def trajectory(prefix: str) -> PmacTrajectory:
     return PmacTrajectory(
-        axis_motors=axis_motors,
         profile_build=profile_build(prefix),
         points_append=points_append(prefix),
         profile_execution=profile_execution(prefix),
@@ -103,8 +102,9 @@ def trajectory(prefix: str, axis_motors: AxisMotors) -> PmacTrajectory:
     )
 
 
-def pmac(prefix: str, axis_motors: AxisMotors) -> Pmac:
+def pmac(prefix: str, motors: PmacMotors) -> Pmac:
     return Pmac(
         i10=CaChannel(f'{prefix}:I10'),
-        trajectory=trajectory(prefix, axis_motors)
+        trajectory=trajectory(prefix),
+        motors=motors
     )

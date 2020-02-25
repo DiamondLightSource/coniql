@@ -125,8 +125,8 @@ class PmacTrajectory:
         await self.profile_abort.put(False)
 
 
-CsAxisMapping = Dict[CsAxis, PmacMotor]
-CsAxisMappings = Dict[str, CsAxisMapping]
+# CsAxisMapping = Dict[CsAxis, PmacMotor]
+# CsAxisMappings = Dict[str, CsAxisMapping]
 
 
 @dataclass
@@ -137,14 +137,14 @@ class PmacMotors:
     def iterator(self) -> Iterable[PmacMotor]:
         return [self.axis_1, self.axis_2]
 
-    async def cs_axis_mappings(self) -> CsAxisMappings:
-        mappings: CsAxisMappings = {}
-        for motor in self.iterator():
-            cs = await motor.cs()
-            if cs.port not in mappings:
-                mappings[cs.port] = {}
-            mappings[cs.port][cs.axis] = motor
-        return mappings
+    # async def cs_axis_mappings(self) -> CsAxisMappings:
+    #     mappings: CsAxisMappings = {}
+    #     for motor in self.iterator():
+    #         cs = await motor.cs()
+    #         if cs.port not in mappings:
+    #             mappings[cs.port] = {}
+    #         mappings[cs.port][cs.axis] = motor
+    #     return mappings
 
 
 @dataclass

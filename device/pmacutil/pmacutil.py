@@ -14,7 +14,7 @@ from scanpointgenerator import Point, CompoundGenerator, StaticPointGenerator
 # from .infos import MotorInfo
 from device.channel.multi import get_all
 from device.devices.motor import MotorCs, PmacMotor
-from device.devices.pmac import AxisMotors, CsAxisMapping, PmacMotors
+from device.devices.pmac import CsAxisMapping, PmacMotors
 from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL, \
     CsAxis
 from device.pmacutil.scanningutil import MotionTrigger
@@ -78,13 +78,11 @@ class MotorInfo:
         return cts
 
 
-async def cs_port_with_motors_in(layout_table: AxisMotors) -> str:
-    for _, motor in layout_table.available_axes():
+async def cs_port_with_motors_in(motors: PmacMotors) -> str:
+    for motor in motors.iterator():
         cs = await motor.cs()
-        if cs:
-            cs_port, cs_axis = cs.split(",", 1)
-            if cs_axis in CS_AXIS_NAMES:
-                return cs_port
+        if cs.axis in CS_AXIS_NAMES:
+            return cs.port
     raise ValueError("Can't find a cs port to use in %s" % layout_table.name)
 
 
@@ -109,7 +107,7 @@ async def cs_axis_mapping(motors: PmacMotors,
 
     for motor in motors.iterator():
         cs = await motor.cs()
-        name = cs.axis # TODO: SOmething is not right here!
+        name = await motor.scannable_name.get()
         if name in axes_to_move:
             cs_ports.add(cs.port)
             axis_mapping[name] = await motor_info(cs, name, motor)
