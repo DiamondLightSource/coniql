@@ -10,14 +10,14 @@ from device.pmacutil.pmacconst import MIN_TIME, VelocityMode, UserProgram, \
     PointType
 from device.pmacutil.pmacutil import AxisProfileArrays, get_user_program, \
     point_velocities, points_joined, profile_between_points, MotorInfo
-
-# Longest move time we can request
 from device.pmacutil.scanningutil import MotionTrigger
 
+# Longest move time we can request
 MAX_MOVE_TIME = 4.0
 
 
-# user programs
+# How many profile points to write each time
+PROFILE_POINTS = 10000
 
 
 @dataclass

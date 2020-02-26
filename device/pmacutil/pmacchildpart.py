@@ -21,10 +21,6 @@ from device.pmacutil.scanningutil import MotionTrigger, \
 TICK_S = 0.000001
 
 
-# How many profile points to write each time
-PROFILE_POINTS = 10000
-
-
 class PmacChildPart:
     def __init__(self, traj: PmacTrajectoryPart, pmac: Pmac):
         # type: (...) -> None
