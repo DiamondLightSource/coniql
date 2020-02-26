@@ -1,52 +1,26 @@
 import asyncio
-import re
 from typing import Any, List
 
 import numpy as np
-from enum import IntEnum
 
 # Number of seconds that a trajectory tick is
 from scanpointgenerator import CompoundGenerator, Point
 
-from device.devices.pmac import Pmac, PmacTrajectory
+from device.devices.pmac import Pmac
+from device.pmacutil.pmacenums import VelocityModes, UserPrograms, PointType
 from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
-    point_velocities, points_joined, profile_between_points
+    point_velocities, points_joined, profile_between_points, get_user_program
 from device.pmacutil.profile import PmacTrajectoryProfile
 from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, CS_AXIS_NAMES
-from device.pmacutil.scanningutil import MinTurnaroundInfo, MotionTrigger, \
+from device.pmacutil.scanningutil import MotionTrigger, \
     ParameterTweakInfo, RunProgressInfo
 
 TICK_S = 0.000001
 
 # Longest move time we can request
 MAX_MOVE_TIME = 4.0
-
-
-# velocity modes
-class VelocityModes:
-    PREV_TO_NEXT = 0
-    PREV_TO_CURRENT = 1
-    CURRENT_TO_NEXT = 2
-    ZERO_VELOCITY = 3
-
-
-# user programs
-class UserPrograms:
-    NO_PROGRAM = 0  # Do nothing
-    LIVE_PROGRAM = 1  # GPIO123 = 1, 0, 0
-    DEAD_PROGRAM = 2  # GPIO123 = 0, 1, 0
-    MID_PROGRAM = 4  # GPIO123 = 0, 0, 1
-    ZERO_PROGRAM = 8  # GPIO123 = 0, 0, 0
-
-
-class PointType(IntEnum):
-    START_OF_ROW = 0  # Lower bound of first point of row
-    MID_POINT = 1  # Position of any point
-    POINT_JOIN = 2  # Boundary of two joined points
-    END_OF_ROW = 3  # Upper boundary of last point of row
-    TURNAROUND = 4  # Between rows
 
 
 # How many profile points to write each time
@@ -391,31 +365,6 @@ class PmacChildPart:
             cs_port
         )
 
-    def get_user_program(self, point_type):
-        # type: (PointType) -> int
-        if self.output_triggers == MotionTrigger.NONE:
-            # Always produce no program
-            return UserPrograms.NO_PROGRAM
-        elif self.output_triggers == MotionTrigger.ROW_GATE:
-            if point_type == PointType.START_OF_ROW:
-                # Produce a gate for the whole row
-                return UserPrograms.LIVE_PROGRAM
-            elif point_type == PointType.END_OF_ROW:
-                # Falling edge of row gate
-                return UserPrograms.ZERO_PROGRAM
-            else:
-                # Otherwise don't change anything
-                return UserPrograms.NO_PROGRAM
-        else:
-            if point_type in (PointType.START_OF_ROW, PointType.POINT_JOIN):
-                return UserPrograms.LIVE_PROGRAM
-            elif point_type == PointType.END_OF_ROW:
-                return UserPrograms.DEAD_PROGRAM
-            elif point_type == PointType.MID_POINT:
-                return UserPrograms.MID_PROGRAM
-            else:
-                return UserPrograms.ZERO_PROGRAM
-
     def calculate_profile_from_velocities(self, time_arrays, velocity_arrays,
                                           current_positions, completed_steps):
         # at this point we have time/velocity arrays with 2-4 values for each
@@ -445,7 +394,7 @@ class PmacChildPart:
         self.profile.time_array += time_intervals
         self.profile.velocity_mode += \
             [VelocityModes.PREV_TO_CURRENT] * num_intervals
-        user_program = self.get_user_program(PointType.TURNAROUND)
+        user_program = get_user_program(self.output_triggers, PointType.TURNAROUND)
         self.profile.user_programs += [user_program] * num_intervals
         self.completed_steps_lookup += [completed_steps] * num_intervals
 
@@ -524,7 +473,7 @@ class PmacChildPart:
 
     def add_generator_point_pair(self, point, point_num, points_are_joined):
         # Add position
-        user_program = self.get_user_program(PointType.MID_POINT)
+        user_program = get_user_program(self.output_triggers, PointType.MID_POINT)
         self.add_profile_point(point.duration / 2.0,
                                VelocityModes.PREV_TO_NEXT, user_program,
                                point_num,
@@ -533,10 +482,10 @@ class PmacChildPart:
 
         # insert the lower bound of the next frame
         if points_are_joined:
-            user_program = self.get_user_program(PointType.POINT_JOIN)
+            user_program = get_user_program(self.output_triggers, PointType.POINT_JOIN)
             velocity_point = VelocityModes.PREV_TO_NEXT
         else:
-            user_program = self.get_user_program(PointType.END_OF_ROW)
+            user_program = get_user_program(self.output_triggers, PointType.END_OF_ROW)
             velocity_point = VelocityModes.PREV_TO_CURRENT
 
         self.add_profile_point(
@@ -560,7 +509,7 @@ class PmacChildPart:
             self.time_since_last_pvt += point.duration
         else:
             # not skipping - add this mid point
-            user_program = self.get_user_program(PointType.MID_POINT)
+            user_program = get_user_program(self.output_triggers, PointType.MID_POINT)
             self.add_profile_point(
                 self.time_since_last_pvt + point.duration / 2.0,
                 VelocityModes.PREV_TO_NEXT, user_program, point_num,
@@ -569,10 +518,10 @@ class PmacChildPart:
 
         # insert the lower bound of the next frame
         if points_are_joined:
-            user_program = self.get_user_program(PointType.POINT_JOIN)
+            user_program = get_user_program(self.output_triggers, PointType.POINT_JOIN)
             velocity_point = VelocityModes.PREV_TO_NEXT
         else:
-            user_program = self.get_user_program(PointType.END_OF_ROW)
+            user_program = get_user_program(self.output_triggers, PointType.END_OF_ROW)
             velocity_point = VelocityModes.PREV_TO_CURRENT
 
         # only add the lower bound if we did not skip this point OR if we are
@@ -601,7 +550,7 @@ class PmacChildPart:
                                   motor_info.acceleration_time(0, velocity))
 
             # Add lower bound
-            user_program = self.get_user_program(PointType.START_OF_ROW)
+            user_program = get_user_program(self.output_triggers, PointType.START_OF_ROW)
             self.add_profile_point(
                 run_up_time, VelocityModes.PREV_TO_CURRENT, user_program,
                 start_index, axis_points)
@@ -660,7 +609,7 @@ class PmacChildPart:
             tail_off = motor_info.ramp_distance(velocity, 0)
             axis_points[axis_name] = point.upper[axis_name] + tail_off
         # Do the last move
-        user_program = self.get_user_program(PointType.TURNAROUND)
+        user_program = get_user_program(self.output_triggers, PointType.TURNAROUND)
         self.add_profile_point(tail_off_time, VelocityModes.ZERO_VELOCITY,
                                user_program,
                                self.steps_up_to, axis_points)
@@ -691,7 +640,7 @@ class PmacChildPart:
 
         # Change the last point to be a live frame
         self.profile.velocity_mode[-1] = VelocityModes.PREV_TO_CURRENT
-        user_program = self.get_user_program(PointType.START_OF_ROW)
+        user_program = get_user_program(self.output_triggers, PointType.START_OF_ROW)
         self.profile.user_programs[-1] = user_program
 
     def is_same_velocity(self, p1, p2):

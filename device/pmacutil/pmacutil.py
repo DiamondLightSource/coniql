@@ -15,6 +15,7 @@ from scanpointgenerator import Point, CompoundGenerator, StaticPointGenerator
 from device.channel.multi import get_all
 from device.devices.motor import MotorCs, PmacMotor
 from device.devices.pmac import CsAxisMapping, PmacMotors
+from device.pmacutil.pmacenums import UserPrograms, PointType
 from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL, \
     CsAxis
 from device.pmacutil.scanningutil import MotionTrigger
@@ -195,6 +196,32 @@ def point_velocities(axis_mapping, point, entry=True):
                 velocity, axis_name, motor_info.max_velocity)
         velocities[axis_name] = velocity
     return velocities
+
+
+def get_user_program(output_triggers: MotionTrigger,
+                     point_type: PointType) -> int:
+    if output_triggers == MotionTrigger.NONE:
+        # Always produce no program
+        return UserPrograms.NO_PROGRAM
+    elif output_triggers == MotionTrigger.ROW_GATE:
+        if point_type == PointType.START_OF_ROW:
+            # Produce a gate for the whole row
+            return UserPrograms.LIVE_PROGRAM
+        elif point_type == PointType.END_OF_ROW:
+            # Falling edge of row gate
+            return UserPrograms.ZERO_PROGRAM
+        else:
+            # Otherwise don't change anything
+            return UserPrograms.NO_PROGRAM
+    else:
+        if point_type in (PointType.START_OF_ROW, PointType.POINT_JOIN):
+            return UserPrograms.LIVE_PROGRAM
+        elif point_type == PointType.END_OF_ROW:
+            return UserPrograms.DEAD_PROGRAM
+        elif point_type == PointType.MID_POINT:
+            return UserPrograms.MID_PROGRAM
+        else:
+            return UserPrograms.ZERO_PROGRAM
 
 
 def profile_between_points(
