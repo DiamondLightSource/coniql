@@ -15,13 +15,10 @@ from scanpointgenerator import Point, CompoundGenerator, StaticPointGenerator
 from device.channel.multi import get_all
 from device.devices.motor import MotorCs, PmacMotor
 from device.devices.pmac import PmacMotors
-from device.pmacutil.csaxismapping import CsAxisMapping
-from device.pmacutil.profile import UserProgram, PointType
 from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL, \
-    CsAxis
+    UserProgram, PointType
 from device.pmacutil.scanningutil import MotionTrigger
 from device.pmacutil.velocityprofile import VelocityProfile
-from device.util import asyncio_gather_values
 
 if TYPE_CHECKING:
     from typing import Dict, Set, List
