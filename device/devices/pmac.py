@@ -1,12 +1,10 @@
 from dataclasses import dataclass
-from typing import Optional, List, Generator, \
-    Tuple, Generic, TypeVar, Iterator, Dict, Iterable
+from typing import List, Iterable
 
-from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
-from device.devices.motor import Motor, PmacMotor
-from device.pmacutil.pmacconst import CS_AXIS_NAMES, CsAxis
+from device.devices.motor import PmacMotor
+from device.pmacutil.csaxismapping import CsAxisMapping
 
 
 @dataclass
@@ -33,31 +31,6 @@ class Axis:
     num_points: ReadOnlyChannel[int]
     max_points: ReadOnlyChannel[int]
     positions: ReadOnlyChannel[List[float]]
-
-
-T = TypeVar('T')
-
-
-@dataclass
-class CsAxisMapping(Generic[T]):
-    a: T
-    b: T
-    c: T
-    u: T
-    v: T
-    w: T
-    x: T
-    y: T
-    z: T
-
-    def __getitem__(self, item: str):
-        # TODO: Should be case sensitive
-        item = item.lower()
-        names = [c.lower() for c in CS_AXIS_NAMES]
-        if item in names:
-            return self.__dict__[item]
-        else:
-            raise KeyError(f'{item} not a valid CS axis')
 
 
 @dataclass

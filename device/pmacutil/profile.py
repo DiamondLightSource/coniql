@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import List, Optional
 
-from device.devices.pmac import CsAxisMapping
+from device.pmacutil.csaxismapping import CsAxisMapping
 
 
 class VelocityMode(IntEnum):
