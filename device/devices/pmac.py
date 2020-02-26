@@ -1,5 +1,3 @@
-import asyncio
-
 from dataclasses import dataclass
 from typing import List, Iterable
 
@@ -7,8 +5,6 @@ from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
 from device.devices.motor import PmacMotor
 from device.pmacutil.csaxismapping import CsAxisMapping
-from device.pmacutil.pmactrajectorypart import setup_axis
-from device.pmacutil.profile import PmacTrajectoryProfile
 
 
 @dataclass
@@ -91,21 +87,6 @@ class PmacTrajectory:
     percentage_complete: ReadOnlyChannel[float]
     profile_abort: ReadOnlyChannel[bool]
 
-    async def write_profile(self, profile: PmacTrajectoryProfile):
-        profile_build = self.profile_build
-
-        num_points = len(profile.time_array)
-        common_jobs = [profile_build.num_points_to_build.put(num_points),
-                       profile_build.time_array.put(profile.time_array),
-                       profile_build.velocity_mode.put(profile.velocity_mode),
-                       profile_build.user_programs.put(profile.user_programs)]
-
-        axis_demands = zip(self.axes.iterator(), profile.axes.iterator())
-        axis_jobs = [setup_axis(axis, demands)
-                     for axis, demands in axis_demands]
-
-        await asyncio.wait(common_jobs + axis_jobs)
-
     async def build_profile(self):
         await self.profile_build.trigger.put('Build')
 
@@ -117,7 +98,6 @@ class PmacTrajectory:
 
     async def abort(self):
         await self.profile_abort.put(False)
-
 
 # CsAxisMapping = Dict[CsAxis, PmacMotor]
 # CsAxisMappings = Dict[str, CsAxisMapping]

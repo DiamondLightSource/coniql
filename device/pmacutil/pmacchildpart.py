@@ -7,7 +7,7 @@ import numpy as np
 from scanpointgenerator import CompoundGenerator, Point
 
 from device.devices.pmac import Pmac
-from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart, write_profile
+from device.pmacutil.pmactrajectorypart import write_profile
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
     point_velocities, points_joined, profile_between_points, get_user_program, \

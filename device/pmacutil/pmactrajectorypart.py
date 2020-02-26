@@ -1,12 +1,10 @@
 import asyncio
-from typing import List, Optional, Dict
+from typing import Optional
 
 import numpy as np
 
-from device.devices.pmac import Pmac, Axes, PmacTrajectory, ProfileBuild, Axis
-
+from device.devices.pmac import Pmac, Axis, PmacTrajectory
 # expected trajectory program number
-from device.pmacutil.pmacconst import CS_AXIS_NAMES
 from device.pmacutil.profile import PmacTrajectoryProfile
 
 TRAJECTORY_PROGRAM_NUM = 2
@@ -21,11 +19,7 @@ async def write_profile(pmac: Pmac,
     traj = pmac.trajectory
     profile = profile.with_padded_optionals()
 
-    # make sure a matching trajectory program is installed on the pmac
-    program_version = await traj.program_version.get()
-    assert program_version == TRAJECTORY_PROGRAM_NUM, \
-        f'pmac trajectory program {program_version} detected, ' \
-        f'conqil requires {TRAJECTORY_PROGRAM_NUM}'
+    await ensure_correct_trajectory_program(traj)
 
     profile_build = traj.profile_build
     if cs_port is not None:
@@ -39,10 +33,35 @@ async def write_profile(pmac: Pmac,
         # This is an append
         action = traj.append_points()
 
-    await traj.write_profile(profile)
+    await write_arrays(pmac, profile)
 
     # Write the profile
     await action
+
+
+async def ensure_correct_trajectory_program(traj: PmacTrajectory):
+    """make sure a matching trajectory program is installed on the pmac
+    """
+    program_version = await traj.program_version.get()
+    assert program_version == TRAJECTORY_PROGRAM_NUM, \
+        f'pmac trajectory program {program_version} detected, ' \
+        f'conqil requires {TRAJECTORY_PROGRAM_NUM}'
+
+
+async def write_arrays(pmac: Pmac, profile: PmacTrajectoryProfile):
+    profile_build = pmac.trajectory.profile_build
+
+    num_points = len(profile.time_array)
+    common_jobs = [profile_build.num_points_to_build.put(num_points),
+                   profile_build.time_array.put(profile.time_array),
+                   profile_build.velocity_mode.put(profile.velocity_mode),
+                   profile_build.user_programs.put(profile.user_programs)]
+
+    axis_demands = zip(pmac.trajectory.axes.iterator(), profile.axes.iterator())
+    axis_jobs = [setup_axis(axis, demands)
+                 for axis, demands in axis_demands]
+
+    await asyncio.wait(common_jobs + axis_jobs)
 
 
 async def setup_axis(axis: Axis, demands: np.ndarray):
