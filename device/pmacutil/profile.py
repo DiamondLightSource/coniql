@@ -22,15 +22,15 @@ PROFILE_POINTS = 10000
 
 @dataclass
 class PmacTrajectoryProfile:
-    time_array: np.ndarray  # of floats
-    user_programs: Optional[np.ndarray] = None  # of ints
-    velocity_mode: Optional[np.ndarray] = None  # of floats
+    time_array: List[float]  # of floats
+    user_programs: Optional[List[UserProgram]] = None  # of ints
+    velocity_mode: Optional[List[VelocityMode]] = None  # of floats
     axes: CsAxisMapping[List[float]] = CsAxisMapping(
         [], [], [], [], [], [], [], [], [])
 
     @classmethod
     def empty(cls):
-        return PmacTrajectoryProfile(np.array([]), np.array([]), np.array([]))
+        return PmacTrajectoryProfile([], [], [])
 
     def __getitem__(self, item):
         return self.axes.__getitem__(item)
