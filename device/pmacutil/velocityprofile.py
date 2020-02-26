@@ -4,7 +4,7 @@ from typing import List, Tuple
 
 import numpy as np
 
-VelocityArrays = Tuple[List[float], List[float]]
+VelocityArrays = Tuple[np.ndarray, np.ndarray]
 
 HAT = 1
 INVERSE_HAT = 2
@@ -463,6 +463,6 @@ class VelocityProfile:
         # tests - round to 12 decimals
         velocity_array = np.around(velocity_array, 12)
         time_array = np.around(time_array, 12)
-        return list(time_array), list(velocity_array)
+        return time_array, velocity_array
         # All this makes the time array and velocity array (seen above) which
         # are then written to the pmac

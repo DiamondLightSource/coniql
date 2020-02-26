@@ -3,7 +3,7 @@ from __future__ import division
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Tuple
 
 import numpy as np
 from annotypes import TYPE_CHECKING, Sequence
@@ -225,13 +225,16 @@ def get_user_program(output_triggers: MotionTrigger,
             return UserProgram.ZERO_PROGRAM
 
 
+AxisProfiles = Dict[str, np.ndarray]
+
+
 def profile_between_points(
-        axis_mapping,  # type: (Dict[str, MotorInfo])
-        point,  # type: Point
-        next_point,  # type: Point
-        min_time=MIN_TIME,  # type: float
-        min_interval=MIN_INTERVAL  # type: float
-):
+        axis_mapping: Dict[str, MotorInfo],
+        point: Point,
+        next_point: Point,
+        min_time: float = MIN_TIME,
+        min_interval: float = MIN_INTERVAL
+) -> Tuple[AxisProfiles, AxisProfiles]:
     """Make consistent time and velocity arrays for each axis
     Try to create velocity profiles for all axes that all arrive at
     'distance' in the same time period. The profiles will contain the
