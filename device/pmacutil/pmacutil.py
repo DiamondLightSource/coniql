@@ -3,7 +3,7 @@ from __future__ import division
 
 from collections import Counter
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import numpy as np
 from annotypes import TYPE_CHECKING, Sequence
@@ -82,18 +82,16 @@ async def cs_port_with_motors_in(motors: PmacMotors) -> str:
         cs = await motor.cs()
         if cs.axis in CS_AXIS_NAMES:
             return cs.port
-    raise ValueError("Can't find a cs port to use in %s" % layout_table.name)
+    raise ValueError("Can't find a cs port to use in %s" % motors)
 
 
-def get_motion_axes(generator, axes_to_move):
-    # type: (CompoundGenerator, Sequence[str]) -> List[str]
+def get_motion_axes(generator: CompoundGenerator) -> List[str]:
     """Filter axes_to_move to only contain motion axes"""
-    static_generator_axes = set()
-    for g in generator.generators:
-        if isinstance(g, StaticPointGenerator):
-            static_generator_axes.update(g.axes)
-    axes_to_move = [a for a in axes_to_move if a not in static_generator_axes]
-    return axes_to_move
+    axes: List[str] = []
+    for subgenerator in generator.generators:
+        if not isinstance(subgenerator, StaticPointGenerator):
+            axes += subgenerator.axes
+    return axes
 
 
 async def cs_axis_mapping(motors: PmacMotors,

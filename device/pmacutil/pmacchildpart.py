@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, List, Dict
+from typing import Any, List, Dict, Optional
 
 import numpy as np
 
@@ -11,14 +11,108 @@ from device.pmacutil.profileio import write_profile
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
     point_velocities, points_joined, profile_between_points, get_user_program, \
-    AxisProfileArrays
-from device.pmacutil.profile import PmacTrajectoryProfile, ProfileGenerator
+    AxisProfileArrays, MotorInfo
+from device.pmacutil.profile import PmacTrajectoryProfile, ProfileGenerator, \
+    PROFILE_POINTS
 from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, CS_AXIS_NAMES, \
     VelocityMode, UserProgram, PointType
 from device.pmacutil.scanningutil import MotionTrigger, \
     ParameterTweakInfo, RunProgressInfo
+from device.scanutil.movetopoint import move_to_point
 
-TICK_S = 0.000001
+
+async def configure_pmac_for_scan(pmac: Pmac,
+                            generator: CompoundGenerator,
+                            completed_steps: int = 0,
+                            steps_to_do: Optional[int] = None):
+    steps_to_do = steps_to_do or len(list(generator.iterator()))
+
+    # Store what sort of triggers we need to output
+    # output_triggers = get_motion_trigger(part_info)
+    output_triggers = MotionTrigger.EVERY_POINT
+
+    # Check if we should be taking part in the scan
+    motion_axes = get_motion_axes(generator)
+    need_gpio = output_triggers != MotionTrigger.NONE
+    if not (motion_axes or need_gpio):
+        # This pmac has nothing to do for this scan
+        return
+
+    min_turnaround = MIN_TIME
+    min_interval = MIN_INTERVAL
+
+    # Work out the cs_port we should be using
+    # layout_table = self.pmac.trajectory.axis_motors
+    if motion_axes:
+        axis_mapping = await cs_axis_mapping(pmac.motors, motion_axes)
+        # Check units for everything in the axis mapping
+        # TODO: reinstate this when GDA does it properly
+        # for axis_name, motor_info in sorted(self.axis_mapping.items()):
+        #     assert motor_info.units == generator.units[axis_name], \
+        #         "%s: Expected scan units of %r, got %r" % (
+        #         axis_name, motor_info.units, generator.units[axis_name])
+        # Guaranteed to have an entry in axis_mapping otherwise
+        # cs_axis_mapping would fail, so pick its cs_port
+        cs_port = list(axis_mapping.values())[0].cs.port
+    else:
+        # No axes to move, but if told to output triggers we still need to
+        # do something
+        axis_mapping = {}
+        # Pick the first cs we find that has an axis assigned
+        cs_port = await cs_port_with_motors_in(pmac.motors)
+
+    clean_profile = PmacTrajectoryProfile(
+        time_array=[MIN_TIME],
+        user_programs=[UserProgram.ZERO_PROGRAM.real]
+    )
+    await write_profile(pmac, clean_profile, cs_port)
+    await pmac.trajectory.execute_profile()
+    await move_to_start(pmac, generator, axis_mapping, completed_steps)
+
+    steps_up_to = completed_steps + steps_to_do
+    completed_steps_lookup = []
+    # Reset the profiles that still need to be sent
+    # self.profile = dict(
+    #     timeArray=[],
+    #     velocityMode=[],
+    #     userPrograms=[],
+    # )
+    time_since_last_pvt = 0
+    # for info in self.axis_mapping.values():
+    #     self.profile[info.cs_axis.lower()] = []
+    profile_generator = ProfileGenerator(
+            generator,
+            output_triggers,
+            axis_mapping,
+            steps_up_to,
+            min_turnaround,
+            min_interval,
+            completed_steps_lookup
+        )
+    profile = profile_generator.calculate_generator_profile(
+        completed_steps, do_run_up=True)
+    await write_profile_points(pmac, profile, cs_port)
+
+
+async def write_profile_points(pmac: Pmac, profile: PmacTrajectoryProfile,
+                         cs_port: Optional[str] = None):
+    """Build profile using given data
+    """
+    await write_profile(pmac, profile.with_ticks(), cs_port)
+
+
+async def move_to_start(pmac: Pmac, generator: CompoundGenerator,
+                        axis_mapping: Dict[str, MotorInfo],
+                        completed_steps: int):
+    first_point = generator.get_point(completed_steps)
+    starting_pos = Point()
+    for axis_name, velocity in point_velocities(
+            axis_mapping, first_point).items():
+        motor_info = axis_mapping[axis_name]
+        acceleration_distance = motor_info.ramp_distance(0, velocity)
+        starting_pos.positions[axis_name] = first_point.lower[
+                                                axis_name] - acceleration_distance
+    await move_to_point(pmac.motors.iterator(), starting_pos)
 
 
 class PmacChildPart:
@@ -299,22 +393,7 @@ class PmacChildPart:
                                    cs_port: str = None):
         """Build profile using given data
         """
-
-        # Time array
-        overflow = 0.0
-        time_array_ticks = []
-        for t in profile.time_array:
-            ticks = t / TICK_S
-            overflow += (ticks % 1)
-            ticks = int(ticks)
-            if overflow > 0.5:
-                overflow -= 1
-                ticks += 1
-            time_array_ticks.append(ticks)
-        # TODO: overflow discarded overy 10000 points, is it a problem?
-        profile.time_array = time_array_ticks  # np.array(time_array_ticks, np.int32)
-
-        await write_profile(self.pmac, profile, cs_port)
+        await write_profile(self.pmac, profile.with_ticks(), cs_port)
 
     def calculate_generator_profile(self, start_index: int,
                                     do_run_up: bool = False) -> PmacTrajectoryProfile:

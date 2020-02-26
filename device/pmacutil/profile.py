@@ -20,6 +20,9 @@ MAX_MOVE_TIME = 4.0
 PROFILE_POINTS = 10000
 
 
+TICK_S = 0.000001
+
+
 @dataclass
 class PmacTrajectoryProfile:
     time_array: List[float]  # of floats
@@ -51,6 +54,26 @@ class PmacTrajectoryProfile:
             self.time_array,
             user_programs,
             velocity_mode,
+            self.axes
+        )
+
+    def with_ticks(self):
+        overflow = 0.0
+        time_array_ticks = []
+        for t in self.time_array:
+            ticks = t / TICK_S
+            overflow += (ticks % 1)
+            ticks = int(ticks)
+            if overflow > 0.5:
+                overflow -= 1
+                ticks += 1
+            time_array_ticks.append(ticks)
+        # TODO: overflow discarded overy 10000 points, is it a problem?
+        # profile.time_array = time_array_ticks  # np.array(time_array_ticks, np.int32)
+        return PmacTrajectoryProfile(
+            time_array_ticks,
+            self.user_programs,
+            self.velocity_mode,
             self.axes
         )
 
