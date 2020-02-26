@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, Iterable
 
 from device.pmacutil.pmacconst import CS_AXIS_NAMES
 
@@ -26,3 +26,7 @@ class CsAxisMapping(Generic[T]):
             return self.__dict__[item]
         else:
             raise KeyError(f'{item} not a valid CS axis')
+
+    def iterator(self) -> Iterable[T]:
+        return [self.a, self.b, self.c, self.u, self.v, self.w, self.x,
+                self.y, self.z]

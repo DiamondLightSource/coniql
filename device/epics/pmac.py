@@ -96,6 +96,7 @@ def trajectory(prefix: str) -> PmacTrajectory:
         axes=axes(prefix),
         scan_status=trajectory_scan_status(prefix),
         driver_status=trajectory_driver_status(prefix),
+        program_version=CaChannel(f'{prefix}:ProgramVersion_RBV'),
         percentage_complete=CaChannel(f'{prefix}:TscanPercent_RBV'),
         profile_abort=CaBool(f'{prefix}:ProfileAbort'),
         coordinate_system_name=CaEnum(f'{prefix}:ProfileCsName', rbv_suffix='_RBV')

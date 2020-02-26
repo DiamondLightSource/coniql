@@ -7,7 +7,7 @@ import numpy as np
 from scanpointgenerator import CompoundGenerator, Point
 
 from device.devices.pmac import Pmac
-from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
+from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart, write_profile
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
     point_velocities, points_joined, profile_between_points, get_user_program, \
@@ -22,10 +22,9 @@ TICK_S = 0.000001
 
 
 class PmacChildPart:
-    def __init__(self, traj: PmacTrajectoryPart, pmac: Pmac):
+    def __init__(self, pmac: Pmac):
         # type: (...) -> None
         # super(PmacChildPart, self).__init__(name, mri, initial_visibility)
-        self.traj = traj
         self.pmac = pmac
         # Axis information stored from validate
         self.axis_mapping = None  # type: Dict[str, MotorInfo]
@@ -223,7 +222,7 @@ class PmacChildPart:
             time_array=[MIN_TIME],
             user_programs=[UserProgram.ZERO_PROGRAM.real]
         )
-        await self.traj.write_profile(clean_profile, cs_port)
+        await write_profile(self.pmac, clean_profile, cs_port)
         await self.pmac.trajectory.execute_profile()
         await self.move_to_start(completed_steps)
         # if motion_axes:
@@ -315,10 +314,7 @@ class PmacChildPart:
         # TODO: overflow discarded overy 10000 points, is it a problem?
         profile.time_array = time_array_ticks  # np.array(time_array_ticks, np.int32)
 
-        await self.traj.write_profile(
-            profile,
-            cs_port
-        )
+        await write_profile(self.pmac, profile, cs_port)
 
     def calculate_generator_profile(self, start_index: int,
                                     do_run_up: bool = False) -> PmacTrajectoryProfile:

@@ -22,18 +22,47 @@ PROFILE_POINTS = 10000
 
 @dataclass
 class PmacTrajectoryProfile:
-    time_array: List[float]
-    user_programs: Optional[List[int]] = None
-    velocity_mode: Optional[List[float]] = None
+    time_array: np.ndarray  # of floats
+    user_programs: Optional[np.ndarray] = None  # of ints
+    velocity_mode: Optional[np.ndarray] = None  # of floats
     axes: CsAxisMapping[List[float]] = CsAxisMapping(
         [], [], [], [], [], [], [], [], [])
 
     @classmethod
     def empty(cls):
-        return PmacTrajectoryProfile([], [], [])
+        return PmacTrajectoryProfile(np.array([]), np.array([]), np.array([]))
 
     def __getitem__(self, item):
         return self.axes.__getitem__(item)
+
+    def in_use(self, axis_name: str) -> bool:
+        """Returns True if there are any points to be appended to the
+        specified axis"""
+        return bool(self[axis_name])
+
+    def num_points(self):
+        return len(self.time_array)
+
+    def with_padded_optionals(self):
+        num_points = self.num_points()
+        user_programs = _zeros_or_right_length(self.user_programs, num_points)
+        velocity_mode = _zeros_or_right_length(self.velocity_mode, num_points)
+        return PmacTrajectoryProfile(
+            self.time_array,
+            user_programs,
+            velocity_mode,
+            self.axes
+        )
+
+
+def _zeros_or_right_length(array, num_points):
+    if array is None:
+        array = np.zeros(num_points, np.int32)
+    else:
+        assert len(array) == num_points, \
+            "Array %s should be %d points long" % (
+                array, num_points)
+    return array
 
 
 class ProfileGenerator:
