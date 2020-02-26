@@ -225,7 +225,7 @@ def get_user_program(output_triggers: MotionTrigger,
             return UserProgram.ZERO_PROGRAM
 
 
-AxisProfiles = Dict[str, np.ndarray]
+AxisProfileArrays = Dict[str, np.ndarray]
 
 
 def profile_between_points(
@@ -234,7 +234,7 @@ def profile_between_points(
         next_point: Point,
         min_time: float = MIN_TIME,
         min_interval: float = MIN_INTERVAL
-) -> Tuple[AxisProfiles, AxisProfiles]:
+) -> Tuple[AxisProfileArrays, AxisProfileArrays]:
     """Make consistent time and velocity arrays for each axis
     Try to create velocity profiles for all axes that all arrive at
     'distance' in the same time period. The profiles will contain the

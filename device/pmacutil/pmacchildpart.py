@@ -1,5 +1,5 @@
 import asyncio
-from typing import Any, List
+from typing import Any, List, Dict
 
 import numpy as np
 
@@ -10,7 +10,8 @@ from device.devices.pmac import Pmac
 from device.pmacutil.pmactrajectorypart import PmacTrajectoryPart
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
-    point_velocities, points_joined, profile_between_points, get_user_program
+    point_velocities, points_joined, profile_between_points, get_user_program, \
+    AxisProfileArrays
 from device.pmacutil.profile import PmacTrajectoryProfile, VelocityMode, \
     UserProgram, PointType
 from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, CS_AXIS_NAMES
@@ -220,7 +221,7 @@ class PmacChildPart:
             # do something
             self.axis_mapping = {}
             # Pick the first cs we find that has an axis assigned
-            cs_port = await cs_port_with_motors_in(pmac.motors)
+            cs_port = await cs_port_with_motors_in(self.pmac.motors)
 
         # Reset GPIOs
         # TODO: we might need to put this in pause if the PandA logic doesn't
@@ -365,8 +366,11 @@ class PmacChildPart:
             cs_port
         )
 
-    def calculate_profile_from_velocities(self, time_arrays, velocity_arrays,
-                                          current_positions, completed_steps):
+    def calculate_profile_from_velocities(self,
+                                          time_arrays: AxisProfileArrays,
+                                          velocity_arrays: AxisProfileArrays,
+                                          current_positions: Dict[str, float],
+                                          completed_steps: int):
         # at this point we have time/velocity arrays with 2-4 values for each
         # axis. Each time represents a (instantaneous) change in acceleration.
         # We want to translate this into a move profile (time/position).
@@ -448,7 +452,7 @@ class PmacChildPart:
                 self.profile.time_array.append(time_point / nsplit)
             for _ in range(nsplit - 1):
                 self.profile.velocity_mode.append(VelocityMode.PREV_TO_NEXT)
-                self.profile.user_programs.append(UserPrograms.NO_PROGRAM)
+                self.profile.user_programs.append(UserProgram.NO_PROGRAM)
             for k, v in axis_points.items():
                 cs_axis = self.axis_mapping[k].cs.axis.lower()
                 last_point = self.profile[cs_axis][-1]
