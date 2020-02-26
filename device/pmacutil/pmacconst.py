@@ -5,10 +5,6 @@ MIN_TIME = 0.002
 MIN_INTERVAL = 0.002
 
 
-class CsAxis(Enum):
-    A, B, C, U, V, W, X, Y, Z = CS_AXIS_NAMES
-
-
 class VelocityMode(IntEnum):
     PREV_TO_NEXT = 0
     PREV_TO_CURRENT = 1
