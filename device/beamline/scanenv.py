@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Dict
 
-from beamline.beamlines.adsim import adsim_environment
+from device.beamline.beamlines import adsim_environment
 from device.adcore.addetector import AdDetector
 from device.motor import Motor
 from device.motor.stage3d import Stage3D

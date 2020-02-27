@@ -3,7 +3,7 @@ from typing import Dict
 
 from scanpointgenerator import Point, LineGenerator, CompoundGenerator
 
-from beamline.scanenv import AdSimScanEnvironment, make_env
+from device.beamline.scanenv import AdSimScanEnvironment, make_env
 from device.devices.positioner import PositionerWithStatus
 
 

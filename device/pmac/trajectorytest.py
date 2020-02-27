@@ -2,7 +2,7 @@ import asyncio
 
 from scanpointgenerator import LineGenerator, CompoundGenerator
 
-from beamline.beamlines.trainingrig import p49_environment
+from device.beamline.beamlines.trainingrig import p49_environment
 from device.pmac.control.trajectorycontrol import scan_points
 from device.pmac.control.trajectorymodel import TrajectoryModel
 

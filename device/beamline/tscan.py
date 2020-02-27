@@ -1,10 +1,8 @@
 import asyncio
-from typing import Dict
 
 from scanpointgenerator import Point, LineGenerator, CompoundGenerator
 
-from beamline.beamlines.trainingrig import p47_environment, TrainingRig
-from device.devices.positioner import PositionerWithStatus
+from device.beamline.beamlines import p47_environment, TrainingRig
 
 
 def exposure_delay(exposure_time: float, acquire_period: float) -> float:
