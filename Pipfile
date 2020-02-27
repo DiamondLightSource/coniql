@@ -15,6 +15,7 @@ numpy = "*"
 aioca = {git = 'https://gitlab.diamond.ac.uk/vid18871/aioca.git'}
 scanpointgenerator = "*"
 annotypes = "*"
+pyyaml = "*"
 
 [requires]
 python_version = "3.7"
