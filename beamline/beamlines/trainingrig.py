@@ -1,18 +1,12 @@
-import asyncio
-
 from dataclasses import dataclass
 
-from coniql.deviceplugin import DevicePlugin
 from device.channel.setup import setup
 from device.devices.addetector import AdDetector
 from device.devices.adpanda import AdPandA
-from device.devices.camera import Camera
-from device.devices.pmac import Pmac, PmacMotors
-from device.devices.stage3d import Stage3D
+from device.pmac.device.pmac import Pmac, PmacMotors
 from device.devices.tomostage import TomoStage
-from device.epics.ad import camera
 from device.epics.addets import ad_detector, ad_panda
-from device.epics.motor import motor, pmac_motor
+from device.epics.motor import pmac_motor
 from device.epics.pmac import pmac
 
 

@@ -3,7 +3,8 @@ from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
 from device.channel.ca.string import CaString
 from device.channel.inmemory.channel import InMemoryReadOnlyChannel
-from device.devices.motor import Motor, PmacMotor
+from device.devices.motor import Motor
+from device.pmac.device.motor import PmacMotor
 
 
 def motor(prefix: str) -> Motor:

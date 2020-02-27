@@ -5,7 +5,7 @@ import numpy as np
 # Number of seconds that a control tick is
 from scanpointgenerator import CompoundGenerator, Point
 
-from device.devices.pmac import Pmac
+from device.pmac.device.pmac import Pmac
 from device.pmac.profileio import write_profile
 from device.pmac.util import point_velocities
 from device.pmac.motorinfo import MotorInfo

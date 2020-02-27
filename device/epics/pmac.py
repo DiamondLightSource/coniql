@@ -2,7 +2,7 @@ from device.channel.ca.bool import CaBool
 from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
 from device.channel.ca.string import CaString
-from device.devices.pmac import ProfileBuild, ProfilePart, Axis, Axes, \
+from device.pmac.device.pmac import ProfileBuild, ProfilePart, Axis, Axes, \
     TrajectoryScanStatus, TrajDriverStatus, PmacTrajectory, Pmac, PmacMotors
 
 

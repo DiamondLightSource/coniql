@@ -3,7 +3,7 @@ from typing import List, Sequence, Dict
 
 from scanpointgenerator import CompoundGenerator, StaticPointGenerator
 
-from device.devices.pmac import PmacMotors
+from device.pmac.device.pmac import PmacMotors
 from device.pmac.modes import CS_AXIS_NAMES
 from device.pmac.motorinfo import MotorInfo, motor_info
 
