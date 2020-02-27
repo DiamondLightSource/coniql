@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from device.adcore.camera import DetectorDriver
-from device.adcore import HdfPlugin
+from device.adcore.hdf import HdfPlugin
 
 
 @dataclass

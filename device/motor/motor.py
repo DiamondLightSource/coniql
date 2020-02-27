@@ -2,10 +2,10 @@ from dataclasses import dataclass
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel
-from device.devices.joggable import Joggable
-from device.devices.limitable import MaxLimitable, MinLimitable
-from device.devices.pidcontroller import PidController
-from device.devices.positioner import PositionerWithStatus
+from device.core.joggable import Joggable
+from device.core.limitable import MaxLimitable, MinLimitable
+from device.core.pidcontroller import PidController
+from device.core.positioner import PositionerWithStatus
 
 
 @dataclass

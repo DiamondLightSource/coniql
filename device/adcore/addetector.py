@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from device.adcore import HdfPlugin
+from device.adcore.hdf import HdfPlugin
 from device.adcore.camera import Camera
 
 

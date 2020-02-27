@@ -1,7 +1,7 @@
 from device.channel.ca.bool import CaBool
 from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
-from device.adcore import HdfPlugin, Swmr
+from device.adcore.hdf import HdfPlugin, Swmr
 from device.adcore.plugin import PluginCallback, PluginCounters, \
     PluginProperties
 from device.adcore.camera import Camera, DetectorDriver
