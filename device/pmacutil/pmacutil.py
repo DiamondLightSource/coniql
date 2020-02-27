@@ -17,7 +17,7 @@ from device.devices.motor import MotorCs, PmacMotor
 from device.devices.pmac import PmacMotors
 from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL, \
     UserProgram, PointType
-from device.pmacutil.scanningutil import MotionTrigger
+from device.scanutil.scanningutil import MotionTrigger
 from device.pmacutil.velocityprofile import VelocityProfile
 
 if TYPE_CHECKING:

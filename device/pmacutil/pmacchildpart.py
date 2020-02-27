@@ -10,13 +10,11 @@ from device.devices.pmac import Pmac
 from device.pmacutil.profileio import write_profile
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
-    point_velocities, points_joined, profile_between_points, get_user_program, \
-    AxisProfileArrays, MotorInfo
+    point_velocities, MotorInfo
 from device.pmacutil.profile import PmacTrajectoryProfile, ProfileGenerator, \
     PROFILE_POINTS
-from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, CS_AXIS_NAMES, \
-    VelocityMode, UserProgram, PointType
-from device.pmacutil.scanningutil import MotionTrigger, \
+from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, UserProgram
+from device.scanutil.scanningutil import MotionTrigger, \
     ParameterTweakInfo, RunProgressInfo
 from device.scanutil.movetopoint import move_to_point
 

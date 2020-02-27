@@ -10,7 +10,7 @@ from device.pmacutil.pmacconst import MIN_TIME, VelocityMode, UserProgram, \
     PointType
 from device.pmacutil.pmacutil import AxisProfileArrays, get_user_program, \
     point_velocities, points_joined, profile_between_points, MotorInfo
-from device.pmacutil.scanningutil import MotionTrigger
+from device.scanutil.scanningutil import MotionTrigger
 
 # Longest move time we can request
 MAX_MOVE_TIME = 4.0
