@@ -36,6 +36,22 @@ class TrajectoryModel:
         steps_to_do = len(list(generator.iterator()))
         return cls.do_steps(generator, 0, steps_to_do)
 
+    def with_revised_generator(self, revised_generator: CompoundGenerator):
+        return TrajectoryModel(revised_generator,
+                               self.start_index, self.end_index)
+
+
+async def scan_points(pmac: Pmac, model: TrajectoryModel):
+    """The selected pmac will scan through the points provided by the
+    trajectory model. Assuming the axis labels match scannables attached
+    said pmac and all the axes are in the same coordinate system"""
+    revised_generator = await validate_trajectory_scan(pmac, model)
+    if revised_generator is not None:
+        revised_generator.prepare()
+        model = model.with_revised_generator(revised_generator)
+    await configure_pmac_for_scan(pmac, model)
+    await pmac.trajectory.execute_profile()
+
 
 async def configure_pmac_for_scan(pmac: Pmac,
                                   model: TrajectoryModel):
