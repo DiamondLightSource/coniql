@@ -7,7 +7,7 @@ from device.channel.setup import setup
 from device.adcore.addetector import AdDetector
 from device.motor.stage3d import Stage3D
 from device.epics.addets import ad_detector
-from device.epics.motor import motor
+from device.epics.motor import motor, scannable_motor
 
 
 def adsim_device_environment():
@@ -27,10 +27,10 @@ class AdSimBeamline:
     stage: Stage3D
 
 
-def adsim_environment(machine_name: str) -> AdSimBeamline:
-    x = motor(f'{machine_name}-MO-SIM-01:M1')
-    y = motor(f'{machine_name}-MO-SIM-01:M2')
-    z = motor(f'{machine_name}-MO-SIM-01:M3')
+async def adsim_environment(machine_name: str) -> AdSimBeamline:
+    x = scannable_motor(f'{machine_name}-MO-SIM-01:M1', 'x')
+    y = scannable_motor(f'{machine_name}-MO-SIM-01:M2', 'y')
+    z = scannable_motor(f'{machine_name}-MO-SIM-01:M3', 'z')
     sample_stage = Stage3D(x, y, z)
     det = ad_detector(f'{machine_name}-AD-SIM-01')
     # trigger_box = in_memory_box()
@@ -39,5 +39,5 @@ def adsim_environment(machine_name: str) -> AdSimBeamline:
         detector=det,
         stage=sample_stage
     )
-    asyncio.get_event_loop().create_task(setup(beamline))
+    await setup(beamline)
     return beamline

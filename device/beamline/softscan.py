@@ -3,8 +3,9 @@ from typing import Dict
 
 from scanpointgenerator import Point, LineGenerator, CompoundGenerator
 
-from device.beamline.scanenv import AdSimScanEnvironment, make_env
-from device.devices.positioner import PositionerWithStatus
+from device.beamline.beamlines.adsim import adsim_environment, AdSimBeamline
+from device.core.positioner import PositionerWithStatus
+from device.scan.movetopoint import move_to_point
 
 
 def exposure_delay(exposure_time: float, acquire_period: float) -> float:
@@ -12,42 +13,42 @@ def exposure_delay(exposure_time: float, acquire_period: float) -> float:
     return readout_time / 2
 
 
-async def prepare_detector(env: AdSimScanEnvironment):
+async def prepare_detector(env: AdSimBeamline):
     print('Preparing detector')
-    await env.main_detector.camera.array_counter.put(0)
+    await env.detector.camera.array_counter.put(0)
 
 
-async def configure_stage(env: AdSimScanEnvironment, scan_point_generator):
-    stage = env.sample_stage
+async def configure_stage(env: AdSimBeamline, scan_point_generator):
+    stage = env.stage
     scan_point_generator.prepare()
     first = scan_point_generator.get_point(0)
     print('Moving to starting position')
-    await move_to_point(env.axes, first)
+    await move_to_point(env.stage.iterator(), first)
 
 
-async def move_to_point(axes: Dict[str, PositionerWithStatus], point: Point):
-    moves = [axes[axis].setpoint.put(pos)
-             for axis, pos in point.positions.items()]
-    return await asyncio.wait(moves)
+# async def move_to_point(axes: Dict[str, PositionerWithStatus], point: Point):
+#     moves = [axes[axis].setpoint.put(pos)
+#              for axis, pos in point.positions.items()]
+#     return await asyncio.wait(moves)
 
 
-async def run(env: AdSimScanEnvironment, scan_point_generator):
+async def run(env: AdSimBeamline, scan_point_generator):
     scan_point_generator.prepare()
     print('Starting scan')
     for point in scan_point_generator.iterator():
         print('Scanning point')
-        await move_to_point(env.axes, point)
-        await env.main_detector.camera.acquire.put(True)
+        await move_to_point(env.stage.iterator(), point)
+        await env.detector.camera.acquire.put(True)
         await asyncio.sleep(0.1)
 
 
-async def test(env: AdSimScanEnvironment, scan_point_generator):
+async def test(env: AdSimBeamline, scan_point_generator):
     await prepare_detector(env)
     await configure_stage(env, scan_point_generator)
     await run(env, scan_point_generator)
 
 
-env = asyncio.run(make_env())
+env = asyncio.run(adsim_environment('ws415'))
 
 xs = LineGenerator("x", "mm", 0.0, 20.0, 8)
 ys = LineGenerator("y", "mm", 0.0, 30.0, 4)

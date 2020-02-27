@@ -4,8 +4,15 @@ from device.channel.ca.enum import CaEnum
 from device.channel.ca.string import CaString
 from device.channel.inmemory.channel import InMemoryReadOnlyChannel
 from device.motor.motor import Motor
+from device.motor.scannable import ScannableMotor
 from device.pmac.device.motor import PmacMotor
 
+
+def scannable_motor(prefix: str, scannable_name: str):
+    return ScannableMotor(
+        **motor_layout(prefix),
+        scannable_name=InMemoryReadOnlyChannel(scannable_name)
+    )
 
 def motor(prefix: str) -> Motor:
     return Motor(
