@@ -35,7 +35,7 @@ def profile_part(prefix: str) -> ProfilePart:
 
 def profile_part_layout(prefix: str):
     return dict(
-        trigger=CaEnum(f'{prefix}'),
+        trigger=CaEnum(f'{prefix}', timeout=None),
         status=CaString(f'{prefix}Status_RBV'),
         state=CaString(f'{prefix}State_RBV'),
         message=CaString(f'{prefix}Message_RBV')
