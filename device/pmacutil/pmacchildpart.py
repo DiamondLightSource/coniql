@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 from typing import Any, List, Dict, Optional
 
 import numpy as np
@@ -19,18 +20,31 @@ from device.scanutil.scanningutil import MotionTrigger, \
 from device.scanutil.movetopoint import move_to_point
 
 
-async def configure_pmac_for_scan(pmac: Pmac,
-                            generator: CompoundGenerator,
-                            completed_steps: int = 0,
-                            steps_to_do: Optional[int] = None):
-    steps_to_do = steps_to_do or len(list(generator.iterator()))
+@dataclass
+class TrajectoryModel:
+    generator: CompoundGenerator
+    start_index: int
+    end_index: int
 
+    @classmethod
+    def do_steps(cls, generator: CompoundGenerator, start_index: int, steps_to_do: int):
+        return TrajectoryModel(generator, start_index, start_index + steps_to_do)
+
+    @classmethod
+    def all_steps(cls, generator: CompoundGenerator):
+        generator.prepare()
+        steps_to_do = len(list(generator.iterator()))
+        return cls.do_steps(generator, 0, steps_to_do)
+
+
+async def configure_pmac_for_scan(pmac: Pmac,
+                                  model: TrajectoryModel):
     # Store what sort of triggers we need to output
     # output_triggers = get_motion_trigger(part_info)
     output_triggers = MotionTrigger.EVERY_POINT
 
     # Check if we should be taking part in the scan
-    motion_axes = get_motion_axes(generator)
+    motion_axes = get_motion_axes(model.generator)
     need_gpio = output_triggers != MotionTrigger.NONE
     if not (motion_axes or need_gpio):
         # This pmac has nothing to do for this scan
@@ -65,9 +79,8 @@ async def configure_pmac_for_scan(pmac: Pmac,
     )
     await write_profile(pmac, clean_profile, cs_port)
     await pmac.trajectory.execute_profile()
-    await move_to_start(pmac, generator, axis_mapping, completed_steps)
+    await move_to_start(pmac, model, axis_mapping)
 
-    steps_up_to = completed_steps + steps_to_do
     completed_steps_lookup = []
     # Reset the profiles that still need to be sent
     # self.profile = dict(
@@ -79,16 +92,16 @@ async def configure_pmac_for_scan(pmac: Pmac,
     # for info in self.axis_mapping.values():
     #     self.profile[info.cs_axis.lower()] = []
     profile_generator = ProfileGenerator(
-            generator,
+            model.generator,
             output_triggers,
             axis_mapping,
-            steps_up_to,
+            model.end_index,
             min_turnaround,
             min_interval,
             completed_steps_lookup
         )
     profile = profile_generator.calculate_generator_profile(
-        completed_steps, do_run_up=True)
+        model.start_index, do_run_up=True)
     await write_profile_points(pmac, profile, cs_port)
 
 
@@ -99,18 +112,28 @@ async def write_profile_points(pmac: Pmac, profile: PmacTrajectoryProfile,
     await write_profile(pmac, profile.with_ticks(), cs_port)
 
 
-async def move_to_start(pmac: Pmac, generator: CompoundGenerator,
-                        axis_mapping: Dict[str, MotorInfo],
-                        completed_steps: int):
-    first_point = generator.get_point(completed_steps)
+async def move_to_start(pmac: Pmac,
+                        model: TrajectoryModel,
+                        axis_mapping: Dict[str, MotorInfo]):
+    first_pt = first_point(model)
+    starting_pos = starting_position(first_pt, axis_mapping)
+    await move_to_point(pmac.motors.iterator(), starting_pos)
+
+
+def starting_position(first_point: Point,
+                      axis_mapping: Dict[str, MotorInfo]) -> Point:
     starting_pos = Point()
     for axis_name, velocity in point_velocities(
             axis_mapping, first_point).items():
         motor_info = axis_mapping[axis_name]
         acceleration_distance = motor_info.ramp_distance(0, velocity)
-        starting_pos.positions[axis_name] = first_point.lower[
-                                                axis_name] - acceleration_distance
-    await move_to_point(pmac.motors.iterator(), starting_pos)
+        runup_position = first_point.lower[axis_name] - acceleration_distance
+        starting_pos.positions[axis_name] = runup_position
+    return starting_pos
+
+
+def first_point(model: TrajectoryModel) -> Point:
+    return model.generator.get_point(model.start_index)
 
 
 class PmacChildPart:
