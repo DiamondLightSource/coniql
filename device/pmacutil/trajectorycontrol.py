@@ -1,6 +1,4 @@
-import asyncio
-from dataclasses import dataclass
-from typing import Any, List, Dict, Optional
+from typing import Dict, Optional
 
 import numpy as np
 
@@ -10,35 +8,12 @@ from scanpointgenerator import CompoundGenerator, Point
 from device.devices.pmac import Pmac
 from device.pmacutil.profileio import write_profile
 from device.pmacutil.pmacutil import cs_axis_mapping, \
-    cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
-    point_velocities, MotorInfo
-from device.pmacutil.profile.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator, \
-    PROFILE_POINTS
+    cs_port_with_motors_in, get_motion_axes, point_velocities, MotorInfo
+from device.pmacutil.profile.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator
 from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, UserProgram
-from device.scanutil.scanningutil import MotionTrigger, \
-    ParameterTweakInfo, RunProgressInfo
+from device.pmacutil.trajectorymodel import TrajectoryModel
+from device.scanutil.scanningutil import MotionTrigger
 from device.scanutil.movetopoint import move_to_point
-
-
-@dataclass
-class TrajectoryModel:
-    generator: CompoundGenerator
-    start_index: int
-    end_index: int
-
-    @classmethod
-    def do_steps(cls, generator: CompoundGenerator, start_index: int, steps_to_do: int):
-        return TrajectoryModel(generator, start_index, start_index + steps_to_do)
-
-    @classmethod
-    def all_steps(cls, generator: CompoundGenerator):
-        generator.prepare()
-        steps_to_do = len(list(generator.iterator()))
-        return cls.do_steps(generator, 0, steps_to_do)
-
-    def with_revised_generator(self, revised_generator: CompoundGenerator):
-        return TrajectoryModel(revised_generator,
-                               self.start_index, self.end_index)
 
 
 async def scan_points(pmac: Pmac, model: TrajectoryModel):
@@ -108,10 +83,9 @@ async def configure_pmac_for_scan(pmac: Pmac,
     # for info in self.axis_mapping.values():
     #     self.profile[info.cs_axis.lower()] = []
     profile_generator = ProfileGenerator(
-            model.generator,
+            model,
             output_triggers,
             axis_mapping,
-            model.end_index,
             min_turnaround,
             min_interval,
             completed_steps_lookup

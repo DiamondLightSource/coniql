@@ -1,15 +1,14 @@
-import numpy as np
-
 from dataclasses import dataclass
 from typing import List, Optional, Dict
 
-from scanpointgenerator import CompoundGenerator
+import numpy as np
 
 from device.pmacutil.csaxismapping import CsAxisMapping
 from device.pmacutil.pmacconst import MIN_TIME, VelocityMode, UserProgram, \
     PointType
 from device.pmacutil.pmacutil import AxisProfileArrays, get_user_program, \
     point_velocities, points_joined, profile_between_points, MotorInfo
+from device.pmacutil.trajectorymodel import TrajectoryModel
 from device.scanutil.scanningutil import MotionTrigger
 
 # Longest move time we can request
@@ -90,17 +89,15 @@ def _zeros_or_right_length(array, num_points):
 
 class ProfileGenerator:
     def __init__(self,
-                 generator: CompoundGenerator,
+                 model: TrajectoryModel,
                  output_triggers: MotionTrigger,
                  axis_mapping: Dict[str, MotorInfo],
-                 steps_up_to: int,
                  min_turnaround: float,
                  min_interval: float,
                  completed_steps_lookup: List[int]):
-        self.generator = generator
+        self.model = model
         self.output_triggers = output_triggers
         self.axis_mapping = axis_mapping
-        self.steps_up_to = steps_up_to
         self.min_turnaround = min_turnaround
         self.min_interval = min_interval
         self.completed_steps_lookup = completed_steps_lookup
@@ -290,7 +287,7 @@ class ProfileGenerator:
         # If we are doing the first build, do_run_up will be passed to flag
         # that we need a run up, else just continue from the previous point
         if do_run_up:
-            point = self.generator.get_point(start_index)
+            point = self.model.generator.get_point(start_index)
 
             # Calculate how long to leave for the run-up (at least MIN_TIME)
             run_up_time = MIN_TIME
@@ -310,12 +307,12 @@ class ProfileGenerator:
                 start_index, axis_points)
 
         self.time_since_last_pvt = 0
-        for i in range(start_index, self.steps_up_to):
-            point = self.generator.get_point(i)
+        for i in range(start_index, self.model.end_index):
+            point = self.model.generator.get_point(i)
 
-            if i + 1 < self.steps_up_to:
+            if i + 1 < self.model.end_index:
                 # Check if we need to insert the lower bound of next_point
-                next_point = self.generator.get_point(i + 1)
+                next_point = self.model.generator.get_point(i + 1)
 
                 points_are_joined = points_joined(
                     self.axis_mapping, point, next_point
@@ -342,7 +339,7 @@ class ProfileGenerator:
             # array so we can always stretch points in a subsequent add with
             # the values already in the profiles
             if len(self.profile.time_array) > PROFILE_POINTS:
-                self.end_index = i + 1
+                self.model.end_index = i + 1
                 return
 
         self.add_tail_off()
@@ -350,7 +347,7 @@ class ProfileGenerator:
 
     def add_tail_off(self):
         # Add the last tail off point
-        point = self.generator.get_point(self.steps_up_to - 1)
+        point = self.model.generator.get_point(self.model.end_index - 1)
         # Calculate how long to leave for the tail-off
         # #(at least MIN_TIME)
         axis_points = {}
@@ -368,8 +365,8 @@ class ProfileGenerator:
                                         PointType.TURNAROUND)
         self.add_profile_point(tail_off_time, VelocityMode.ZERO_VELOCITY,
                                user_program,
-                               self.steps_up_to, axis_points)
-        self.end_index = self.steps_up_to
+                               self.model.end_index, axis_points)
+        self.end_index = self.model.end_index
 
     def insert_gap(self, point, next_point, completed_steps):
         # Work out the velocity profiles of how to move to the start
