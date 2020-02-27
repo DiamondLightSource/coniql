@@ -3,7 +3,7 @@ import asyncio
 from scanpointgenerator import LineGenerator, CompoundGenerator
 
 from beamline.beamlines.trainingrig import p49_environment, p47_environment
-from device.pmacutil.pmacchildpart import configure_pmac_for_scan, \
+from device.pmacutil.trajectorycontrol import configure_pmac_for_scan, \
     TrajectoryModel, validate_trajectory_scan
 
 env = asyncio.run(p49_environment())
