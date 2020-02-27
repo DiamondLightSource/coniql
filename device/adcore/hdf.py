@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel, CanPutValue
-from device.devices.adcore.plugin import AdPlugin
+from device.adcore.plugin import AdPlugin
 
 
 @dataclass

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from device.devices.camera import Camera
+from device.adcore.camera import Camera
 from device.channel.channeltypes.channel import ReadWriteChannel, ReadOnlyChannel
 
 

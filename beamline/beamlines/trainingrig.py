@@ -1,10 +1,10 @@
 from dataclasses import dataclass
 
 from device.channel.setup import setup
-from device.devices.addetector import AdDetector
-from device.devices.adpanda import AdPandA
+from device.adcore.addetector import AdDetector
+from device.panda.adpanda import AdPandA
 from device.pmac.device.pmac import Pmac, PmacMotors
-from device.devices.tomostage import TomoStage
+from device.motor.tomostage import TomoStage
 from device.epics.addets import ad_detector, ad_panda
 from device.epics.motor import pmac_motor
 from device.epics.pmac import pmac

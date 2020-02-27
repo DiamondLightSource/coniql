@@ -4,7 +4,7 @@ from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
 from device.channel.multi import get_all
-from device.devices.motor import Motor
+from device.motor import Motor
 
 
 @dataclass

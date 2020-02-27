@@ -1,15 +1,9 @@
-import dataclasses
-
 from coniql.deviceplugin import DevicePlugin
 from device.channel.inmemory.channel import InMemoryReadOnlyChannel, \
     InMemoryReadWriteChannel
-from device.devices.camera import Camera
-from device.devices.faketriggerbox import in_memory_box, FakeTriggerBox
-from device.devices.goniometer import Goniometer
-from device.devices.motor import Motor
-from device.devices.stage3d import Stage3D
-from device.epics.ad import camera
-from device.epics.motor import motor
+from device.motor.goniometer import Goniometer
+from device.motor import Motor
+from device.motor.stage3d import Stage3D
 
 
 def mock_device_environment() -> DevicePlugin:

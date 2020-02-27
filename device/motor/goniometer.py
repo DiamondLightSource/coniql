@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
-from device.devices.motor import Motor
-from device.devices.stage3d import Stage3D
+from device.motor import Motor
+from device.motor.stage3d import Stage3D
 
 
 @dataclass

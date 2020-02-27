@@ -1,11 +1,10 @@
 from dataclasses import dataclass
-from typing import Optional, Dict
+from typing import Dict
 
 from beamline.beamlines.adsim import adsim_environment
-from device.devices.addetector import AdDetector
-from device.devices.camera import Camera
-from device.devices.motor import Motor
-from device.devices.stage3d import Stage3D
+from device.adcore.addetector import AdDetector
+from device.motor import Motor
+from device.motor.stage3d import Stage3D
 
 
 @dataclass
