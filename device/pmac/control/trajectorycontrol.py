@@ -2,23 +2,25 @@ from typing import Dict, Optional
 
 import numpy as np
 
-# Number of seconds that a trajectory tick is
+# Number of seconds that a control tick is
 from scanpointgenerator import CompoundGenerator, Point
 
 from device.devices.pmac import Pmac
-from device.pmacutil.profileio import write_profile
-from device.pmacutil.pmacutil import cs_axis_mapping, \
-    cs_port_with_motors_in, get_motion_axes, point_velocities, MotorInfo
-from device.pmacutil.profile.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator
-from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, UserProgram
-from device.pmacutil.trajectorymodel import TrajectoryModel
+from device.pmac.profileio import write_profile
+from device.pmac.util import point_velocities
+from device.pmac.motorinfo import MotorInfo
+from device.pmac.control.motionaxes import cs_port_with_motors_in, \
+    get_motion_axes, cs_axis_mapping
+from device.pmac.profile.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator
+from device.pmac.modes import MIN_TIME, MIN_INTERVAL, UserProgram
+from device.pmac.control.trajectorymodel import TrajectoryModel
 from device.scanutil.scanningutil import MotionTrigger
 from device.scanutil.movetopoint import move_to_point
 
 
 async def scan_points(pmac: Pmac, model: TrajectoryModel):
     """The selected pmac will scan through the points provided by the
-    trajectory model. Assuming the axis labels match scannables attached
+    control model. Assuming the axis labels match scannables attached
     said pmac and all the axes are in the same coordinate system"""
     revised_generator = await validate_trajectory_scan(pmac, model)
     if revised_generator is not None:
@@ -45,7 +47,7 @@ async def configure_pmac_for_scan(pmac: Pmac,
     min_interval = MIN_INTERVAL
 
     # Work out the cs_port we should be using
-    # layout_table = self.pmac.trajectory.axis_motors
+    # layout_table = self.pmac.control.axis_motors
     if motion_axes:
         axis_mapping = await cs_axis_mapping(pmac.motors, motion_axes)
         # Check units for everything in the axis mapping
@@ -161,11 +163,11 @@ async def validate_trajectory_scan(pmac: Pmac, model: TrajectoryModel) -> \
     # TODO: Figure out what this is and how it fits in
     # async def update_step(model: TrajectoryModel, scanned: int):
     #     # scanned is an index into the completed_steps_lookup, so a
-    #     # "how far through the pmac trajectory" rather than a generator
+    #     # "how far through the pmac control" rather than a generator
     #     # scan step
     #     if scanned > 0:
     #         completed_steps = self.completed_steps_lookup[scanned - 1]
-    #         # Keep PROFILE_POINTS trajectory points in front
+    #         # Keep PROFILE_POINTS control points in front
     #         if not self.loading and self.end_index < self.steps_up_to and \
     #                 len(self.completed_steps_lookup) - scanned < PROFILE_POINTS:
     #             self.loading = True

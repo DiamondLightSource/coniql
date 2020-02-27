@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Iterable
 
-from device.pmacutil.pmacconst import CS_AXIS_NAMES
+from device.pmac.modes import CS_AXIS_NAMES
 
 T = TypeVar('T')
 
 
 @dataclass
-class CsAxisMapping(Generic[T]):
+class CsAxes(Generic[T]):
     a: T
     b: T
     c: T

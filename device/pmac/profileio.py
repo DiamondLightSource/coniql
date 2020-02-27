@@ -4,12 +4,12 @@ from typing import Optional
 import numpy as np
 
 from device.devices.pmac import Pmac, Axis, PmacTrajectory
-# expected trajectory program number
-from device.pmacutil.profile.trajectoryprofile import PmacTrajectoryProfile
+# expected control program number
+from device.pmac.profile.trajectoryprofile import PmacTrajectoryProfile
 
 TRAJECTORY_PROGRAM_NUM = 2
 
-# The maximum number of points in a single trajectory scan
+# The maximum number of points in a single control scan
 MAX_NUM_POINTS = 4000000
 
 
@@ -40,11 +40,11 @@ async def write_profile(pmac: Pmac,
 
 
 async def ensure_correct_trajectory_program(traj: PmacTrajectory):
-    """make sure a matching trajectory program is installed on the pmac
+    """make sure a matching control program is installed on the pmac
     """
     program_version = await traj.program_version.get()
     assert program_version == TRAJECTORY_PROGRAM_NUM, \
-        f'pmac trajectory program {program_version} detected, ' \
+        f'pmac control program {program_version} detected, ' \
         f'conqil requires {TRAJECTORY_PROGRAM_NUM}'
 
 

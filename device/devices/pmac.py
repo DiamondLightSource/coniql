@@ -4,7 +4,7 @@ from typing import List, Iterable
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
 from device.devices.motor import PmacMotor
-from device.pmacutil.csaxismapping import CsAxisMapping
+from device.pmac.csaxes import CsAxes
 
 
 @dataclass
@@ -34,7 +34,7 @@ class Axis:
 
 
 @dataclass
-class Axes(CsAxisMapping[Axis]):
+class Axes(CsAxes[Axis]):
     pass
     # a: Axis = doc_field("axis a")
     # b: Axis = doc_field("axis b")

@@ -3,12 +3,14 @@ from typing import List, Optional, Dict
 
 import numpy as np
 
-from device.pmacutil.csaxismapping import CsAxisMapping
-from device.pmacutil.pmacconst import MIN_TIME, VelocityMode, UserProgram, \
+from device.pmac.csaxes import CsAxes
+from device.pmac.modes import MIN_TIME, VelocityMode, UserProgram, \
     PointType
-from device.pmacutil.pmacutil import AxisProfileArrays, get_user_program, \
-    point_velocities, points_joined, profile_between_points, MotorInfo
-from device.pmacutil.trajectorymodel import TrajectoryModel
+from device.pmac.util import AxisProfileArrays, point_velocities
+from device.pmac.profile.util import points_joined, get_user_program, \
+    profile_between_points
+from device.pmac.motorinfo import MotorInfo
+from device.pmac.control.trajectorymodel import TrajectoryModel
 from device.scanutil.scanningutil import MotionTrigger
 
 # Longest move time we can request
@@ -27,7 +29,7 @@ class PmacTrajectoryProfile:
     time_array: List[float]  # of floats
     user_programs: Optional[List[UserProgram]] = None  # of ints
     velocity_mode: Optional[List[VelocityMode]] = None  # of floats
-    axes: CsAxisMapping[List[float]] = CsAxisMapping(
+    axes: CsAxes[List[float]] = CsAxes(
         [], [], [], [], [], [], [], [], [])
 
     @classmethod
@@ -125,7 +127,7 @@ class ProfileGenerator:
         combined_times = list(np.sort(combined_times))[1:]
         num_intervals = len(combined_times)
 
-        # set up the time, mode and user arrays for the trajectory
+        # set up the time, mode and user arrays for the control
         prev_time = 0
         time_intervals = []
         for t in combined_times:
