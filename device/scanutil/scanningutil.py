@@ -1,4 +1,6 @@
 from enum import IntEnum, Enum
+from dataclasses import dataclass
+from typing import Any
 
 
 class DatasetType(Enum):
@@ -20,16 +22,17 @@ class DatasetType(Enum):
     POSITION_MAX = "position_max"
 
 
+@dataclass
 class ParameterTweakInfo:
     """Info about a configure() parameter that needs to be tweaked
     Args:
         parameter: Parameter name, e.g. "generator"
         value: The value it should be changed to
     """
-    def __init__(self, parameter, value):
-        # type: (str, Any) -> None
-        self.parameter = parameter
-        self.value = value
+
+    parameter: str
+    value: Any
+
 
 
 class ConfigureParamsInfo:

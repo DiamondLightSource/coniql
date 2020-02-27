@@ -136,6 +136,38 @@ def first_point(model: TrajectoryModel) -> Point:
     return model.generator.get_point(model.start_index)
 
 
+async def validate_trajectory_scan(pmac: Pmac, model: TrajectoryModel) -> \
+        Optional[CompoundGenerator]:
+    # If GPIO not demanded for every point we don't need to align to the
+    # servo cycle
+    # trigger = get_motion_trigger(part_info)
+    # if trigger != MotionTrigger.EVERY_POINT:
+    #     return
+    # TODO: Reinstate this when we have some equalivalent of part info
+
+    # Find the duration
+    point_duration = model.generator.duration
+    assert point_duration > 0, \
+        "Can only do fixed duration at the moment"
+    servo_freq = await pmac.servo_frequency()
+    # convert half an exposure to multiple of servo ticks, rounding down
+    ticks = np.floor(servo_freq * 0.5 * point_duration)
+    if not np.isclose(servo_freq, 3200):
+        # + 0.002 for some observed jitter in the servo frequency if I10
+        # isn't a whole number of 1/4 us move timer ticks
+        # (any frequency apart from 3.2 kHz)
+        ticks += 0.002
+    # convert to integer number of microseconds, rounding up
+    micros = np.ceil(ticks / servo_freq * 1e6)
+    # back to duration
+    duration = 2 * float(micros) / 1e6
+    if duration != point_duration:
+        serialized = model.generator.to_dict()
+        new_generator = CompoundGenerator.from_dict(serialized)
+        new_generator.duration = duration
+        return new_generator
+
+
 class PmacChildPart:
     def __init__(self, pmac: Pmac):
         # type: (...) -> None
