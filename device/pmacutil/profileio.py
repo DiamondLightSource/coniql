@@ -5,7 +5,7 @@ import numpy as np
 
 from device.devices.pmac import Pmac, Axis, PmacTrajectory
 # expected trajectory program number
-from device.pmacutil.trajectoryprofile import PmacTrajectoryProfile
+from device.pmacutil.profile.trajectoryprofile import PmacTrajectoryProfile
 
 TRAJECTORY_PROGRAM_NUM = 2
 

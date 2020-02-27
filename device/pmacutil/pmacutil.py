@@ -18,7 +18,7 @@ from device.devices.pmac import PmacMotors
 from device.pmacutil.pmacconst import CS_AXIS_NAMES, MIN_TIME, MIN_INTERVAL, \
     UserProgram, PointType
 from device.scanutil.scanningutil import MotionTrigger
-from device.pmacutil.velocityprofile import VelocityProfile
+from device.pmacutil.profile.velocityprofile import VelocityProfile
 
 if TYPE_CHECKING:
     from typing import Dict, Set, List

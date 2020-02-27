@@ -11,7 +11,7 @@ from device.pmacutil.profileio import write_profile
 from device.pmacutil.pmacutil import cs_axis_mapping, \
     cs_port_with_motors_in, get_motion_axes, get_motion_trigger, \
     point_velocities, MotorInfo
-from device.pmacutil.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator, \
+from device.pmacutil.profile.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator, \
     PROFILE_POINTS
 from device.pmacutil.pmacconst import MIN_TIME, MIN_INTERVAL, UserProgram
 from device.scanutil.scanningutil import MotionTrigger, \
