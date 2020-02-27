@@ -11,7 +11,7 @@ from scanpointgenerator import Point
 # from malcolm.modules import builtin, scanning
 # from .infos import MotorInfo
 from device.pmac.motorinfo import MotorInfo
-from device.scanutil.scanningutil import MotionTrigger
+from device.scan.util import MotionTrigger
 
 if TYPE_CHECKING:
     from typing import Dict, List

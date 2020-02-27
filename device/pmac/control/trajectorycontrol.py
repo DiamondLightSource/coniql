@@ -14,8 +14,8 @@ from device.pmac.control.motionaxes import cs_port_with_motors_in, \
 from device.pmac.profile.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator
 from device.pmac.modes import MIN_TIME, MIN_INTERVAL, UserProgram
 from device.pmac.control.trajectorymodel import TrajectoryModel
-from device.scanutil.scanningutil import MotionTrigger
-from device.scanutil.movetopoint import move_to_point
+from device.scan.util import MotionTrigger
+from device.scan.movetopoint import move_to_point
 
 
 async def scan_points(pmac: Pmac, model: TrajectoryModel):

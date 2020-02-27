@@ -11,7 +11,7 @@ from device.pmac.profile.util import points_joined, get_user_program, \
     profile_between_points
 from device.pmac.motorinfo import MotorInfo
 from device.pmac.control.trajectorymodel import TrajectoryModel
-from device.scanutil.scanningutil import MotionTrigger
+from device.scan.util import MotionTrigger
 
 # Longest move time we can request
 MAX_MOVE_TIME = 4.0

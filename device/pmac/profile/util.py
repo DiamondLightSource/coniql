@@ -6,7 +6,7 @@ from scanpointgenerator import Point
 from device.pmac.modes import PointType, UserProgram, MIN_TIME, MIN_INTERVAL
 from device.pmac.motorinfo import MotorInfo
 from device.pmac.util import AxisProfileArrays, point_velocities
-from device.scanutil.scanningutil import MotionTrigger
+from device.scan.util import MotionTrigger
 
 
 def points_joined(axis_mapping, point, next_point):
