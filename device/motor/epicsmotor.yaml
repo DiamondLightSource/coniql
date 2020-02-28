@@ -1,0 +1,24 @@
+position:
+    type: CaFloat
+#    description: Current position of the motor
+    pv: $(prefix).RBV
+
+setpoint:
+    type: CaFloat
+#    description: Current target position that the motor should be either at or moving towards
+    pv: $(prefix)
+
+stationary:
+    type: CaBool
+#    description: True if the motor is not currently moving
+    pv: $(prefix).DMOV
+
+max:
+    type: CaFloat
+#    description: High limit
+    pv: $(prefix).HLM
+
+min:
+    type: CaFloat
+#    description: Low limit
+    pv: $(prefix).LLM
