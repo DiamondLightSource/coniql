@@ -1,0 +1,19 @@
+active:
+    type: CaBool
+#    description: is the IOC active
+    pv: $(machine)-EA-IOC-01:LOAD.SEVR
+
+x:
+    type: EpicsMotor
+#    description: X stage
+    prefix: $(machine)-MO-SIM-01:X
+
+y:
+    type: EpicsMotor
+#    description: Y stage
+    prefix: $(machine)-MO-SIM-01:Y
+
+z:
+    type: EpicsMotor
+#    description: Z stage
+    prefix: $(machine)-MO-SIM-01:Z
