@@ -1,11 +1,14 @@
 x:
-    type: device.motor.EpicsMotor
+    type: device.motor.ScannableMotor
     prefix: $(prefix):M1
+    scannable: simx
 
 y:
-    type: device.motor.EpicsMotor
+    type: device.motor.ScannableMotor
     prefix: $(prefix):M2
+    scannable: simy
 
 z:
-    type: device.motor.EpicsMotor
+    type: device.motor.ScannableMotor
     prefix: $(prefix):M3
+    scannable: simz

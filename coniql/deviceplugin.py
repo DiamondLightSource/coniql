@@ -1,22 +1,15 @@
-import dataclasses
-
-from typing import List, Dict, Any, Optional
-from typing_extensions import Protocol
+from typing import List, Any
 
 from coniql._types import Channel, Function
 from coniql.plugin import Plugin
 from device.channel.channeltypes.channel import ReadWriteChannel
+from device.viewableasdict import ViewableAsDict
 
 ADDRESS_DELIMETER = '.'
 
 
 def parse_channel_address(channel_id: str) -> List[str]:
     return channel_id.split(ADDRESS_DELIMETER)
-
-
-class ViewableAsDict(Protocol):
-    def dict_view(self):
-        return NotImplemented
 
 
 class DevicePlugin(Plugin):

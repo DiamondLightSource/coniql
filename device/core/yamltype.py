@@ -1,3 +1,4 @@
+from functools import reduce
 from pprint import pformat
 from typing import Type, Dict
 
@@ -10,10 +11,12 @@ def yaml_load(yaml_path: str, **kwargs):
     return yaml_type(yaml_path)(**kwargs)
 
 
-def yaml_type(yaml_path: str) -> Type:
-    text = ''
-    with open(yaml_path, 'r') as f:
-        text = f.read()
+def yaml_type(*yaml_paths: str) -> Type:
+    # text = ''
+    # with open(yaml_path, 'r') as f:
+    #     text = f.read()
+    #
+    text = concat_files(*yaml_paths)
 
     def make_raw_structure(**kwargs):
         to_parse = replace_substitutions(text, kwargs)
@@ -41,6 +44,15 @@ def yaml_type(yaml_path: str) -> Type:
             }
 
     return YamlType
+
+
+def concat_files(*paths: str):
+    return reduce(lambda x, y: x + y, map(read_file, paths))
+
+
+def read_file(file_path: str) -> str:
+    with open(file_path, 'r') as f:
+        return f.read()
 
 
 def replace_substitutions(value: str, substitutions: Dict[str, str]) -> str:
