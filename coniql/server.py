@@ -6,13 +6,12 @@ import traceback
 from aiohttp import web
 from graphql import graphql
 import graphql_ws_next
-from device.beamline.beamlines.adsim.adsim import adsim_device_environment
 from device.beamline.beamlines.trainingrig import htss_environment
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql import EPICS7_BASE
 from coniql.template import render_graphiql
-from coniql.schema import ConiqlSchema
+from coniql.devicelayer.deviceschema import ConiqlSchema
 
 
 async def get_query(request):
@@ -36,13 +35,7 @@ class App(web.Application):
         self.router.add_get('/graphql', self.graphql_view)
         self.router.add_post('/graphql', self.graphql_view)
         self.websockets = set()
-        self.schema = ConiqlSchema()
-        if EPICS7_BASE in os.environ:
-            from coniql.pvaplugin import PVAPlugin
-            self.schema.add_plugin("pva", PVAPlugin(), set_default=True)
-        from coniql.simplugin import SimPlugin
-        self.schema.add_plugin("sim", SimPlugin())
-        self.schema.add_plugin('device', htss_environment('BL49P'))
+        self.schema = ConiqlSchema(htss_environment('BL49P'))
         self.subscription_server = graphql_ws_next.SubscriptionServer(
             self.schema, AiohttpConnectionContext
         )

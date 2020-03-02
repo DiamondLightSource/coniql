@@ -2,6 +2,7 @@ import asyncio
 
 from dataclasses import dataclass
 
+from coniql.devicelayer.deviceplugin import DeviceLayer
 from device.channel.setup import setup
 from device.adcore.addetector import AdDetector
 from device.panda.adpanda import AdPandA
@@ -16,12 +17,8 @@ from coniql.deviceplugin import DevicePlugin
 
 def htss_environment(beamline_prefix: str):
     beamline = training_rig_environment(beamline_prefix)
-
-    plugin = DevicePlugin()
-    plugin.register_device(beamline, name='beamline')
-
-    plugin.debug()
-    return plugin
+    layer = DeviceLayer.from_tree(beamline)
+    return layer
 
 
 @dataclass
