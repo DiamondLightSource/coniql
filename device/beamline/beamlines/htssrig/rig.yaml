@@ -1,0 +1,3 @@
+stage:
+    type: device.beamline.beamlines.htssrig.Stage
+    prefix: $(rig)-MO-MAP-01:STAGE

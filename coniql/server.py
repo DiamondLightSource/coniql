@@ -7,6 +7,7 @@ from aiohttp import web
 from graphql import graphql
 import graphql_ws_next
 from device.beamline.beamlines.adsim.adsim import adsim_device_environment
+from device.beamline.beamlines.trainingrig import htss_environment
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql import EPICS7_BASE
@@ -41,7 +42,7 @@ class App(web.Application):
             self.schema.add_plugin("pva", PVAPlugin(), set_default=True)
         from coniql.simplugin import SimPlugin
         self.schema.add_plugin("sim", SimPlugin())
-        self.schema.add_plugin('device', adsim_device_environment())
+        self.schema.add_plugin('device', htss_environment('BL49P'))
         self.subscription_server = graphql_ws_next.SubscriptionServer(
             self.schema, AiohttpConnectionContext
         )

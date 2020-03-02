@@ -1,3 +1,5 @@
+import asyncio
+
 from dataclasses import dataclass
 
 from device.channel.setup import setup
@@ -8,16 +10,18 @@ from device.motor.tomostage import TomoStage
 from device.epics.addets import ad_detector, ad_panda
 from device.epics.motor import pmac_motor
 from device.epics.pmac import pmac
+from device.beamline.beamlines.htssrig import HtssRig
+from coniql.deviceplugin import DevicePlugin
 
 
-# def adsim_device_environment():
-#     beamline = adsim_environment('ws415')
-#
-#     plugin = DevicePlugin()
-#     plugin.register_device(beamline, name='beamline')
-#
-#     plugin.debug()
-#     return plugin
+def htss_environment(beamline_prefix: str):
+    beamline = training_rig_environment(beamline_prefix)
+
+    plugin = DevicePlugin()
+    plugin.register_device(beamline, name='beamline')
+
+    plugin.debug()
+    return plugin
 
 
 @dataclass
@@ -28,27 +32,20 @@ class TrainingRig:
     pmac: Pmac
 
 
-async def p47_environment():
-    return await training_rig_environment('BL47P')
-
-
-async def p49_environment():
-    return await training_rig_environment('BL49P')
-
-
-async def training_rig_environment(beamline_prefix: str) -> TrainingRig:
-    x = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:X', 'x')
-    theta = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:A', 'a')
-    sample_stage = TomoStage(x, theta)
-    det = ad_detector(f'{beamline_prefix}-EA-DET-01', cam_prefix='DET')
-    panda_det = ad_panda(f'{beamline_prefix}-MO-PANDA-01')
-    motors = PmacMotors(x, theta)
-    pmc = pmac(f'{beamline_prefix}-MO-BRICK-01', motors)
-    beamline = TrainingRig(
-        detector=det,
-        panda_position_detector=panda_det,
-        sample_stage=sample_stage,
-        pmac=pmc
-    )
-    await setup(beamline)
+def training_rig_environment(beamline_prefix: str) -> TrainingRig:
+    # x = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:X', 'x')
+    # theta = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:A', 'a')
+    # sample_stage = TomoStage(x, theta)
+    # det = ad_detector(f'{beamline_prefix}-EA-DET-01', cam_prefix='DET')
+    # panda_det = ad_panda(f'{beamline_prefix}-MO-PANDA-01')
+    # motors = PmacMotors(x, theta)
+    # pmc = pmac(f'{beamline_prefix}-MO-BRICK-01', motors)
+    # beamline = TrainingRig(
+    #     detector=det,
+    #     panda_position_detector=panda_det,
+    #     sample_stage=sample_stage,
+    #     pmac=pmc
+    # )
+    beamline = HtssRig(rig=beamline_prefix)
+    asyncio.get_event_loop().create_task(setup(beamline))
     return beamline
