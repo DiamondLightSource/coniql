@@ -1,0 +1,14 @@
+x:
+    type: device.motor.EpicsMotor
+#    description: X stage
+    prefix: $(prefix):M1
+
+y:
+    type: device.motor.EpicsMotor
+#    description: Y stage
+    prefix: $(prefix):M2
+
+z:
+    type: device.motor.EpicsMotor
+#    description: Z stage
+    prefix: $(prefix):M3

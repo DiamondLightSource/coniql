@@ -1,6 +1,7 @@
 import dataclasses
 
 from typing import List, Dict, Any, Optional
+from typing_extensions import Protocol
 
 from coniql._types import Channel, Function
 from coniql.plugin import Plugin
@@ -13,24 +14,32 @@ def parse_channel_address(channel_id: str) -> List[str]:
     return channel_id.split(ADDRESS_DELIMETER)
 
 
+class ViewableAsDict(Protocol):
+    def dict_view(self):
+        return NotImplemented
+
+
 class DevicePlugin(Plugin):
     def __init__(self):
-        self.channels = {}
+        class Root:
+            pass
+        self.channels = Root()
 
-    def register_device(self, device: Any, name: str):
+    def register_device(self, device: ViewableAsDict, name: str):
         """Registers a device and its channels and subdevices with the plugin"""
-        self.channels[name] = device
+        setattr(self.channels, name, device)
+        # self.channels[name] = device
 
-    def lookup_channel(self, channel_addr: List[str], channels = None) -> ReadWriteChannel:
+    def lookup_channel(self, channel_addr: List[str], channels=None) -> ReadWriteChannel:
         if channels is None:
             return self.lookup_channel(channel_addr, self.channels)
-        if dataclasses.is_dataclass(channels):
-            channels = channels.__dict__
+
         nxt = channel_addr[0]
+        nxt_attr = getattr(channels, nxt)
         if len(channel_addr) == 1:
-            return channels[nxt]
+            return nxt_attr
         elif len(channel_addr) > 1:
-            return self.lookup_channel(channel_addr[1:], channels[nxt])
+            return self.lookup_channel(channel_addr[1:], nxt_attr)
         else:
             raise Exception('Eerrm')
 
