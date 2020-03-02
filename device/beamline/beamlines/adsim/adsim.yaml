@@ -1,0 +1,3 @@
+stage:
+    type: device.beamline.beamlines.adsim.Stage3D
+    prefix: $(machine)-MO-SIM-01

@@ -6,7 +6,7 @@ import traceback
 from aiohttp import web
 from graphql import graphql
 import graphql_ws_next
-from device.beamline.beamlines.adsim import adsim_device_environment
+from device.beamline.beamlines.adsim.adsim import adsim_device_environment
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql import EPICS7_BASE
