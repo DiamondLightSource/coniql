@@ -1,10 +1,8 @@
 import asyncio
-from typing import Dict
 
-from scanpointgenerator import Point, LineGenerator, CompoundGenerator
+from scanpointgenerator import LineGenerator, CompoundGenerator
 
 from device.beamline.beamlines.adsim import adsim_environment, AdSimBeamline
-from device.core.positioner import PositionerWithStatus
 from device.scan.movetopoint import move_to_point
 
 
