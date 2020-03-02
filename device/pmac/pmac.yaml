@@ -1,0 +1,7 @@
+i10:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):I10
+
+trajectory:
+  type: device.pmac.Trajectory
+  prefix: $(prefix)

@@ -77,6 +77,8 @@ class DevicePlugin(Plugin):
         async for readback in stream:
             yield readback.to_gql_readback()
 
+    # TODO: Device introspection
+
     def startup(self):
         """Start any services the plugin needs. Don't block"""
 

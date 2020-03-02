@@ -1,0 +1,24 @@
+cs:
+  type: device.pmac.CsDemands
+  prefix: $(prefix)
+
+profile_build:
+  type: device.pmac.ProfilePart
+  prefix: $(prefix):ProfileBuild
+
+points_append:
+  type: device.pmac.ProfilePart
+  prefix: $(prefix):ProfileAppend
+
+profile_execution:
+  type: device.pmac.ProfilePart
+  prefix: $(prefix):ProfileExecute
+
+program_version:
+  type: device.channel.ca.CaString
+  pv: $(prefix):ProgramVersion_RBV
+
+coordinate_system_name:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):ProfileCsName
+  rbv_suffix: _RBV

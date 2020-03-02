@@ -1,0 +1,15 @@
+use:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):UseAxis
+
+num_points:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):NoOfPts
+
+max_points:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):Positions.NELM
+
+positions:
+  type: device.channel.ca.CaFloatArray
+  pv: $(prefix):Positions

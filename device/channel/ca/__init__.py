@@ -5,3 +5,5 @@ from device.channel.ca.string import CaString
 
 CaFloat = CaChannel
 CaInt = CaChannel
+CaIntArray = CaChannel
+CaFloatArray = CaChannel
