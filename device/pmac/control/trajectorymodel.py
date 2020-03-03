@@ -19,6 +19,14 @@ class TrajectoryModel:
         steps_to_do = len(list(generator.iterator()))
         return cls.do_steps(generator, 0, steps_to_do)
 
+    @classmethod
+    def from_dict(cls, dct):
+        return TrajectoryModel(
+            dct['generator'],
+            dct['start_index'],
+            dct['end_index']
+        )
+
     def with_revised_generator(self, revised_generator: CompoundGenerator):
         return TrajectoryModel(revised_generator,
                                self.start_index, self.end_index)

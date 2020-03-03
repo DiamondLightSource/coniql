@@ -6,7 +6,8 @@ from typing import Type, Dict, Generic
 from graphql import (
     GraphQLEnumType, GraphQLEnumValue, GraphQLField, GraphQLFloat,
     GraphQLNonNull, GraphQLList, GraphQLObjectType, GraphQLString,
-    GraphQLInterfaceType, GraphQLInt, GraphQLBoolean, GraphQLOutputType)
+    GraphQLInterfaceType, GraphQLInt, GraphQLBoolean, GraphQLOutputType,
+    GraphQLInputType, GraphQLInputObjectType)
 
 
 GQL_BUILTIN_TYPES = dict(

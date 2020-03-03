@@ -1,5 +1,7 @@
 from coniql._types import Channel
 from coniql.devicelayer.environment import DeviceEnvironment
+from device.pmac.control.trajectorycontrol import scan_points
+from device.pmac.control.trajectorymodel import TrajectoryModel
 
 
 class DeviceLayer:
@@ -32,6 +34,11 @@ class DeviceLayer:
         stream = channel.monitor()
         async for readback in stream:
             yield readback
+
+    async def scan_points(self, pmac_id: str, model: TrajectoryModel):
+        pmac = self.env.get_resource(pmac_id)
+        await scan_points(pmac, model)
+        return True
 
     # TODO: Device introspection
 
