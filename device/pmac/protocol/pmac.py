@@ -3,7 +3,7 @@ from typing import List, Iterable
 
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
-from device.pmac.device.motor import PmacMotor
+from device.pmac.protocol.motor import PmacMotor
 from device.pmac.csaxes import CsAxes
 
 

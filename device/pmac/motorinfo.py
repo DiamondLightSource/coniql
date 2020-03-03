@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 
 from device.channel.multi import get_all
-from device.pmac.device.motor import MotorCs, PmacMotor
+from device.pmac.protocol.motor import MotorCs, PmacMotor
 from device.pmac.modes import CS_AXIS_NAMES
 from device.pmac.profile.velocityprofile import VelocityProfile
 

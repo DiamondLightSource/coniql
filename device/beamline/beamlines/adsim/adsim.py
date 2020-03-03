@@ -29,7 +29,7 @@ class AdSimBeamline:
 
 
 def adsim_environment(machine_name: str) -> AdSimBeamline:
-    path = 'device/beamline/beamlines/adsim/adsim.yaml'
+    path = 'protocol/beamline/beamlines/adsim/adsim.yaml'
     beamline = yaml_load(path, machine=machine_name)
     asyncio.get_event_loop().create_task(setup(beamline))
     return beamline

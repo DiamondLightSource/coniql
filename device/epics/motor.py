@@ -5,7 +5,7 @@ from device.channel.ca.string import CaString
 from device.channel.inmemory.channel import InMemoryReadOnlyChannel
 from device.motor.motor import Motor
 from device.motor.scannable import ScannableMotor
-from device.pmac.device.motor import PmacMotor
+from device.pmac.protocol.motor import PmacMotor
 
 
 def scannable_motor(prefix: str, scannable_name: str):

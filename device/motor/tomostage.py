@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from device.pmac.device.motor import PmacMotor
+from device.pmac.protocol.motor import PmacMotor
 
 
 @dataclass

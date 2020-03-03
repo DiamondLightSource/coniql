@@ -6,7 +6,7 @@ from coniql.devicelayer.deviceplugin import DeviceLayer
 from device.channel.setup import setup
 from device.adcore.addetector import AdDetector
 from device.panda.adpanda import AdPandA
-from device.pmac.device.pmac import Pmac, PmacMotors
+from device.pmac.protocol.pmac import Pmac, PmacMotors
 from device.motor.tomostage import TomoStage
 from device.epics.addets import ad_detector, ad_panda
 from device.epics.motor import pmac_motor

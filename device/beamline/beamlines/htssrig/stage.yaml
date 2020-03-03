@@ -1,9 +1,9 @@
 x:
-    type: device.motor.ScannableMotor
+    type: protocol.motor.ScannableMotor
     prefix: $(prefix):X
     scannable: stagex
 
 theta:
-    type: device.motor.ScannableMotor
+    type: protocol.motor.ScannableMotor
     prefix: $(prefix):A
     scannable: stagea

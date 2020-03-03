@@ -19,9 +19,9 @@ class DevicePlugin(Plugin):
         self.channels = Root()
 
     def register_device(self, device: ViewableAsDict, name: str):
-        """Registers a device and its channels and subdevices with the plugin"""
+        """Registers a protocol and its channels and subdevices with the plugin"""
         setattr(self.channels, name, device)
-        # self.channels[name] = device
+        # self.channels[name] = protocol
 
     def lookup_channel(self, channel_addr: List[str], channels=None) -> ReadWriteChannel:
         if channels is None:

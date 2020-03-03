@@ -3,7 +3,7 @@ from typing import Optional
 
 import numpy as np
 
-from device.pmac.device.pmac import Pmac, Axis, PmacTrajectory
+from device.pmac.protocol.pmac import Pmac, Axis, PmacTrajectory
 # expected control program number
 from device.pmac.profile.trajectoryprofile import PmacTrajectoryProfile
 
