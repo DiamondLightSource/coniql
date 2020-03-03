@@ -1,9 +1,9 @@
 cs_port:
-    type: protocol.channel.ca.CaString
+    type: device.channel.ca.CaString
     pv: $(prefix):CsPort
     rbv_prefix: _RBV
 
 cs_axis:
-    type: protocol.channel.ca.CaString
+    type: device.channel.ca.CaString
     pv: $(prefix):CsAxis
     rbv_prefix: _RBV

@@ -5,7 +5,7 @@ import numpy as np
 
 from device.pmac.csaxes import CsAxes
 from device.pmac.modes import MIN_TIME, VelocityMode, UserProgram, \
-    PointType
+    PointType, CS_AXIS_NAMES
 from device.pmac.util import AxisProfileArrays, point_velocities
 from device.pmac.profile.util import points_joined, get_user_program, \
     profile_between_points
@@ -27,14 +27,14 @@ TICK_S = 0.000001
 @dataclass
 class PmacTrajectoryProfile:
     time_array: List[float]  # of floats
+    axes: Dict[str, List[float]]
     user_programs: Optional[List[UserProgram]] = None  # of ints
     velocity_mode: Optional[List[VelocityMode]] = None  # of floats
-    axes: CsAxes[List[float]] = CsAxes(
-        [], [], [], [], [], [], [], [], [])
 
     @classmethod
     def empty(cls):
-        return PmacTrajectoryProfile([], [], [])
+        axes = {cs: [] for cs in CS_AXIS_NAMES}
+        return PmacTrajectoryProfile([], axes, [], [])
 
     def __getitem__(self, item):
         return self.axes.__getitem__(item)

@@ -1,7 +1,11 @@
 i10:
-  type: protocol.channel.ca.CaInt
+  type: device.channel.ca.CaInt
   pv: $(prefix):I10
 
 trajectory:
-  type: protocol.pmac.Trajectory
+  type: device.pmac.Trajectory
   prefix: $(prefix)
+
+motors:
+  type: device.channel.inmemory.InMemoryReadOnlyChannel
+  value: $(motors)

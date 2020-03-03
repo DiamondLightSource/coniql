@@ -1,11 +1,11 @@
 from device.core.yamltype import yaml_type
 
-PmacMotor = yaml_type('protocol/motor/epicsmotor.yaml',
-                      'protocol/motor/scannable.yaml',
-                      'protocol/pmac/pmacaxis.yaml')
+PmacMotor = yaml_type('device/motor/epicsmotor.yaml',
+                      'device/motor/scannable.yaml',
+                      'device/pmac/pmacaxis.yaml')
 
-CsAxis = yaml_type('protocol/pmac/csaxis.yaml')
-CsDemands = yaml_type('protocol/pmac/csdemands.yaml')
-ProfilePart = yaml_type('protocol/pmac/profilepart.yaml')
-Trajectory = yaml_type('protocol/pmac/trajectory.yaml')
-Pmac = yaml_type('protocol/pmac/pmac.yaml')
+CsAxis = yaml_type('device/pmac/csaxis.yaml')
+CsDemands = yaml_type('device/pmac/csdemands.yaml')
+ProfilePart = yaml_type('device/pmac/profilepart.yaml')
+Trajectory = yaml_type('device/pmac/trajectory.yaml')
+Pmac = yaml_type('device/pmac/pmac.yaml')

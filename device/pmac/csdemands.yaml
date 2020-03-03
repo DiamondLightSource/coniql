@@ -1,57 +1,57 @@
 time_array:
-  type: protocol.channel.ca.CaFloatArray
+  type: device.channel.ca.CaFloatArray
   pv: $(prefix):ProfileTimeArray
 
 velocity_mode:
-  type: protocol.channel.ca.CaIntArray
+  type: device.channel.ca.CaIntArray
   pv: $(prefix):VelocityMode
 
 user_programs:
-  type: protocol.channel.ca.CaIntArray
+  type: device.channel.ca.CaIntArray
   pv: $(prefix):UserArray
 
 max_points:
-  type: protocol.channel.ca.CaInt
+  type: device.channel.ca.CaInt
   pv: $(prefix):ProfileNumPoints
   rbv_suffix: _RBV
 
 num_points_to_build:
-  type: protocol.channel.ca.CaInt
+  type: device.channel.ca.CaInt
   pv: $(prefix):ProfilePointsToBuild
   rbv_suffix: _RBV
 
 a:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):A
 
 b:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):B
 
 c:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):C
 
 u:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):U
 
 v:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):V
 
 w:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):W
 
 x:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):X
 
 y:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):Y
 
 z:
-  type: protocol.pmac.CsAxis
+  type: device.pmac.CsAxis
   prefix: $(prefix):Z

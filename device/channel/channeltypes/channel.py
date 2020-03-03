@@ -3,7 +3,8 @@ from typing_extensions import Protocol
 
 from coniql._types import ChannelStatus, Time, Readback
 
-TValue = TypeVar('TValue')
+TValue = TypeVar('TValue', covariant=True)
+TInputValue = TypeVar('TInputValue', contravariant=True)
 DEFAULT_TIMEOUT = 10.0  # seconds
 
 
@@ -27,8 +28,8 @@ class CanMonitorReadback(Protocol):
         yield NotImplemented
 
 
-class CanPutValue(Protocol[TValue]):
-    async def put(self, value: TValue) -> bool:
+class CanPutValue(Protocol[TInputValue]):
+    async def put(self, value: TInputValue) -> bool:
         return NotImplemented
 
 
@@ -38,6 +39,10 @@ class ReadOnlyChannel(HasValue[TValue], HasReadback,
     pass
 
 
-class ReadWriteChannel(ReadOnlyChannel[TValue], CanPutValue[TValue],
-                       Protocol[TValue]):
+class ReadWriteChannelDiff(ReadOnlyChannel[TValue], CanPutValue[TInputValue],
+                       Protocol[TValue, TInputValue]):
+    pass
+
+
+class ReadWriteChannel(ReadWriteChannelDiff[TValue, TValue]):
     pass

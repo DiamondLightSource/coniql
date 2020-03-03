@@ -11,7 +11,9 @@ def field_from_yaml_def(yaml_def: Dict[str, Any]):
 
 def import_type(type_addr: str) -> Type:
     parts = type_addr.split('.')
-    module = importlib.import_module(parts[0])
-    for part in parts[1:]:
-        module = getattr(module, part)
-    return module
+
+    mod_name = '.'.join(parts[:-1])
+    part_name = parts[-1]
+
+    module = importlib.import_module(mod_name)
+    return getattr(module, part_name)

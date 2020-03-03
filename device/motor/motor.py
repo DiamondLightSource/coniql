@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from typing_extensions import Protocol
+
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel
 from device.motor.joggable import Joggable
@@ -8,9 +10,8 @@ from device.motor.pidcontroller import PidController
 from device.motor.positioner import PositionerWithStatus
 
 
-@dataclass
 class Motor(PositionerWithStatus, Joggable, PidController, MinLimitable,
-            MaxLimitable):
+            MaxLimitable, Protocol):
     velocity: ReadWriteChannel[float] = doc_field("Velocity of the motor")
     max_velocity: ReadWriteChannel[float] = doc_field("Velocity limit of the "
                                                       "motor")

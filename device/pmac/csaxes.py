@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from typing import TypeVar, Generic, Iterable
+from typing_extensions import Protocol
 
 from device.pmac.modes import CS_AXIS_NAMES
 
 T = TypeVar('T')
 
 
-@dataclass
-class CsAxes(Generic[T]):
+class CsAxes(Protocol[T]):
     a: T
     b: T
     c: T

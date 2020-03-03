@@ -1,3 +1,3 @@
 scannable_name:
-    type: protocol.channel.inmemory.InMemoryReadOnlyChannel
+    type: device.channel.inmemory.InMemoryReadOnlyChannel
     value: $(scannable)

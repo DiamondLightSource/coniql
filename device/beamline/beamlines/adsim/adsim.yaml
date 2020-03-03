@@ -1,3 +1,3 @@
 stage:
-    type: protocol.beamline.beamlines.adsim.Stage3D
+    type: device.beamline.beamlines.adsim.Stage3D
     prefix: $(machine)-MO-SIM-01

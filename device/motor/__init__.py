@@ -1,5 +1,5 @@
 from device.core.yamltype import yaml_type
 
-EpicsMotor = yaml_type('protocol/motor/epicsmotor.yaml')
-ScannableMotor = yaml_type('protocol/motor/epicsmotor.yaml',
-                           'protocol/motor/scannable.yaml')
+EpicsMotor = yaml_type('device/motor/epicsmotor.yaml')
+ScannableMotor = yaml_type('device/motor/epicsmotor.yaml',
+                           'device/motor/scannable.yaml')

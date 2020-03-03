@@ -1,15 +1,15 @@
 trigger:
-  type: protocol.channel.ca.CaEnum
+  type: device.channel.ca.CaEnum
   pv: $(prefix)
 
 status:
-  type: protocol.channel.ca.CaString
+  type: device.channel.ca.CaString
   pv: $(prefix)Status_RBV
 
 state:
-  type: protocol.channel.ca.CaString
+  type: device.channel.ca.CaString
   pv: $(prefix)State_RBV
 
 message:
-  type: protocol.channel.ca.CaString
+  type: device.channel.ca.CaString
   pv: $(prefix)Message_RBV

@@ -3,7 +3,7 @@ from typing import Optional
 
 import numpy as np
 
-from device.pmac.protocol.pmac import Pmac, Axis, PmacTrajectory
+from device.pmac.protocol.pmac import Pmac, Trajectory, CsDemands, DemandsAxis
 # expected control program number
 from device.pmac.profile.trajectoryprofile import PmacTrajectoryProfile
 
@@ -39,7 +39,7 @@ async def write_profile(pmac: Pmac,
     await action
 
 
-async def ensure_correct_trajectory_program(traj: PmacTrajectory):
+async def ensure_correct_trajectory_program(traj: Trajectory):
     """make sure a matching control program is installed on the pmac
     """
     program_version = await traj.program_version.get()
@@ -64,7 +64,7 @@ async def write_arrays(pmac: Pmac, profile: PmacTrajectoryProfile):
     await asyncio.wait(common_jobs + axis_jobs)
 
 
-async def setup_axis(axis: Axis, demands: np.ndarray):
+async def setup_axis(axis: DemandsAxis, demands: np.ndarray):
     if demands:
         await axis.use.put(True)
         await axis.positions.put(demands)

@@ -1,19 +1,19 @@
 position:
-    type: protocol.channel.ca.CaFloat
+    type: device.channel.ca.CaFloat
     pv: $(prefix).RBV
 
 setpoint:
-    type: protocol.channel.ca.CaFloat
+    type: device.channel.ca.CaFloat
     pv: $(prefix)
 
 stationary:
-    type: protocol.channel.ca.CaBool
+    type: device.channel.ca.CaBool
     pv: $(prefix).DMOV
 
 max:
-    type: protocol.channel.ca.CaFloat
+    type: device.channel.ca.CaFloat
     pv: $(prefix).HLM
 
 min:
-    type: protocol.channel.ca.CaFloat
+    type: device.channel.ca.CaFloat
     pv: $(prefix).LLM

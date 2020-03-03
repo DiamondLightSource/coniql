@@ -1,24 +1,24 @@
-cs:
-  type: protocol.pmac.CsDemands
+cs_demands:
+  type: device.pmac.CsDemands
   prefix: $(prefix)
 
 profile_build:
-  type: protocol.pmac.ProfilePart
+  type: device.pmac.ProfilePart
   prefix: $(prefix):ProfileBuild
 
 points_append:
-  type: protocol.pmac.ProfilePart
+  type: device.pmac.ProfilePart
   prefix: $(prefix):ProfileAppend
 
 profile_execution:
-  type: protocol.pmac.ProfilePart
+  type: device.pmac.ProfilePart
   prefix: $(prefix):ProfileExecute
 
 program_version:
-  type: protocol.channel.ca.CaString
+  type: device.channel.ca.CaString
   pv: $(prefix):ProgramVersion_RBV
 
 coordinate_system_name:
-  type: protocol.channel.ca.CaEnum
+  type: device.channel.ca.CaEnum
   pv: $(prefix):ProfileCsName
   rbv_suffix: _RBV

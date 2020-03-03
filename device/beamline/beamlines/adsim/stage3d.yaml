@@ -1,14 +1,14 @@
 x:
-    type: protocol.motor.ScannableMotor
+    type: device.motor.ScannableMotor
     prefix: $(prefix):M1
     scannable: simx
 
 y:
-    type: protocol.motor.ScannableMotor
+    type: device.motor.ScannableMotor
     prefix: $(prefix):M2
     scannable: simy
 
 z:
-    type: protocol.motor.ScannableMotor
+    type: device.motor.ScannableMotor
     prefix: $(prefix):M3
     scannable: simz
