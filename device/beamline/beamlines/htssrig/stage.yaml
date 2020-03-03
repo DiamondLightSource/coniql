@@ -1,9 +1,9 @@
 x:
-    type: device.motor.ScannableMotor
+    type: device.pmac.PmacMotor
     prefix: $(prefix):X
     scannable: stagex
 
 theta:
-    type: device.motor.ScannableMotor
+    type: device.pmac.PmacMotor
     prefix: $(prefix):A
     scannable: stagea

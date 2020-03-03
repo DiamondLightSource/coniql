@@ -1,11 +1,11 @@
 i10:
   type: device.channel.ca.CaInt
-  pv: $(prefix):I10
+  pv: $(prefix)-MO-BRICK-01:I10
 
 trajectory:
   type: device.pmac.Trajectory
-  prefix: $(prefix)
+  prefix: $(prefix)-MO-BRICK-01
 
 motors:
     type: device.beamline.beamlines.htssrig.Stage
-    prefix: $(rig)-MO-MAP-01:STAGE
+    prefix: $(prefix)-MO-MAP-01:STAGE

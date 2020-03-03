@@ -3,6 +3,7 @@ from typing import List, Sequence, Dict
 
 from scanpointgenerator import CompoundGenerator, StaticPointGenerator
 
+from device.pmac.deviceutil.motor import coordinate_system
 from device.pmac.modes import CS_AXIS_NAMES
 from device.pmac.motorinfo import MotorInfo, motor_info
 from device.pmac.protocol.motor import PmacMotor
@@ -34,7 +35,7 @@ async def cs_axis_mapping(motors: List[PmacMotor],
     axis_mapping = {}  # type: Dict[str, MotorInfo]
 
     for motor in motors:
-        cs = await motor.cs()
+        cs = await coordinate_system(motor)
         name = await motor.scannable_name.get()
         if name in axes_to_move:
             cs_ports.add(cs.port)
