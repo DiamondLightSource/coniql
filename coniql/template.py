@@ -1,7 +1,7 @@
 from string import Template
 
 
-def render_graphiql():
+def render_graphiql(host: str):
     return Template('''
 <!DOCTYPE html>
 <html>
@@ -118,7 +118,7 @@ def render_graphiql():
 </html>''').substitute(
         GRAPHIQL_VERSION='0.11.7',
         SUBSCRIPTIONS_TRANSPORT_VERSION='0.7.0',
-        subscriptionsEndpoint='ws://localhost:8000/subscriptions',
+        subscriptionsEndpoint=f'ws://{host}/subscriptions',
         # subscriptionsEndpoint='ws://localhost:5000/',
         endpointURL='/graphql',
 )

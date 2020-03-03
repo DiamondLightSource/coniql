@@ -23,8 +23,9 @@ async def get_query(request):
 
 
 async def graphiql_view(request):
+    host: str = request.host
     return web.Response(
-        text=render_graphiql(), headers={'Content-Type': 'text/html'})
+        text=render_graphiql(host), headers={'Content-Type': 'text/html'})
 
 
 class App(web.Application):
