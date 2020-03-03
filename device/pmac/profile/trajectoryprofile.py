@@ -218,7 +218,7 @@ class ProfileGenerator:
         self.profile.user_programs.append(user_program)
         self.completed_steps_lookup.append(completed_step)
         for k, v in axis_points.items():
-            cs_axis = self.axis_mapping[k].cs.axis.lower()
+            cs_axis = self.axis_mapping[k].cs.axis.upper()
             self.profile[cs_axis].append(v)
 
     def add_generator_point_pair(self, point, point_num, points_are_joined):

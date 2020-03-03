@@ -30,7 +30,7 @@ async def scan_points(pmac: Pmac, model: TrajectoryModel):
         revised_generator.prepare()
         model = model.with_revised_generator(revised_generator)
     await configure_pmac_for_scan(pmac, model)
-    await pmac.trajectory.execute_profile()
+    await execute_profile(pmac.trajectory)
 
 
 async def configure_pmac_for_scan(pmac: Pmac,
