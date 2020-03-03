@@ -31,7 +31,7 @@ class DeviceLayer:
         """Subscribe to the structure of the value, yielding dict structures
         where only changing top level fields are filled in"""
         channel = self.env.get_resource(channel_id)
-        stream = channel.monitor()
+        stream = channel.monitor_readback()
         async for readback in stream:
             yield readback
 

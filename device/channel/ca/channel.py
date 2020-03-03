@@ -54,6 +54,9 @@ class CaChannel(Generic[T]):
 
     async def get_readback(self) -> Readback:
         value = await self.caget()
+        return await self.as_readback(value)
+
+    async def as_readback(self, value):
         time, status = value_to_readback_meta(value)
         return Readback(
             value=self.format_value(value),
@@ -68,6 +71,11 @@ class CaChannel(Generic[T]):
         return await caget_one(self.rbv,
                                format=FORMAT_TIME,
                                timeout=self.timeout)
+
+    async def monitor_readback(self) -> AsyncGenerator[Readback, None]:
+        gen = await self.camonitor()
+        async for value in gen:
+            yield self.as_readback(value)
 
     async def monitor(self) -> AsyncGenerator[T, None]:
         gen = await self.camonitor()

@@ -112,7 +112,7 @@ class ConiqlSchema(GraphQLSchema):
     async def subscribe_channel(self, root, info, id: str):
         try:
             async for data in self.device_layer.subscribe_channel(id):
-                data.id = id
+                # data.id = id
                 yield dict(subscribeChannel=data)
         except Exception as e:
             # TODO: I'm sure it's possible to raise an exception from a subscription...
