@@ -49,7 +49,7 @@ async def configure_pmac_for_scan(pmac: Pmac,
 
     # Work out the cs_port we should be using
     # layout_table = self.pmac.control.axis_motors
-    motors = await pmac.motors.get()
+    motors = list(pmac.motors.__dict__.values())
     if motion_axes:
         axis_mapping = await cs_axis_mapping(motors, motion_axes)
         # Check units for everything in the axis mapping

@@ -2,10 +2,6 @@ stage:
     type: device.beamline.beamlines.htssrig.Stage
     prefix: $(rig)-MO-MAP-01:STAGE
 
-
 pmac:
-    type: device.pmac.Pmac
+    type: device.beamline.beamlines.htssrig.Pmac
     prefix: $(rig)-MO-BRICK-01
-    motors:
-        - stage.x
-        - stage.theta

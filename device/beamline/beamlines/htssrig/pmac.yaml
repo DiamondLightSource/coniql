@@ -5,3 +5,7 @@ i10:
 trajectory:
   type: device.pmac.Trajectory
   prefix: $(prefix)
+
+motors:
+    type: device.beamline.beamlines.htssrig.Stage
+    prefix: $(rig)-MO-MAP-01:STAGE
