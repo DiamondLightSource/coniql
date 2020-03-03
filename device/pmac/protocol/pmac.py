@@ -32,31 +32,15 @@ class ProfilePart(Protocol):
 class Trajectory(Protocol):
     cs_demands: CsDemands
     profile_build: ProfilePart
+    points_append: ProfilePart
+    profile_execution: ProfilePart
     program_version: ReadOnlyChannel[str]
     coordinate_system_name: ReadWriteChannel[str]
-
-    async def build_profile(self):
-        await self.profile_build.trigger.put('Build')
-
-    async def append_points(self):
-        await self.points_append.trigger.put('Append')
-
-    async def execute_profile(self):
-        await self.profile_execution.trigger.put('Execute')
-
-    async def abort(self):
-        await self.profile_abort.put(False)
+    profile_abort: ReadWriteChannel[bool]
 
 
 class Pmac(Protocol):
     i10: ReadOnlyChannel[int]
     motors: ReadOnlyChannel[List[str]]
     trajectory: Trajectory
-
-    async def servo_frequency(self) -> float:
-        i10 = await self.i10.get()
-        return 8388608000.0 / i10
-
-    async def layout(self):
-        return NotImplemented
 

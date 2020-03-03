@@ -16,6 +16,7 @@ from device.pmac.modes import MIN_TIME, MIN_INTERVAL, UserProgram
 from device.pmac.control.trajectorymodel import TrajectoryModel
 from device.scan.util import MotionTrigger
 from device.scan.movetopoint import move_to_point
+from device.pmac.deviceutil.pmac import servo_frequency
 
 
 async def scan_points(pmac: Pmac, model: TrajectoryModel):
@@ -48,8 +49,9 @@ async def configure_pmac_for_scan(pmac: Pmac,
 
     # Work out the cs_port we should be using
     # layout_table = self.pmac.control.axis_motors
+    motors = await pmac.motors.get()
     if motion_axes:
-        axis_mapping = await cs_axis_mapping(pmac.motors, motion_axes)
+        axis_mapping = await cs_axis_mapping(motors, motion_axes)
         # Check units for everything in the axis mapping
         # TODO: reinstate this when GDA does it properly
         # for axis_name, motor_info in sorted(self.axis_mapping.items()):
@@ -64,7 +66,7 @@ async def configure_pmac_for_scan(pmac: Pmac,
         # do something
         axis_mapping = {}
         # Pick the first cs we find that has an axis assigned
-        cs_port = await cs_port_with_motors_in(pmac.motors)
+        cs_port = await cs_port_with_motors_in(motors)
 
     clean_profile = PmacTrajectoryProfile(
         time_array=[MIN_TIME],
@@ -141,7 +143,7 @@ async def validate_trajectory_scan(pmac: Pmac, model: TrajectoryModel) -> \
     point_duration = model.generator.duration
     assert point_duration > 0, \
         "Can only do fixed duration at the moment"
-    servo_freq = await pmac.servo_frequency()
+    servo_freq = await servo_frequency(pmac)
     # convert half an exposure to multiple of servo ticks, rounding down
     ticks = np.floor(servo_freq * 0.5 * point_duration)
     if not np.isclose(servo_freq, 3200):

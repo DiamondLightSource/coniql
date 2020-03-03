@@ -22,3 +22,7 @@ coordinate_system_name:
   type: device.channel.ca.CaEnum
   pv: $(prefix):ProfileCsName
   rbv_suffix: _RBV
+
+profile_abort:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):ProfileAbort
