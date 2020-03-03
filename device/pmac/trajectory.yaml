@@ -26,3 +26,7 @@ coordinate_system_name:
 profile_abort:
   type: device.channel.ca.CaBool
   pv: $(prefix):ProfileAbort
+
+percentage_complete:
+  type: device.channel.ca.CaFloat
+  pv: $(prefix):TscanPercent_RBV
