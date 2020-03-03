@@ -21,10 +21,15 @@ class TrajectoryModel:
 
     @classmethod
     def from_dict(cls, dct):
+        end_index = dct['end_index']
+        generator = dct['generator']
+        if end_index < 0:
+            generator.prepare()
+            end_index = len(list(generator.iterator()))
         return TrajectoryModel(
-            dct['generator'],
+            generator,
             dct['start_index'],
-            dct['end_index']
+            end_index
         )
 
     def with_revised_generator(self, revised_generator: CompoundGenerator):

@@ -185,7 +185,7 @@ class ProfileGenerator:
                 prev_velocity = this_velocity
 
                 position += part_position
-                self.profile[motor_info.cs.axis.lower()].append(position)
+                self.profile[motor_info.cs.axis.upper()].append(position)
 
     def add_profile_point(self, time_point, velocity_mode, user_program,
                           completed_step, axis_points):
@@ -200,7 +200,7 @@ class ProfileGenerator:
                 self.profile.velocity_mode.append(VelocityMode.PREV_TO_NEXT)
                 self.profile.user_programs.append(UserProgram.NO_PROGRAM)
             for k, v in axis_points.items():
-                cs_axis = self.axis_mapping[k].cs.axis.lower()
+                cs_axis = self.axis_mapping[k].cs.axis.upper()
                 last_point = self.profile[cs_axis][-1]
                 per_section = float(v - last_point) / nsplit
                 for i in range(1, nsplit):
@@ -395,7 +395,7 @@ class ProfileGenerator:
         # calculate_profile_from_velocities fails when the turnaround is 2
         # points only
         for axis_name, motor_info in self.axis_mapping.items():
-            self.profile[motor_info.cs.axis.lower()][-1] = \
+            self.profile[motor_info.cs.axis.upper()][-1] = \
                 next_point.lower[axis_name]
 
         # Change the last point to be a live frame
