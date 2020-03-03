@@ -24,6 +24,10 @@ PROFILE_POINTS = 10000
 TICK_S = 0.000001
 
 
+def empty_axis_demands() -> Dict[str, List[float]]:
+    return {cs: [] for cs in CS_AXIS_NAMES}
+
+
 @dataclass
 class PmacTrajectoryProfile:
     time_array: List[float]  # of floats
@@ -33,11 +37,12 @@ class PmacTrajectoryProfile:
 
     @classmethod
     def empty(cls):
-        axes = {cs: [] for cs in CS_AXIS_NAMES}
-        return PmacTrajectoryProfile([], axes, [], [])
+        axes = empty_axis_demands()
+        return PmacTrajectoryProfile(time_array=[], axes=axes,
+                                     user_programs=[], velocity_mode=[])
 
     def __getitem__(self, item):
-        return self.axes.__getitem__(item)
+        return self.axes[item]
 
     def in_use(self, axis_name: str) -> bool:
         """Returns True if there are any points to be appended to the
@@ -52,10 +57,10 @@ class PmacTrajectoryProfile:
         user_programs = _zeros_or_right_length(self.user_programs, num_points)
         velocity_mode = _zeros_or_right_length(self.velocity_mode, num_points)
         return PmacTrajectoryProfile(
-            self.time_array,
-            user_programs,
-            velocity_mode,
-            self.axes
+            time_array=self.time_array,
+            user_programs=user_programs,
+            velocity_mode=velocity_mode,
+            axes=self.axes
         )
 
     def with_ticks(self):
@@ -72,10 +77,10 @@ class PmacTrajectoryProfile:
         # TODO: overflow discarded overy 10000 points, is it a problem?
         # profile.time_array = time_array_ticks  # np.array(time_array_ticks, np.int32)
         return PmacTrajectoryProfile(
-            time_array_ticks,
-            self.user_programs,
-            self.velocity_mode,
-            self.axes
+            time_array=time_array_ticks,
+            user_programs=self.user_programs,
+            velocity_mode=self.velocity_mode,
+            axes=self.axes
         )
 
 

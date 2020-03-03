@@ -17,3 +17,27 @@ max:
 min:
     type: device.channel.ca.CaFloat
     pv: $(prefix).LLM
+
+max_velocity:
+    type: device.channel.ca.CaFloat
+    pv: $(prefix).VMAX
+
+acceleration_time:
+    type: device.channel.ca.CaFloat
+    pv: $(prefix).ACCL
+
+output:
+    type: device.channel.ca.CaString
+    pv: $(prefix).OUT
+
+resolution:
+    type: device.channel.ca.CaFloat
+    pv: $(prefix).MRES
+
+offset:
+    type: device.channel.ca.CaFloat
+    pv: $(prefix).OFF
+
+units:
+    type: device.channel.ca.CaString
+    pv: $(prefix).EGU

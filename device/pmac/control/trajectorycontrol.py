@@ -11,12 +11,14 @@ from device.pmac.util import point_velocities
 from device.pmac.motorinfo import MotorInfo
 from device.pmac.control.motionaxes import cs_port_with_motors_in, \
     get_motion_axes, cs_axis_mapping
-from device.pmac.profile.trajectoryprofile import PmacTrajectoryProfile, ProfileGenerator
+from device.pmac.profile.trajectoryprofile import PmacTrajectoryProfile, \
+    ProfileGenerator, empty_axis_demands
 from device.pmac.modes import MIN_TIME, MIN_INTERVAL, UserProgram
 from device.pmac.control.trajectorymodel import TrajectoryModel
 from device.scan.util import MotionTrigger
 from device.scan.movetopoint import move_to_point
 from device.pmac.deviceutil.pmac import servo_frequency
+from device.pmac.deviceutil.trajectory import execute_profile
 
 
 async def scan_points(pmac: Pmac, model: TrajectoryModel):
@@ -70,10 +72,11 @@ async def configure_pmac_for_scan(pmac: Pmac,
 
     clean_profile = PmacTrajectoryProfile(
         time_array=[MIN_TIME],
-        user_programs=[UserProgram.ZERO_PROGRAM.real]
+        axes=empty_axis_demands(),
+        user_programs=[UserProgram.ZERO_PROGRAM.real],
     )
     await write_profile(pmac, clean_profile, cs_port)
-    await pmac.trajectory.execute_profile()
+    await execute_profile(pmac.trajectory)
     await move_to_start(pmac, model, axis_mapping)
 
     completed_steps_lookup = []
@@ -111,7 +114,8 @@ async def move_to_start(pmac: Pmac,
                         axis_mapping: Dict[str, MotorInfo]):
     first_pt = first_point(model)
     starting_pos = starting_position(first_pt, axis_mapping)
-    await move_to_point(pmac.motors.iterator(), starting_pos)
+    motors = list(pmac.motors.__dict__.values())
+    await move_to_point(motors, starting_pos)
 
 
 def starting_position(first_point: Point,
