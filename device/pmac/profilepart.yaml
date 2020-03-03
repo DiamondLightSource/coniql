@@ -1,6 +1,7 @@
 trigger:
   type: device.channel.ca.CaEnum
   pv: $(prefix)
+  timeout: 300 # TODO: Temporary, dynamic timeout needed
 
 status:
   type: device.channel.ca.CaString
