@@ -1,8 +1,9 @@
 import base64
 import traceback
 import dataclasses
-from typing import Tuple, Dict
+import json
 
+from typing import Tuple, Dict
 from graphql import (
     GraphQLSchema, GraphQLObjectType, GraphQLField, GraphQLNonNull,
     GraphQLString, GraphQLArgument, GraphQLFloat, GraphQLScalarType,
@@ -59,7 +60,11 @@ class ConiqlSchema(GraphQLSchema):
                     GraphQLNonNull(GraphQLString),
                     description="The ID of the Channel to connect to")
             ), resolve=self.get_channel),
-
+            getFields=GraphQLField(GraphQLString, args=dict(
+                id=GraphQLArgument(
+                    GraphQLNonNull(GraphQLString),
+                    description="The ID of the Device to introspect"),
+            ), resolve=self.get_fields)
         )
 
     def _mutation_fields(self):
@@ -93,6 +98,10 @@ class ConiqlSchema(GraphQLSchema):
                     description="The ID of the Channel to connect to"),
             ), subscribe=self.subscribe_channel),
         )
+
+    async def get_fields(self, root, info, id: str):
+        fields = self.device_layer.get_fields(id)
+        return json.dumps(fields)
 
     async def read_channel(self, root, info, id: str, timeout: float):
         data = await self.device_layer.read_channel(id)

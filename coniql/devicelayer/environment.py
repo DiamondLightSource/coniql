@@ -7,6 +7,10 @@ class DeviceEnvironment:
     def __init__(self, device_tree):
         self.device_tree = device_tree
 
+    def get_fields(self, resource_addr: str):
+        resource = self.get_resource(resource_addr)
+        return resource.dict_view()
+
     def get_resource(self, resource_addr: str):
         addr = parse_resource_addr(resource_addr)
         return get_resource(self.device_tree, addr)

@@ -5,6 +5,7 @@ from typing import Type, Dict
 import yaml
 
 from device.core.yamlload import field_from_yaml_def
+from device.viewableasdict import ViewableAsDict
 
 
 def yaml_load(yaml_path: str, **kwargs):
@@ -39,9 +40,13 @@ def yaml_type(*yaml_paths: str) -> Type:
             return pformat(self.dict_view())
 
         def dict_view(self):
-            return {
-                k: v.__dict__ for k, v in self.__dict__.items()
-            }
+            view = {}
+            for k, v in self.__dict__.items():
+                if isinstance(v, ViewableAsDict):
+                    view[k] = v.dict_view()
+                else:
+                    view[k] = type(v).__name__
+            return view
 
     return YamlType
 

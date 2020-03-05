@@ -12,6 +12,9 @@ class DeviceLayer:
     def from_tree(cls, device_tree):
         return DeviceLayer(DeviceEnvironment(device_tree))
 
+    def get_fields(self, resource_id: str):
+        return self.env.get_fields(resource_id)
+
     async def read_channel(self, channel_id: str):
         channel = self.env.get_resource(channel_id)
         readback = await channel.get_readback()
