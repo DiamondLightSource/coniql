@@ -42,7 +42,9 @@ class CaChannel(Generic[T]):
     async def setup(self):
         """Performs any setup for this channel. Verifies that the PV is
         reachable and gather any metadata"""
-        return await connect([self.pv, self.rbv])
+        pvs = [self.pv, self.rbv]
+        print(f'Connecting to {pvs}')
+        return await connect(pvs)
 
     async def put(self, value: T) -> bool:
         """Write a value to this channel"""

@@ -10,6 +10,7 @@ class CaEnum(CaChannel[str]):
     choices: EnumMeta
 
     async def setup(self):
+        print(f'Enum setup: {self.pv}')
         meta = await caget_one(self.pv, format=FORMAT_CTRL)
         self.choices = choices_from_meta(meta)
 
