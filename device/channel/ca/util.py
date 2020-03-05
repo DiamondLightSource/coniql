@@ -21,7 +21,9 @@ async def camonitor_as_async_generator(pv: str, format=FORMAT_TIME) -> \
         while True:
             yield await q.get()
     finally:
-        subscription.close()
+        # TODO: Figure out why subscription is sometimes None
+        if subscription is not None:
+            subscription.close()
 
 
 NUMBER_TYPES = {
