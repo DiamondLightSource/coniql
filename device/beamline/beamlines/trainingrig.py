@@ -39,5 +39,4 @@ def training_rig_environment(beamline_prefix: str) -> TrainingRig:
     #     pmac=pmc
     # )
     beamline = HtssRig(rig=beamline_prefix)
-    asyncio.get_event_loop().create_task(setup(beamline))
     return beamline

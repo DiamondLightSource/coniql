@@ -1,5 +1,6 @@
 from coniql._types import Channel
 from coniql.devicelayer.environment import DeviceEnvironment
+from device.channel.setup import setup
 from device.pmac.control.trajectorycontrol import scan_points
 from device.pmac.control.trajectorymodel import TrajectoryModel
 
@@ -45,8 +46,9 @@ class DeviceLayer:
 
     # TODO: Device introspection
 
-    def startup(self):
+    async def startup(self):
         """Start any services the plugin needs. Don't block"""
+        await setup(self.env.device_tree)
 
-    def shutdown(self):
+    async def shutdown(self):
         """Destroy the plugin and any connections it has"""

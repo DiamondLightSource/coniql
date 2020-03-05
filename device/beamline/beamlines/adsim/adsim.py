@@ -31,7 +31,6 @@ class AdSimBeamline:
 def adsim_environment(machine_name: str) -> AdSimBeamline:
     path = 'protocol/beamline/beamlines/adsim/adsim.yaml'
     beamline = yaml_load(path, machine=machine_name)
-    asyncio.get_event_loop().create_task(setup(beamline))
     return beamline
 
     # x = scannable_motor(f'{machine_name}-MO-SIM-01:M1', 'x')

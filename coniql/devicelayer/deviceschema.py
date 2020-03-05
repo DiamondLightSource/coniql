@@ -137,7 +137,7 @@ class ConiqlSchema(GraphQLSchema):
         return await self.device_layer.scan_points(pmac_id, model)
 
     async def startup(self, app):
-        self.device_layer.startup()
+        await self.device_layer.startup()
 
     async def shutdown(self, app):
-        self.device_layer.shutdown()
+        await self.device_layer.shutdown()
