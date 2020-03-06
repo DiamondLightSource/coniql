@@ -1,29 +1,15 @@
-from functools import reduce
 from pprint import pformat
-from re import Match
-from typing import Type, Dict, Any
+from typing import Type, Dict
 
-import re
 import yaml
 
 from device.core.dicttypes import field_from_dict_def
+from device.core.yaml.load import load_and_preprocess
 from device.viewableasdict import ViewableAsDict
 
 
 def yaml_load(yaml_path: str, **kwargs):
     return yaml_type(yaml_path)(**kwargs)
-
-
-INCLUDE_REGEX = '#include (.*)\n'
-
-
-def load_and_preprocess(yaml_path: str) -> str:
-    text = read_file(yaml_path)
-    return re.sub(INCLUDE_REGEX, include_match, text)
-
-
-def include_match(match: Match):
-    return load_and_preprocess(match.group(1))
 
 
 def yaml_type(yaml_path: str) -> Type:
@@ -59,20 +45,6 @@ def yaml_type(yaml_path: str) -> Type:
             return view
 
     return YamlType
-
-
-def concat_files(*paths: str):
-    return reduce(lambda x, y: x + y, map(read_file, paths))
-
-
-def read_file(file_path: str) -> str:
-    with open(file_path, 'r') as f:
-        return f.read()
-
-
-def replace_substitutions_dct(dct: Dict[str, Any],
-                              substitutions: Dict[str, str]) -> Dict[str, Any]:
-    return {k: replace_substitutions(v, substitutions) for k, v in dct.items()}
 
 
 def replace_substitutions(value: str, substitutions: Dict[str, str]) -> str:
