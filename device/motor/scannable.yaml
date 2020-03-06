@@ -1,3 +1,5 @@
+#include device/motor/epicsmotor.yaml
+
 scannable_name:
     type: device.channel.inmemory.InMemoryReadOnlyChannel
     value: $(scannable)

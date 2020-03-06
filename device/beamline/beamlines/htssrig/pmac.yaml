@@ -1,10 +1,4 @@
-i10:
-  type: device.channel.ca.CaInt
-  pv: $(prefix)-MO-BRICK-01:I10
-
-trajectory:
-  type: device.pmac.Trajectory
-  prefix: $(prefix)-MO-BRICK-01
+#include device/pmac/pmac.yaml
 
 motors:
     type: device.beamline.beamlines.htssrig.Stage
