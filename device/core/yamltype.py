@@ -6,7 +6,7 @@ from typing import Type, Dict, Any
 import re
 import yaml
 
-from device.core.yamlload import field_from_dict_def
+from device.core.dicttypes import field_from_dict_def
 from device.viewableasdict import ViewableAsDict
 
 
