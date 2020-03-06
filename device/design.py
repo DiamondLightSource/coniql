@@ -4,7 +4,7 @@ from pprint import pprint
 from typing import Dict, Any, List, Coroutine
 
 from device.channel.channeltypes.channel import ReadableChannel, WriteableChannel
-from device.util import asyncio_gather_values
+from device.asynciohelpers.gather import asyncio_gather_values
 
 _DESIGN = Dict[str, Any]
 
