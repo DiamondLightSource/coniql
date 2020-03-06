@@ -6,7 +6,7 @@ from typing import Type, Dict, Any
 import re
 import yaml
 
-from device.core.yamlload import field_from_yaml_def
+from device.core.yamlload import field_from_dict_def
 from device.viewableasdict import ViewableAsDict
 
 
@@ -36,7 +36,7 @@ def yaml_type(yaml_path: str) -> Type:
     def make_args(**kwargs):
         raw_structure = make_raw_structure(**kwargs)
         fields = {
-            name: field_from_yaml_def(yaml_def)
+            name: field_from_dict_def(yaml_def)
             for name, yaml_def in raw_structure.items()
         }
         return fields
