@@ -6,7 +6,7 @@ from aioca._aioca import caget_one, FORMAT_TIME, caput_one, connect
 
 from coniql._types import Readback
 from device.channel.ca.util import camonitor_as_async_generator, \
-    value_to_readback_meta
+    ca_value_to_readback
 
 T = TypeVar('T')
 
@@ -80,12 +80,7 @@ class CaChannel(Generic[T]):
 
     async def as_readback(self, value) -> Readback:
         """Converts a value structure from aioca to a Readback object"""
-        time, status = value_to_readback_meta(value)
-        return Readback(
-            value=self.format_value(value),
-            time=time,
-            status=status
-        )
+        return ca_value_to_readback(self.format_value(value), value)
 
     def format_value(self, value) -> T:
         """Converts an aioca value into a simpler value. Should be used for

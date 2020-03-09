@@ -4,7 +4,7 @@ from typing import AsyncGenerator, Any, Tuple
 from aioca import FORMAT_TIME, camonitor, _dbr as dbr
 
 from coniql._types import NumberType, ChannelQuality, Range, NumberDisplay, \
-    DisplayForm, Time, ChannelStatus
+    DisplayForm, Time, ChannelStatus, Readback
 
 
 async def camonitor_as_async_generator(pv: str, format=FORMAT_TIME) -> \
@@ -49,16 +49,25 @@ EMPTY_DISPLAY = NumberDisplay(EMPTY_RANGE, EMPTY_RANGE, EMPTY_RANGE,
                               EMPTY_RANGE, "", 4, DisplayForm.DEFAULT)
 
 
-def value_to_readback_meta(value) -> Tuple[Time, ChannelStatus]:
-    timestamp = value.timestamp
-    time = Time(
+def ca_value_to_readback(value: Any, ca_value) -> Readback:
+    return Readback(
+        value=value,
+        time=time_from_ca_timestamp(ca_value.timestamp),
+        status=status_from_ca_value(ca_value)
+    )
+
+
+def time_from_ca_timestamp(timestamp: float) -> Time:
+    return Time(
         seconds=int(timestamp),
         nanoseconds=int((timestamp % 1) * 1e9),
         userTag=0
     )
-    status = ChannelStatus(
-        quality=CHANNEL_QUALITY_MAP[value.severity],
+
+
+def status_from_ca_value(ca_value) -> ChannelStatus:
+    return ChannelStatus(
+        quality=CHANNEL_QUALITY_MAP[ca_value.severity],
         message="alarm",
         mutable=True
     )
-    return time, status
