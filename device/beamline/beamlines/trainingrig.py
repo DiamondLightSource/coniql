@@ -1,13 +1,5 @@
-import asyncio
-from dataclasses import dataclass
-
 from coniql.devicelayer.deviceplugin import DeviceLayer
-from device.adcore.addetector import AdDetector
 from device.beamline.beamlines.htssrig import HtssRig
-from device.channel.setup import setup
-from device.motor.tomostage import TomoStage
-from device.panda.adpanda import AdPandA
-from device.pmac.protocol.pmac import Pmac
 
 
 def htss_environment(beamline_prefix: str):
@@ -16,27 +8,6 @@ def htss_environment(beamline_prefix: str):
     return layer
 
 
-@dataclass
-class TrainingRig:
-    detector: AdDetector
-    panda_position_detector: AdPandA
-    sample_stage: TomoStage
-    pmac: Pmac
-
-
-def training_rig_environment(beamline_prefix: str) -> TrainingRig:
-    # x = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:X', 'x')
-    # theta = pmac_motor(f'{beamline_prefix}-MO-MAP-01:STAGE:A', 'a')
-    # sample_stage = TomoStage(x, theta)
-    # det = ad_detector(f'{beamline_prefix}-EA-DET-01', cam_prefix='DET')
-    # panda_det = ad_panda(f'{beamline_prefix}-MO-PANDA-01')
-    # motors = PmacMotors(x, theta)
-    # pmc = pmac(f'{beamline_prefix}-MO-BRICK-01', motors)
-    # beamline = TrainingRig(
-    #     detector=det,
-    #     panda_position_detector=panda_det,
-    #     sample_stage=sample_stage,
-    #     pmac=pmc
-    # )
+def training_rig_environment(beamline_prefix: str):
     beamline = HtssRig(rig=beamline_prefix)
     return beamline
