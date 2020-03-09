@@ -106,3 +106,12 @@ Then set the environment variable **EPICS7_BASE** to the top level of the instal
     export EPICS7_BASE=/path/to/EPICS
 
 This should allow the values within the coniql database to be made available over pvAccess.
+
+Measuring Performance
+---------------------
+
+If you have followed the above instructions and conqil is running at *localhost:8000*, then performance tests can be run with:
+
+.. code-block:: bash
+
+  pipenv run python benchmark/sim_sine.py 
