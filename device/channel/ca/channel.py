@@ -1,12 +1,10 @@
-import traceback
 from typing import TypeVar, Optional, AsyncGenerator, Generic
-from typing_extensions import Protocol
 
 from aioca._aioca import caget_one, FORMAT_TIME, caput_one, connect
 
 from coniql._types import Readback
-from device.channel.ca.camonitor import camonitor_as_async_generator
-from device.channel.ca.readback import ca_value_to_readback
+from device.channel.ca.util.camonitor import camonitor_as_async_generator
+from device.channel.ca.util.readback import ca_value_to_readback
 
 T = TypeVar('T')
 
