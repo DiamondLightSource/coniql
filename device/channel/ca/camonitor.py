@@ -1,10 +1,7 @@
 import asyncio
-from typing import AsyncGenerator, Any, Tuple
+from typing import AsyncGenerator, Any
 
-from aioca import FORMAT_TIME, camonitor, _dbr as dbr
-
-from coniql._types import NumberType, ChannelQuality, Range, NumberDisplay, \
-    DisplayForm, Time, ChannelStatus, Readback
+from aioca import FORMAT_TIME, camonitor
 
 
 async def camonitor_as_async_generator(pv: str, format=FORMAT_TIME) -> \
