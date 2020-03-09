@@ -1,13 +1,11 @@
-from dataclasses import dataclass
-
 from typing_extensions import Protocol
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadWriteChannel
-from device.motor.joggable import Joggable
-from device.motor.limitable import MaxLimitable, MinLimitable
-from device.motor.pidcontroller import PidController
-from device.motor.positioner import PositionerWithStatus
+from device.motor.protocol.joggable import Joggable
+from device.motor.protocol.limitable import MaxLimitable, MinLimitable
+from device.motor.protocol.pidcontroller import PidController
+from device.motor.protocol.positioner import PositionerWithStatus
 
 
 class Motor(PositionerWithStatus, Joggable, PidController, MinLimitable,

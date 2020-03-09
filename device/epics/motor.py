@@ -3,8 +3,8 @@ from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
 from device.channel.ca.string import CaString
 from device.channel.inmemory.channel import InMemoryReadOnlyChannel
-from device.motor.motor import Motor
-from device.motor.scannable import ScannableMotor
+from device.motor.protocol.motor import Motor
+from device.motor.protocol.scannable import ScannableMotor
 from device.pmac.protocol.motor import PmacMotor
 
 

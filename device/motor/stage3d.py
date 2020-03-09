@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from device.motor.motor import Motor
+from device.motor.protocol.motor import Motor
 
 
 @dataclass

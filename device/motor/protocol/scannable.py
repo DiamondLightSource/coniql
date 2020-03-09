@@ -1,9 +1,8 @@
 from typing_extensions import Protocol
-from dataclasses import dataclass
 
 from coniql.util import doc_field
 from device.channel.channeltypes.channel import ReadOnlyChannel
-from device.motor.motor import Motor
+from device.motor.protocol.motor import Motor
 
 
 class ScannableMotor(Motor, Protocol):
