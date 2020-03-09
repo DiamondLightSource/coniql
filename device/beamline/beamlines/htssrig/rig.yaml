@@ -4,4 +4,6 @@ stage:
 
 pmac:
     type: device.beamline.beamlines.htssrig.Pmac
-    prefix: $(rig)
+    prefix: $(rig)-MO-BRICK-01
+    rig: $(rig)
+

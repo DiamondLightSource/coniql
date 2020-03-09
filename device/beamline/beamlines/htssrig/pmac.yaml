@@ -2,4 +2,4 @@
 
 motors:
     type: device.beamline.beamlines.htssrig.Stage
-    prefix: $(prefix)-MO-MAP-01:STAGE
+    prefix: $(rig)-MO-MAP-01:STAGE
