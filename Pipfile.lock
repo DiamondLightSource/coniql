@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "bc3dcfa333f0e6efe482f243bb3891ebb3e54c6a878d57290dac5802a80ac183"
+            "sha256": "81996c76b5323e0be39fb35cc6cbff3fddb38627a294f46c4d2228c4091bb548"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -210,6 +210,14 @@
             ],
             "version": "==1.8.0"
         },
+        "py-graphql-client": {
+            "hashes": [
+                "sha256:655079369151c29a35fc20a46dce3d26430de9443046a2256391cd9afed2f820",
+                "sha256:98605b4a65ada09fca9f3a30c40c056af3032885ac35d9e821ee3ec76e9e81bf"
+            ],
+            "index": "pypi",
+            "version": "==0.1.0"
+        },
         "pyparsing": {
             "hashes": [
                 "sha256:9b6323ef4ab914af344ba97510e966d64ba91055d6b9afa6b30799340e89cc03"
@@ -247,6 +255,13 @@
                 "sha256:f4ebe71925af7b40a864553f761ed559b43544f8f71746c2d756c7fe788ade7c"
             ],
             "version": "==0.1.7"
+        },
+        "websocket-client": {
+            "hashes": [
+                "sha256:8c8bf2d4f800c3ed952df206b18c28f7070d9e3dcbd6ca6291127574f57ee786",
+                "sha256:e51562c91ddb8148e791f0155fdb01325d99bb52c4cdbb291aee7a3563fd0849"
+            ],
+            "version": "==0.54.0"
         },
         "zipp": {
             "hashes": [

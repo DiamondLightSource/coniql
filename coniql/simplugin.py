@@ -120,7 +120,7 @@ class SineSimChannel(SimChannel):
         min_value: float = -5.0,
         max_value: float = 5.0,
         steps: float = 10.0,
-        update_seconds: float = 1.0,
+        update_seconds: float = 0.01,
         warning_percent: float = 80.0,
         alarm_percent: float = 90.0,
     ):
