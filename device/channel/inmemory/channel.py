@@ -1,28 +1,51 @@
-from asyncio import Queue
-from typing import TypeVar, AsyncGenerator, Generic
+import asyncio
 
+from typing import TypeVar, AsyncGenerator, Generic, List, Optional, Callable, \
+    Awaitable
 
 T = TypeVar('T')
 
 
 class InMemoryReadOnlyChannel(Generic[T]):
-    def __init__(self, value: T):
-        self.__value = value
+    """Immutable channel that holds a value in memeory, useful for storing
+    config in memory"""
 
-    def set_value(self, value: T):
-        self.__value = value
+    def __init__(self, value: T):
+        self._value = value
 
     async def get(self) -> T:
-        return self.__value
+        return self._value
 
-    async def monitor(self) -> AsyncGenerator[T, None]:
-        queue: Queue = Queue()
-        await queue.put(self.get())
-        while True:
-            yield await queue.get()
+
+_Callback = Callable[[T], Awaitable]
 
 
 class InMemoryReadWriteChannel(InMemoryReadOnlyChannel[T]):
+    """Mutable and monitorable channel that holds a value in memory. Useful for
+    testing"""
+    def __init__(self, value: T,
+                 callbacks: Optional[List[_Callback]] = None):
+        super().__init__(value)
+        self.callbacks = callbacks or []
+
     async def put(self, value: T) -> bool:
-        self.set_value(value)
+        self._value = value
+        await self.__notify_all()
         return True
+
+    async def __notify_all(self):
+        for c in self.callbacks:
+            await c(self._value)
+
+    async def monitor(self) -> AsyncGenerator[T, None]:
+        # Yield initial value at the time of subscription
+        yield self._value
+
+        # Yield subsequent values on change
+        try:
+            queue: asyncio.Queue = asyncio.Queue()
+            self.callbacks.append(queue.put)
+            while True:
+                yield await queue.get()
+        finally:
+            self.callbacks.remove(queue.put)
