@@ -7,6 +7,7 @@ verify_ssl = true
 pytest = "*"
 p4p = "*"
 requests = "*"
+coniql = {editable = true,path = "."}
 
 [packages]
 graphql-core = "==3.0.0a2"
