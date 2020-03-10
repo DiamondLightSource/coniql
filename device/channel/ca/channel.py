@@ -39,23 +39,23 @@ class CaChannel(Generic[T]):
 
     async def setup(self):
         """Performs any setup for this channel. Verifies that the PV is
-        reachable and gather any metadata"""
+        reachable and gathers any metadata"""
         pvs = [self.pv, self.rbv]
         print(f'Connecting to {pvs}')
         return await connect(pvs)
 
     async def put(self, value: T) -> bool:
-        """Write a value to this channel"""
+        """Writes a value to this channel"""
         await self.__caput(value)
         return True
 
     async def get(self) -> T:
-        """Request and read a value from this channel"""
+        """Requests and read a value from this channel"""
         value = await self.__caget()
         return self.format_value(value)
 
     async def get_readback(self) -> Readback:
-        """Request and read a Readback structure from this channel"""
+        """Requests and read a Readback structure from this channel"""
         value = await self.__caget()
         return await self.as_readback(value)
 
@@ -85,6 +85,7 @@ class CaChannel(Generic[T]):
         formatting and conversion to a simpler Python type"""
         return value.real
 
+    #
     # Simple wrappers around CA functions
 
     async def __caput(self, value):
