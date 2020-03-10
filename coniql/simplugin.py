@@ -391,6 +391,25 @@ class SineWaveSimple1000000SimChannel(SineWaveSimple1SimChannel):
         super(SineWaveSimple1000000SimChannel, self).__init__(**kwargs, size=1000000)
 
 
+@register_channel("sinewavesimple:10000000")
+class SineWaveSimple10000000SimChannel(SineWaveSimple1SimChannel):
+    """Create a simulated float waveform with a simple distribution of values
+
+    Args:
+        period_seconds: The time between repetitions on the sinewave in time
+        sample_wavelength: The wavelength of the output sinewave
+        size: The size of the output waveform (min 10 elements)
+        update_seconds: The time between each step
+        min_value: The minimum output value
+        max_value: The maximum output value
+        warning_percent: Percentage of the full range, outside this is warning
+        alarm_percent: Percentage of the full range, outside this is alarm
+    """
+
+    def __init__(self, **kwargs):
+        super(SineWaveSimple10000000SimChannel, self).__init__(**kwargs, size=10000000)
+
+
 T = TypeVar("T")
 R = TypeVar("R")
 

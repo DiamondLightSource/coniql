@@ -6,7 +6,10 @@ import requests
 
 
 def measure_request_times(
-    query: str, repeats: int = 100, url: str = "http://localhost:8000/graphql"
+    query: str,
+    repeats: int = 100,
+    url: str = "http://localhost:8000/graphql",
+    validate: Optional[callable] = None,
 ):
     request_times = []
     for request_num in range(repeats):
@@ -14,6 +17,11 @@ def measure_request_times(
         result = requests.post(url, json={"query": query})
         assert result.status_code == 200
         end_time = time.time()
+
+        # Validate the data if provided
+        if validate:
+            assert validate(result.json())
+
         # Store time in ms
         request_times.append((end_time - start_time) * 1000)
     return request_times
