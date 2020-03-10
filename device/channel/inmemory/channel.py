@@ -34,8 +34,8 @@ class InMemoryReadWriteChannel(InMemoryReadOnlyChannel[T]):
         return True
 
     async def __notify_all(self):
-        for c in self.callbacks:
-            await c(self._value)
+        for callback in self.callbacks:
+            await callback(self._value)
 
     async def monitor(self) -> AsyncGenerator[T, None]:
         # Yield initial value at the time of subscription
