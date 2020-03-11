@@ -5,7 +5,8 @@ import traceback
 from aiohttp import web
 from graphql import graphql
 import graphql_ws_next
-from device.beamline.htssrig import htss_environment
+from device.beamline.htssrig.trainingrig import htss_environment
+from device.beamline.adsim.adsim import adsim_device_environment
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql.template import render_graphiql
@@ -34,7 +35,7 @@ class App(web.Application):
         self.router.add_get('/graphql', self.graphql_view)
         self.router.add_post('/graphql', self.graphql_view)
         self.websockets = set()
-        self.schema = ConiqlSchema(htss_environment('BL49P'))
+        self.schema = ConiqlSchema(adsim_device_environment('ws415'))
         self.subscription_server = graphql_ws_next.SubscriptionServer(
             self.schema, AiohttpConnectionContext
         )

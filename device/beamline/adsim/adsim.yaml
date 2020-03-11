@@ -1,3 +1,7 @@
 stage:
-    type: device.beamline.beamlines.adsim.Stage3D
+    type: device.beamline.adsim.SimStage
     prefix: $(machine)-MO-SIM-01
+
+detector:
+    type: device.adcore.BasicDetector
+    prefix: $(machine)-AD-SIM-01

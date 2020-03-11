@@ -1,5 +1,5 @@
 #include device/pmac/pmac.yaml
 
 motors:
-    type: device.beamline.beamlines.htssrig.Stage
+    type: device.beamline.htssrig.Stage
     prefix: $(rig)-MO-MAP-01:STAGE

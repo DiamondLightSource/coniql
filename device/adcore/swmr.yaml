@@ -8,7 +8,7 @@ active:
   pv: $(prefix):SWMRActive_RBV
 
 position_mode:
-  type: device.channel.ac.CaEnum
+  type: device.channel.ca.CaEnum
   pv: $(prefix):PositionMode
 
 flush:

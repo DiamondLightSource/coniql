@@ -2,4 +2,4 @@
 
 array_data:
     type: device.channel.ca.CaNdArray
-    value: $(prefix):ArrayData
+    pv: $(prefix):ArrayData

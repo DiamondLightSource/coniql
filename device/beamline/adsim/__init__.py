@@ -1,3 +1,4 @@
 from device.core.yaml.yamltype import yaml_type
 
-Stage3D = yaml_type('device/beamline/beamlines/adsim/stage3d.yaml')
+SimStage = yaml_type('device/beamline/adsim/simstage.yaml')
+AdSimBeamline = yaml_type('device/beamline/adsim/adsim.yaml')

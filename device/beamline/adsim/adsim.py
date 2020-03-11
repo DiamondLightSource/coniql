@@ -1,18 +1,13 @@
-from coniql.deviceplugin import DevicePlugin
-from device.core.yaml.yamltype import yaml_load
+from coniql.devicelayer.deviceplugin import DeviceLayer
+from device.beamline.adsim import AdSimBeamline
 
 
-def adsim_device_environment():
-    beamline = adsim_environment('ws415')
-
-    plugin = DevicePlugin()
-    plugin.register_device(beamline, name='beamline')
-
-    plugin.debug()
-    return plugin
+def adsim_device_environment(machine: str):
+    beamline = adsim_environment(machine)
+    layer = DeviceLayer.from_tree(beamline)
+    return layer
 
 
-def adsim_environment(machine_name: str):
-    path = 'protocol/beamline/beamlines/adsim/adsim.yaml'
-    beamline = yaml_load(path, machine=machine_name)
+def adsim_environment(machine: str):
+    beamline = AdSimBeamline(machine=machine)
     return beamline

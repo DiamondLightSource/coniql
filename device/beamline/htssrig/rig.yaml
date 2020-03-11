@@ -1,9 +1,9 @@
 stage:
-    type: device.beamline.beamlines.htssrig.Stage
+    type: device.beamline.htssrig.Stage
     prefix: $(rig)-MO-MAP-01:STAGE
 
 pmac:
-    type: device.beamline.beamlines.htssrig.Pmac
+    type: device.beamline.htssrig.Pmac
     prefix: $(rig)-MO-BRICK-01
     rig: $(rig)
 

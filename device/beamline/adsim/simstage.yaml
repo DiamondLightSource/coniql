@@ -12,3 +12,13 @@ z:
     type: device.motor.ScannableMotor
     prefix: $(prefix):M3
     scannable: simz
+
+theta:
+    type: device.motor.ScannableMotor
+    prefix: $(prefix):M4
+    scannable: simtheta
+
+load:
+    type: device.motor.ScannableMotor
+    prefix: $(prefix):M5
+    scannable: simload
