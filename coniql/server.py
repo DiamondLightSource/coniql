@@ -5,7 +5,7 @@ import traceback
 from aiohttp import web
 from graphql import graphql
 import graphql_ws_next
-from device.beamline.beamlines.htssrig.trainingrig import htss_environment
+from device.beamline.htssrig import htss_environment
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
 from coniql.template import render_graphiql

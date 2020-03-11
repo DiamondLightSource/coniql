@@ -1,5 +1,5 @@
 from coniql.devicelayer.deviceplugin import DeviceLayer
-from device.beamline.beamlines.htssrig import HtssRig
+from device.beamline.htssrig import HtssRig
 
 
 def htss_environment(beamline_prefix: str):
