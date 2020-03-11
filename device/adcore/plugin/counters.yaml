@@ -1,0 +1,21 @@
+array_counter:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):ArrayCounter
+  rbv_suffix: _RBV
+
+array_rate:
+  type: device.channel.ca.CaFloat
+  pv: $(prefix):ArrayRate_RBV
+
+queue_size:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):QueueSize
+
+queue_use:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):QueueUse
+
+dropped_arrays:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):DroppedArrays
+  rbv_suffix: _RBV

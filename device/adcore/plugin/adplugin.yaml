@@ -1,0 +1,16 @@
+array_port:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):NDArrayPort
+  rbv_suffix: _RBV
+
+callback:
+  type: device.adcore.plugin.Callback
+  prefix: $(prefix)
+
+counters:
+  type: device.adcore.plugin.Counters
+  prefix: $(prefix)
+
+properties:
+  type: device.adcore.plugin.Properties
+  prefix: $(prefix)

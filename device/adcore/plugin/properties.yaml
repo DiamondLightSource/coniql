@@ -1,0 +1,25 @@
+num_dimensions:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):NDimensions_RBV
+
+data_type:
+  type: device.channel.ca.CaString
+  pv: $(prefix):DataType_RBV
+
+color_mode:
+  type: device.channel.ca.CaString
+  pv: $(prefix):ColorMode_RBV
+
+bayer_pattern:
+  type: device.channel.ca.CaString
+  pv: $(prefix):BayerPattern_RBV
+
+unique_id:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):UNiqueId_RBV
+
+timestamp:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):TimeStamp_RBV
+
+

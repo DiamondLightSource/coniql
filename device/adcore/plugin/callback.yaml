@@ -1,0 +1,14 @@
+status:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):EnableCallbacks
+  rbv_suffix: _RBV
+
+min_time:
+  type: device.channel.ca.CaFloat
+  pv: $(prefix):MinCallbackTime
+  rbv_suffix: _RBV
+
+blocking:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):BlockingCallbacks
+  rbv_suffix: _RBV
