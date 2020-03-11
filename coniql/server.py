@@ -1,15 +1,13 @@
 #!/bin/env python
 import asyncio
-import os
 import traceback
 
 from aiohttp import web
 from graphql import graphql
 import graphql_ws_next
-from device.beamline.beamlines.trainingrig import htss_environment
+from device.beamline.beamlines.htssrig.trainingrig import htss_environment
 from graphql_ws_next.aiohttp import AiohttpConnectionContext
 
-from coniql import EPICS7_BASE
 from coniql.template import render_graphiql
 from coniql.devicelayer.deviceschema import ConiqlSchema
 
