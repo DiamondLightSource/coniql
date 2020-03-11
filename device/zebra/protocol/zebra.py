@@ -1,11 +1,9 @@
-from dataclasses import dataclass
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.channel import ReadWriteChannel
-from device.util import await_value
 
 
-@dataclass
-class PositionCapture:
+class PositionCapture(Protocol):
     enc: ReadWriteChannel[str]
     dir: ReadWriteChannel[str]
     arm_source: ReadWriteChannel[str]
@@ -16,22 +14,20 @@ class PositionCapture:
     num_gates: ReadWriteChannel[int]
     arm: ReadWriteChannel[bool]
     disarm: ReadWriteChannel[bool]
-    arm_out: ReadWriteChannel[bool]
+    arm_status: ReadWriteChannel[bool]
     pulse_source: ReadWriteChannel[str]
     pulse_input: ReadWriteChannel[str]
     pulse_max: ReadWriteChannel[int]
 
 
-@dataclass
-class Pulse:
+class Pulse(Protocol):
     input: ReadWriteChannel[int]
     delay: ReadWriteChannel[float]
     width: ReadWriteChannel[float]
     time_units: ReadWriteChannel[str]
 
 
-@dataclass
-class ZebraIO:
+class ZebraIO(Protocol):
     ttl_out_1: ReadWriteChannel[int]
     ttl_out_2: ReadWriteChannel[int]
     ttl_out_3: ReadWriteChannel[int]
@@ -43,16 +39,7 @@ class ZebraIO:
     enc_copy_4: ReadWriteChannel[int]
 
 
-@dataclass
-class Zebra:
+class Zebra(Protocol):
     position_capture: PositionCapture
     io: ZebraIO
     system_reset_process: ReadWriteChannel[int]
-
-    def arm(self):
-        await self.system_reset_process.put(1)
-        await self.position_capture.arm.put(1)
-        await await_value(self.position_capture.arm_out, 1)
-
-    def disarm(self):
-        await self.position_capture.disarm.put(1)

@@ -9,4 +9,8 @@ pulse_1:
 
 io:
   type: device.zebra.ZebraIO
-  prefix:$(prefix)
+  prefix: $(prefix)
+
+system_reset:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):SYS_RESET.PROC
