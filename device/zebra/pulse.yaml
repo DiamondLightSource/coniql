@@ -1,0 +1,15 @@
+input:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):PC_PULSE$(num)_INP
+
+delay:
+  type: device.channel.ca.CaFloat
+  pv: $(prefix):PC_PULSE$(num)_DELAY
+
+width:
+  type: device.channel.ca.CaFloat
+  pv: $(prefix):PC_PULSE$(num)_WIDTH
+
+time_units:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):PC_PULSE$(num)_PRE

@@ -1,0 +1,34 @@
+# TODO: These actually have string readbacks, but not inputs.
+#        Can make a custom channel type to deal with this
+
+ttl_out_1:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):OUT1_TTL
+
+ttl_out_2:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):OUT2_TTL
+
+ttl_out_3:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):OUT3_TTL
+
+ttl_out_4:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):OUT4_TTL
+
+enc_copy_1:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):M1:SETPOS.PROC
+
+enc_copy_2:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):M2:SETPOS.PROC
+
+enc_copy_3:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):M3:SETPOS.PROC
+
+enc_copy_4:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):M4:SETPOS.PROC

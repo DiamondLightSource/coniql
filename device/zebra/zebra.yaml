@@ -1,0 +1,12 @@
+position_capture:
+  type: device.zebra.PositionCapture
+  prefix: $(prefix)
+
+pulse_1:
+  type: device.zebra.Pulse
+  prefix: $(prefix)
+  num: 1
+
+io:
+  type: device.zebra.ZebraIO
+  prefix:$(prefix)

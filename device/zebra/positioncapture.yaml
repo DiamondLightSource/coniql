@@ -1,0 +1,56 @@
+encoder_source:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):PC_ENC
+
+direction:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):PC_DIR
+
+arm_source:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):PC_ARM_SEL
+
+gate_source:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):PC_GATE_SEL
+
+gate_input:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):PC_GATE_INP
+
+gate_start:
+  type: device.channel.ca.CaFloat
+  pv: $(prefix):PC_GATE_START
+
+gate_width:
+  type: device.channel.ca.CaFloat
+  pv: $(prefix):PC_GATE_WID
+
+num_gates:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):PC_GATE_NGATE
+
+arm:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):PC_ARM
+
+disarm:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):PC_DISARM
+
+arm_status:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):PC_ARM_OUT
+
+pulse_source:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):PC_PULSE_SEL
+
+pulse_input:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):PC_PULSE_INP
+
+max_pulses:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):PC_PULSE_MAX
+
