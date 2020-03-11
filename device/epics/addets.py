@@ -1,4 +1,4 @@
-from device.adcore.addetector import AdDetector
+from device.adcore.protocol.addetector import AdDetector
 from device.panda.protocol.adpanda import AdPandA
 from device.epics.ad import detector_driver, hdf_plugin, camera
 

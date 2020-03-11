@@ -1,10 +1,10 @@
 from device.channel.ca.bool import CaBool
 from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
-from device.adcore.hdf import HdfPlugin, Swmr
+from device.adcore.protocol.hdf import HdfPlugin, Swmr
 from device.adcore.plugin import PluginCallback, PluginCounters, \
     PluginProperties
-from device.adcore.camera import Camera, DetectorDriver
+from device.adcore.protocol.camera import Camera, DetectorDriver
 
 
 def camera(prefix: str) -> Camera:

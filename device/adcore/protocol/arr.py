@@ -1,11 +1,10 @@
 import numpy as np
 
-from dataclasses import dataclass
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.channel import ReadOnlyChannel
-from device.adcore.plugin import AdPlugin
+from device.adcore.protocol.plugin import AdPlugin
 
 
-@dataclass
-class ArrayPlugin(AdPlugin):
+class ArrayPlugin(AdPlugin, Protocol):
     array_data: ReadOnlyChannel[np.ndarray]

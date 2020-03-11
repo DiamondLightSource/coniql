@@ -1,18 +1,16 @@
-from dataclasses import dataclass
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel
 
 
-@dataclass
-class PluginCallback:
+class PluginCallback(Protocol):
     status: ReadWriteChannel[str]
     min_time: ReadWriteChannel[float]
     blocking: ReadWriteChannel[str]
 
 
-@dataclass
-class PluginCounters:
+class PluginCounters(Protocol):
     array_counter: ReadWriteChannel[int]
     array_rate: ReadOnlyChannel[float]
     queue_size: ReadOnlyChannel[int]
@@ -20,8 +18,7 @@ class PluginCounters:
     dropped_arrays: ReadOnlyChannel[int]
 
 
-@dataclass
-class PluginProperties:
+class PluginProperties(Protocol):
     num_dimensions: ReadOnlyChannel[int]
     dim_0_size: ReadOnlyChannel[int]
     dim_1_size: ReadOnlyChannel[int]
@@ -34,8 +31,7 @@ class PluginProperties:
     time_stamp: ReadOnlyChannel[float]
 
 
-@dataclass
-class AdPlugin:
+class AdPlugin(Protocol):
     array_port: ReadWriteChannel[str]
     callback: PluginCallback
     counters: PluginCounters

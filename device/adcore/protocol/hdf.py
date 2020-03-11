@@ -1,12 +1,11 @@
-from dataclasses import dataclass
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.channel import ReadWriteChannel, \
     ReadOnlyChannel, CanPutValue
-from device.adcore.plugin import AdPlugin
+from device.adcore.protocol.plugin import AdPlugin
 
 
-@dataclass
-class Swmr:
+class Swmr(Protocol):
     mode: ReadWriteChannel[str]
     active: ReadWriteChannel[bool]
     position_mode: ReadWriteChannel[str]
@@ -14,12 +13,8 @@ class Swmr:
     flush_on_nth_frame: ReadWriteChannel[int]
     nd_attribute_flush: ReadWriteChannel[int]
 
-    async def flush_now(self):
-        await self.flush.put(True)
 
-
-@dataclass
-class HdfPlugin(AdPlugin):
+class HdfPlugin(AdPlugin, Protocol):
     file_path: ReadWriteChannel[str]
     file_name: ReadWriteChannel[str]
     suffix: ReadWriteChannel[str]
@@ -42,13 +37,3 @@ class HdfPlugin(AdPlugin):
     num_chunk_rows: ReadWriteChannel[int]
 
     swmr: Swmr
-
-    async def arm(self):
-        await self.capture.put(True)
-        armed = await self.capture.get()
-        if not armed:
-            error_message = await self.write_status_message.get()
-            raise ValueError(f'Could not arm HDF5 plugin, error was {error_message}')
-
-    async def disarm(self):
-        await self.capture.put(False)
