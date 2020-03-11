@@ -4,6 +4,8 @@ _ADDR_DELIMITER = '.'
 
 
 class DeviceEnvironment:
+    """Wrapper for device tree that allows for resource lookup via a
+    dot-separated string (e.g. detector.exposure_time)"""
     def __init__(self, device_tree):
         self.device_tree = device_tree
 
@@ -21,6 +23,7 @@ def parse_resource_addr(resource_addr: str) -> List[str]:
 
 
 def get_resource(device_tree, resource_addr: List[str]):
+    """Traverses a device tree and finds the requested resource"""
     nxt = resource_addr[0]
     nxt_attr = getattr(device_tree, nxt)
     if len(resource_addr) == 1:
