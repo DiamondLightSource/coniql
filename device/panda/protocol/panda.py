@@ -1,10 +1,9 @@
-from dataclasses import dataclass
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.channel import ReadWriteChannel
 
 
-@dataclass
-class Bits:
+class Bits(Protocol):
     """Soft inputs and constant bits"""
     a: ReadWriteChannel[bool]
     b: ReadWriteChannel[bool]
@@ -12,8 +11,7 @@ class Bits:
     d: ReadWriteChannel[bool]
 
 
-@dataclass
-class Output:
+class Output(Protocol):
     out_units: ReadWriteChannel[str]
     out_scale: ReadWriteChannel[float]
     out_offset: ReadWriteChannel[float]
@@ -22,8 +20,7 @@ class Output:
     out_dataset_type: ReadWriteChannel[str]
 
 
-@dataclass
-class Calc(Output):
+class Calc(Output, Protocol):
     inp_a: ReadWriteChannel[str]
     inp_b: ReadWriteChannel[str]
     inp_c: ReadWriteChannel[str]
@@ -37,22 +34,19 @@ class Calc(Output):
     func: ReadWriteChannel[str]
 
 
-@dataclass
-class Clock:
+class Clock(Protocol):
     period: ReadWriteChannel[float]
     period_units: ReadWriteChannel[str]
 
 
-@dataclass
-class Clocks:
+class Clocks(Protocol):
     a: Clock
     b: Clock
     c: Clock
     d: Clock
 
 
-@dataclass
-class Counter(Output):
+class Counter(Output, Protocol):
     enable: ReadWriteChannel[str]
     enable_delay: ReadWriteChannel[int]
     trig: ReadWriteChannel[str]
@@ -65,8 +59,7 @@ class Counter(Output):
     min: ReadWriteChannel[int]
 
 
-@dataclass
-class Div:
+class Div(Protocol):
     enable: ReadWriteChannel[str]
     enable_delay: ReadWriteChannel[int]
     inp: ReadWriteChannel[str]
@@ -75,8 +68,7 @@ class Div:
     first_pulse: ReadWriteChannel[str]
 
 
-@dataclass
-class Filter(Output):
+class Filter(Output, Protocol):
     enable: ReadWriteChannel[str]
     enable_delay: ReadWriteChannel[int]
     trig: ReadWriteChannel[str]
@@ -85,8 +77,7 @@ class Filter(Output):
     mode: ReadWriteChannel[str]
 
 
-@dataclass
-class EncVal:
+class EncVal(Protocol):
     units: ReadWriteChannel[str]
     scale: ReadWriteChannel[float]
     offset: ReadWriteChannel[float]
@@ -95,8 +86,7 @@ class EncVal:
     dataset_type: ReadWriteChannel[str]
 
 
-@dataclass
-class InEnc:
+class InEnc(Protocol):
     clk: ReadWriteChannel[str]
     clk_delay: ReadWriteChannel[int]
     protocol: ReadWriteChannel[str]
@@ -112,15 +102,13 @@ class InEnc:
     val: EncVal
 
 
-@dataclass
-class LutInput:
+class LutInput(Protocol):
     soruce: ReadWriteChannel[str]
     delay: ReadWriteChannel[int]
     dtype: ReadWriteChannel[str]
 
 
-@dataclass
-class Lut:
+class Lut(Protocol):
     func: ReadWriteChannel[str]
     inp_a: LutInput
     inp_b: LutInput
@@ -129,8 +117,7 @@ class Lut:
     inp_e: LutInput
 
 
-@dataclass
-class Panda:
+class Panda(Protocol):
     bits: Bits
 
     calc_1: Calc
