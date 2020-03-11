@@ -1,10 +1,8 @@
-from dataclasses import dataclass
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.channel import ReadWriteChannel
 
 
-@dataclass
-class FastShutter:
-    mode: ReadWriteChannel[int]
-    status: ReadWriteChannel[int]
-    # TODO: Aha! A channel that can sometimes be mutable
+class FastShutter(Protocol):
+    mode: ReadWriteChannel[str]
+    status: ReadWriteChannel[str]

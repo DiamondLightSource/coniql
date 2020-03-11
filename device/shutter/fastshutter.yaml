@@ -1,0 +1,8 @@
+mode:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):CTRL1
+
+status:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):CTRL2
+  rbv: $(prefix):STA
