@@ -1,3 +1,7 @@
+import numpy as np
+
+from typing import List
+
 from device.channel.ca.bool import CaBool
 from device.channel.ca.channel import CaChannel
 from device.channel.ca.enum import CaEnum
@@ -6,7 +10,8 @@ from device.channel.ca.string import CaString
 
 # TODO: These should all become their own classes that return Python types
 #        rather than aioca types
-CaFloat = CaChannel
-CaInt = CaChannel
-CaIntArray = CaChannel
-CaFloatArray = CaChannel
+CaFloat = CaChannel[float]
+CaInt = CaChannel[int]
+CaIntArray = CaChannel[List[int]]
+CaFloatArray = CaChannel[List[float]]
+CaNdArray = CaChannel[np.ndarray]

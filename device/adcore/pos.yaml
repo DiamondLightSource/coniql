@@ -1,0 +1,74 @@
+#include device/adcore/plugin/adplugin.yaml
+
+source_file:
+    type: device.channel.ca.CaString
+    pv: $(prefix):Filename
+    rbv_suffix: _RBV
+
+file_valid:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):FileValid_RBV
+
+running:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):Running_RBV
+
+reset_running:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):Reset.PROC
+
+mode:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):Mode
+  rbv_suffix: _RBV
+
+num_positions:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):Qty_RBV
+
+delete:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):Delete
+
+current_index:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):Index_RBV
+
+last_sent_position:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):Position_RBV
+
+num_missing_frames:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):Missing_RBV
+
+reset_missing_frames:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):Missing
+
+num_duplicate_frames:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):Duplicate_RBV
+
+reset_duplicate_frames:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):Duplicate
+
+next_expected_id:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):ExpectedID_RBV
+
+name_of_id_att:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):IDName
+  rbv_suffix: _RBV
+
+id_start_value:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):IDStart
+  rbv_suffix: _RBV
+
+id_difference:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):IDDifference
+  rbv_suffix: _RBV

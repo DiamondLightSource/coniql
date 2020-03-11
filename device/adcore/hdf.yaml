@@ -1,0 +1,86 @@
+#include device/adcore/plugin/adplugin.yaml
+
+swmr:
+    type: device.adcore.Swmr
+    prefix: $(prefix)
+
+file_path:
+    type: device.channel.ca.CaString
+    pv: $(prefix):FilePath
+    rbv_suffix: _RBV
+
+file_name:
+    type: device.channel.ca.CaString
+    pv: $(prefix):FileName
+    rbv_suffix: _RBV
+
+suffix:
+    type: device.channel.ca.CaString
+    pv: $(prefix):TempSuffix
+    rbv_suffix: _RBV
+
+file_name_format:
+    type: device.channel.ca.CaString
+    pv: $(prefix):FileTemplate
+    rbv_suffix: _RBV
+
+next_file_number:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):FileNumber
+    rbv_suffix: _RBV
+
+num_to_capture:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):NumCapture
+    rbv_suffix: _RBV
+
+num_captured:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):NumCaptured_RBV
+
+auto_increment:
+    type: device.channel.ca.CaEnum
+    pv: $(prefix):AutoIncrement
+    rbv_suffix: _RBV
+
+file_format:
+    type: device.channel.ca.CaEnum
+    pv: $(prefix):FileFormat
+    rbv_suffix: _RBV
+
+auto_save:
+    type: device.channel.ca.CaEnum
+    pv: $(prefix):AutoSave
+    rbv_suffix: _RBV
+
+capture_mode:
+    type: device.channel.ca.CaEnum
+    pv: $(prefix):FileWriteMode
+    rbv_suffix: _RBV
+
+capture:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):Capture
+    rbv_suffix: _RBV
+
+write_status:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):WriteStatus
+
+write_status_message:
+    type: device.channel.ca.CaString
+    pv: $(prefix):WriteMessage
+
+full_file_name:
+    type: device.channel.ca.CaString
+    pv: $(prefix):FullFileName_RBV
+
+num_extra_dims:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):NumExtraDims
+    rbv_suffix: _RBV
+
+num_chunk_rows:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):NumRowChunks
+    rbv_suffix: _RBV

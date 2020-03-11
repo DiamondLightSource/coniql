@@ -1,0 +1,26 @@
+mode:
+  type: device.channel.ca.CaEnum
+  pv: $(prefix):SWMRMode
+  rbv_suffix: _RBV
+
+active:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):SWMRActive_RBV
+
+position_mode:
+  type: device.channel.ac.CaEnum
+  pv: $(prefix):PositionMode
+
+flush:
+  type: device.channel.ca.CaBool
+  pv: $(prefix):FlushNow
+
+flush_on_nth_frame:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):NumFramesFlush
+  rbv_suffix: _RBV
+
+nd_attribute_flush:
+  type: device.channel.ca.CaInt
+  pv: $(prefix):NDAttributeChunk
+  rbv_suffix: _RBV
