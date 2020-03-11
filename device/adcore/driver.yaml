@@ -1,0 +1,32 @@
+exposures_per_image:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):NumExposures
+    rbv_suffix: _RBV
+
+num_images:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):NumImages
+    rbv_suffix: _RBV
+
+image_mode:
+    type: device.channel.ca.CaEnum
+    pv: $(prefix):ImageMode
+    rbv_suffix: _RBV
+
+trigger_mode:
+    type: device.channel.ca.CaEnum
+    pv: $(prefix):TriggerMode
+    rbv_suffix: _RBV
+
+acquire:
+    type: device.channel.ca.CaBool
+    pv: $(prefix):Acquire
+
+array_counter:
+    type: device.channel.ca.CaInt
+    pv: $(prefix):ArrayCounter
+    rbv_suffix: _RBV
+
+array_rate:
+    type: device.channel.ca.CaFloat
+    pv: $(prefix):ArrayRate_RBV

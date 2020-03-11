@@ -1,0 +1,11 @@
+#include device/adcore/driver.yaml
+
+exposure_time:
+    type: device.channel.ca.CaFloat
+    pv: $(prefix):AcquireTime
+    rbv_suffix: _RBV
+
+acquire_period:
+    type: device.channel.ca.CaFloat
+    pv: $(prefix):AcquirePeriod
+    rbv_suffix: _RBV

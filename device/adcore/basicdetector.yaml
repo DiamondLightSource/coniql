@@ -1,0 +1,15 @@
+camera:
+  type: device.adcore.Camera
+  prefix: $(prefix):CAM
+
+pos:
+  type: device.adcore.PosPlugin
+  prefix: $(prefix):POS
+
+hdf:
+  type: device.adcore.HdfPlugin
+  prefix: $(prefix):HDF5
+
+arr:
+  type: device.adcore.ArrayPlugin
+  prefix: $(prefix):ARR
