@@ -16,7 +16,7 @@ bayer_pattern:
 
 unique_id:
   type: device.channel.ca.CaInt
-  pv: $(prefix):UNiqueId_RBV
+  pv: $(prefix):UniqueId_RBV
 
 timestamp:
   type: device.channel.ca.CaInt

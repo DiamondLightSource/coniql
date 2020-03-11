@@ -1,5 +1,5 @@
 array_port:
-  type: device.channel.ca.CaEnum
+  type: device.channel.ca.CaString
   pv: $(prefix):NDArrayPort
   rbv_suffix: _RBV
 

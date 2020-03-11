@@ -14,6 +14,7 @@ class CaEnum(CaChannel[str]):
         """Retrieves the Enum choices from the channel, sets them as part of
         object state"""
         meta = await caget_one(self.pv, format=FORMAT_CTRL)
+        assert hasattr(meta, 'enums'), f'{self.pv} is not an EPICS enum!'
         self.choices = choices_from_meta(meta)
 
     def format_value(self, value) -> str:
