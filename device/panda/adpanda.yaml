@@ -1,0 +1,11 @@
+driver:
+  type: device.adcore.Driver
+  prefix: $(prefix):DRV
+
+pos:
+  type: device.adcore.PosPlugin
+  prefix: $(prefix):POS
+
+hdf:
+  type: device.adcore.HdfPlugin
+  prefix: $(prefix):HDF5
