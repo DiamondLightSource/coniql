@@ -1,7 +1,8 @@
 import asyncio
 from dataclasses import is_dataclass
 from pprint import pprint
-from typing import Dict, Any, List, Coroutine
+from typing import Dict, Any, List, Coroutine, Type
+from typing_extensions import Protocol
 
 from device.channel.channeltypes.channel import ReadableChannel, WriteableChannel
 from coniql.asynciohelpers import asyncio_gather_values
@@ -9,10 +10,10 @@ from coniql.asynciohelpers import asyncio_gather_values
 _DESIGN = Dict[str, Any]
 
 
-async def snapshot(device) -> _DESIGN:
+async def snapshot(device, except_fields) -> _DESIGN:
     return await asyncio_gather_values({
         name: value(fld)
-        for name, fld in device.__dict__.items()
+        for name, fld in device.__dict__.items() if fld not in except_fields
     })
 
 
