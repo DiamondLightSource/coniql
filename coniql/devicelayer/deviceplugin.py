@@ -44,8 +44,6 @@ class DeviceLayer:
         await scan_points(pmac, model)
         return True
 
-    # TODO: Device introspection
-
     async def startup(self):
         """Start any services the plugin needs. Don't block"""
         await setup(self.env.device_tree)

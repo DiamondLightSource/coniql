@@ -6,7 +6,5 @@ from device.motor.protocol.motor import Motor
 
 
 class ScannableMotor(Motor, Protocol):
-    # TODO: This is only a temporary place to put this.
-    #  at some point there should be some sort of scannable map.
     scannable_name: ReadOnlyChannel[str] = doc_field(
         "GDA scannable associated with this motor")
