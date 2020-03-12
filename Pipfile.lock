@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f6c267159e30ddf35bca5c1999b6bdcd145ed5e6d0dba09d03ccf8addf1ae2c1"
+            "sha256": "31ff8aebbcc3bb180fa0f83e645f749aea404f767889932e017de3c2d37ea5eb"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -17,8 +17,8 @@
     },
     "default": {
         "aioca": {
-            "git": "https://gitlab.diamond.ac.uk/vid18871/aioca.git",
-            "ref": "4e8cfbafc58021866fca622386d57015f76d3cd7"
+            "git": "https://gitlab.diamond.ac.uk/controls/python3/aioca",
+            "ref": "6c2eef294aa4da24c33179690f38ad88f0ed75ce"
         },
         "aiohttp": {
             "hashes": [
@@ -116,10 +116,10 @@
         },
         "scanpointgenerator": {
             "hashes": [
-                "sha256:2ed16d64bc0c06b25f19b003f866693ee02ffa5f1c4f376408afa506d45825d3"
+                "sha256:28672715d82ebf67f62d3d6632dddd5cb6132e62c71d7884fcfbe6a88aa6ebe5"
             ],
             "index": "pypi",
-            "version": "==3.0"
+            "version": "==3.1"
         },
         "yarl": {
             "hashes": [

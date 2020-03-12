@@ -12,7 +12,7 @@ mypy = "*"
 graphql-core = "==3.0.1"
 aiohttp = "*"
 numpy = "*"
-aioca = {git = 'https://gitlab.diamond.ac.uk/vid18871/aioca.git'}
+aioca = {git = 'https://gitlab.diamond.ac.uk/controls/python3/aioca'}
 scanpointgenerator = "*"
 annotypes = "*"
 pyyaml = "*"
