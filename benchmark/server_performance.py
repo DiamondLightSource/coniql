@@ -106,7 +106,7 @@ async def measure_sinewave_query_response(
         start_time = time.time()
         result = await graphql(app.schema, query)
         end_time = time.time()
-        assert validate_from_json(result[0], expected_values)
+        # assert validate_from_json(result[0], expected_values)
         request_times.append((end_time - start_time) * 1000)
 
     print_request_times(request_times, label)
