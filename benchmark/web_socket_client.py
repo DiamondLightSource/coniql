@@ -3,6 +3,7 @@ import time
 from threading import Thread, Event
 from typing import List
 from queue import Queue
+import json
 
 from graphql_client import GraphQLClient
 
@@ -62,22 +63,84 @@ def test_subscription_rate(queries: [str], recording_time: float, result_queue: 
     result_queue.put((total_messages_recieved / len(queries)) / recording_time)
 
 
-if __name__ == "__main__":
+def measure_sine_subscription(
+    subscriptions: int = 10, recording_time: int = 10, update_time: float = 0.1
+) -> float:
+
+    print("--- sim://sine ---")
+    print(
+        f"--- Subscriptions: {subscriptions}, Recording Time: {recording_time} s, Update Time: {update_time} s ---"
+    )
+
     result_queue = Queue()
 
-    sine_subscription = """subscription {
-  subscribeChannel(id: "sim://sine(-5,5,5,0.1)") {
+    sine_subscription = f"""subscription {{
+  subscribeChannel(id: "sim://sine(-5,5,5,{update_time})") {{
     id
     value
-  }
-}
+  }}
+}}
 """
 
     x = Thread(
         target=test_subscription_rate,
-        args=([sine_subscription] * 100, 10, result_queue),
+        args=([sine_subscription] * subscriptions, recording_time, result_queue),
     )
     x.start()
     x.join()
-    results = result_queue.get()
-    print(f"Recorded rate: {results:4f} Hz")
+    result = result_queue.get()
+    print(f"Recorded rate: {result:4f} Hz")
+
+    return result
+
+
+def measure_sinewave_subscription(
+    subscriptions: int = 10,
+    size: int = 1,
+    recording_time: int = 10,
+    update_time: float = 0.1,
+) -> float:
+
+    print("--- sim://sinewavesimple ---")
+    print(
+        f"--- Subscriptions: {subscriptions}, Size: {size}, Recording Time: {recording_time} s, Update Time: {update_time} s ---"
+    )
+
+    result_queue = Queue()
+
+    sinewave_subscription = f"""subscription {{
+  subscribeChannel(id: "sim://sinewavesimple({size},{update_time})") {{
+    id
+    value
+  }}
+}}
+"""
+
+    x = Thread(
+        target=test_subscription_rate,
+        args=([sinewave_subscription] * subscriptions, recording_time, result_queue),
+    )
+    x.start()
+    x.join()
+    result = result_queue.get()
+    print(f"Recorded rate: {result:4f} Hz")
+
+    return result
+
+
+if __name__ == "__main__":
+
+    subscription_numbers = (
+        [10 * x for x in range(1, 10)]
+        + [100 * x for x in range(1, 10)]
+        + [1000 + (100 * x) for x in range(1, 11)]
+    )
+
+    results = {}
+
+    for num in subscription_numbers:
+        # results[num] = measure_sinewave_subscription(num, 100)
+        results[num] = measure_sine_subscription(num)
+
+    with open("web_socket_results_sine.json", "w") as f:
+        json.dump(results, f, indent=4)

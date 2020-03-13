@@ -124,26 +124,30 @@ query {
 
     app = App()
 
-    asyncio.run(measure_query_response(app, sine_query_value_only, label="Sine value"))
-    asyncio.run(measure_sinewave_query_response(app, 1, label="Sine Wave of size 1"))
-    asyncio.run(measure_sinewave_query_response(app, 10, label="Sine Wave of size 10"))
     asyncio.run(
-        measure_sinewave_query_response(app, 100, label="Sine Wave of size 100")
-    )
-    asyncio.run(
-        measure_sinewave_query_response(app, 1000, label="Sine Wave of size 1000")
-    )
-    asyncio.run(
-        measure_sinewave_query_response(app, 10000, label="Sine Wave of size 10000")
-    )
-    asyncio.run(
-        measure_sinewave_query_response(app, 100000, label="Sine Wave of size 100000")
-    )
-    asyncio.run(
-        measure_sinewave_query_response(app, 1000000, label="Sine Wave of size 1000000")
-    )
-    asyncio.run(
-        measure_sinewave_query_response(
-            app, 10000000, label="Sine Wave of size 10000000"
+        measure_query_response(
+            app, sine_query_value_only, repeats=1, label="Sine value"
         )
     )
+    # asyncio.run(measure_sinewave_query_response(app, 1, label="Sine Wave of size 1"))
+    # asyncio.run(measure_sinewave_query_response(app, 10, label="Sine Wave of size 10"))
+    # asyncio.run(
+    #     measure_sinewave_query_response(app, 100, label="Sine Wave of size 100")
+    # )
+    # asyncio.run(
+    #     measure_sinewave_query_response(app, 1000, label="Sine Wave of size 1000")
+    # )
+    # asyncio.run(
+    #     measure_sinewave_query_response(app, 10000, label="Sine Wave of size 10000")
+    # )
+    # asyncio.run(
+    #     measure_sinewave_query_response(app, 100000, label="Sine Wave of size 100000")
+    # )
+    # asyncio.run(
+    #     measure_sinewave_query_response(app, 1000000, label="Sine Wave of size 1000000")
+    # )
+    # asyncio.run(
+    #     measure_sinewave_query_response(
+    #         app, 10000000, label="Sine Wave of size 10000000"
+    #     )
+    # )

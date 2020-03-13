@@ -219,6 +219,46 @@ class SineWaveSimChannel(SimChannel):
         return super(SineWaveSimChannel, self).compute_changes(value=value)
 
 
+@register_channel("sinewavesimple")
+class SineWaveSimpleSimChannel(SimChannel):
+    """Create a simulated float waveform with a simple distribution of values
+
+    Args:
+        period_seconds: The time between repetitions on the sinewave in time
+        sample_wavelength: The wavelength of the output sinewave
+        size: The size of the output waveform (min 10 elements)
+        update_seconds: The time between each step
+        min_value: The minimum output value
+        max_value: The maximum output value
+        warning_percent: Percentage of the full range, outside this is warning
+        alarm_percent: Percentage of the full range, outside this is alarm
+    """
+
+    def __init__(self, size: int = 1, update_seconds: float = 1.0):
+        super(SineWaveSimpleSimChannel, self).__init__(update_seconds)
+        self.min = -5
+        self.range = 10
+        self.size = size
+        self.start = time.time()
+        self.channel.meta = NumberMeta(
+            description="A Sine waveform generator",
+            label="Sine Waveform",
+            tags=["widget:graph"],
+            array=True,
+            numberType=NumberType.FLOAT64,
+            display=make_number_display(-5, 5, 80, 90),
+        )
+        # Create an array of values equal to the size
+        self.channel.value = ArrayWrapper(
+            np.array([x for x in range(int(self.size))], dtype=np.float64)
+        )
+
+    def compute_changes(self):
+        # Roll the array around by one element
+        value = ArrayWrapper(np.roll(self.channel.value.array, 1))
+        return super(SineWaveSimpleSimChannel, self).compute_changes(value=value)
+
+
 @register_channel("sinewavesimple:1")
 class SineWaveSimple1SimChannel(SimChannel):
     """Create a simulated float waveform with a simple distribution of values

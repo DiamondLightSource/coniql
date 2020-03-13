@@ -9,6 +9,7 @@ p4p = "*"
 requests = "*"
 coniql = {editable = true,path = "."}
 py-graphql-client = "*"
+matplotlib = "*"
 
 [packages]
 graphql-core = "==3.0.0a2"

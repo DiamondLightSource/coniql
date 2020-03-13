@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "81996c76b5323e0be39fb35cc6cbff3fddb38627a294f46c4d2228c4091bb548"
+            "sha256": "66ebe151a09f4470a8fca380b7a2d14b5f4237f46e7e8b34482fd1661c939e3a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -148,6 +148,12 @@
             "editable": true,
             "path": "."
         },
+        "cycler": {
+            "hashes": [
+                "sha256:1d8a5ae1ff6c5cf9b93e8811e581232ad8920aeec647c37316ceac982b08cb2d"
+            ],
+            "version": "==0.10.0"
+        },
         "epicscorelibs": {
             "hashes": [
                 "sha256:88a6479c473ee595386f7c234c2c2f358ba318784e1d0714bc7eb0ebcaf723e0"
@@ -165,6 +171,19 @@
                 "sha256:3a8b2dfd0a2c6a3636e7c016a7e54ae04b997d30e69d5eacdca7a6c2221a1402"
             ],
             "version": "==1.2.0"
+        },
+        "kiwisolver": {
+            "hashes": [
+                "sha256:a0c0a9f06872330d0dd31b45607197caab3c22777600e88031bfe66799e70bb0"
+            ],
+            "version": "==1.1.0"
+        },
+        "matplotlib": {
+            "hashes": [
+                "sha256:1c6c999f2212858021329537f8e0f98f3f29086ec3683511dd1ecec84409f51d"
+            ],
+            "index": "pypi",
+            "version": "==2.2.3"
         },
         "more-itertools": {
             "hashes": [
@@ -230,6 +249,18 @@
             ],
             "index": "pypi",
             "version": "==5.0.0"
+        },
+        "python-dateutil": {
+            "hashes": [
+                "sha256:7e6584c74aeed623791615e26efd690f29817a27c73085b78e4bad02493df2fb"
+            ],
+            "version": "==2.8.0"
+        },
+        "pytz": {
+            "hashes": [
+                "sha256:303879e36b721603cc54604edcac9d20401bdbe31e1e4fdee5b9f98d5d31dfda"
+            ],
+            "version": "==2019.1"
         },
         "requests": {
             "hashes": [
