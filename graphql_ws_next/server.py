@@ -1,6 +1,7 @@
 import asyncio
 import json
 import typing
+import traceback
 
 import graphql
 
@@ -50,9 +51,7 @@ class SubscriptionServer:
                 break
             else:
                 connection_context.tasks.add(
-                    asyncio.ensure_future(
-                        self.on_message(connection_context, message)
-                    )
+                    asyncio.ensure_future(self.on_message(connection_context, message))
                 )
             finally:
                 connection_context.tasks = {
@@ -96,9 +95,7 @@ class SubscriptionServer:
         )
 
         error_payload = {"message": str(error)}
-        await self.send_message(
-            connection_context, op_id, error_type, error_payload
-        )
+        await self.send_message(connection_context, op_id, error_type, error_payload)
 
     async def send_execution_result(
         self,
@@ -126,9 +123,7 @@ class SubscriptionServer:
         await self.on_operation_complete(connection_context, op_id)
 
     # ON methods
-    async def on_close(
-        self, connection_context: AbstractConnectionContext
-    ) -> None:
+    async def on_close(self, connection_context: AbstractConnectionContext) -> None:
         if not connection_context:
             return
         await asyncio.wait(
@@ -177,9 +172,7 @@ class SubscriptionServer:
             return
 
         if loaded.type is GQLMsgType.CONNECTION_INIT:
-            await self.on_connection_init(
-                connection_context, loaded.id, loaded.payload
-            )
+            await self.on_connection_init(connection_context, loaded.id, loaded.payload)
 
         elif loaded.type is GQLMsgType.CONNECTION_TERMINATE:
             await self.on_connection_terminate(connection_context)
@@ -190,9 +183,7 @@ class SubscriptionServer:
         elif loaded.type is GQLMsgType.STOP:
             await self.on_stop(connection_context, loaded.id)
 
-    async def on_open(
-        self, connection_context: AbstractConnectionContext
-    ) -> None:
+    async def on_open(self, connection_context: AbstractConnectionContext) -> None:
         pass
 
     async def on_operation_complete(

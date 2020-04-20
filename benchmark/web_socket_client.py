@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     for num in subscription_numbers:
         # results[num] = measure_sinewave_subscription(num, 100)
-        results[num] = measure_sine_subscription(num)
+        results[num] = measure_sinewave_subscription(num, 10000)
 
-    with open("web_socket_results_sine.json", "w") as f:
-        json.dump(results, f, indent=4)
+    # with open("web_socket_results_sine.json", "w") as f:
+    #     json.dump(results, f, indent=4)
