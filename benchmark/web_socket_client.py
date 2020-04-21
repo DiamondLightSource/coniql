@@ -40,7 +40,7 @@ def test_subscription_rate(queries: [str], recording_time: float, result_queue: 
     subscription_ids = []
     for q_num in range(len(queries)):
         subscription_ids.append(
-            ws.add_subscription(
+            ws.subscribe(
                 queries[q_num],
                 callback=partial(message_callback, message_counter=q_num),
             )
@@ -53,8 +53,8 @@ def test_subscription_rate(queries: [str], recording_time: float, result_queue: 
     counting_flag.clear()
 
     # Close connections
-    for sub_id in subscription_ids:
-        ws.stop_subscribe(sub_id)
+    # for sub_id in subscription_ids:
+    #     ws.stop_subscribe(sub_id)
     ws.close()
     # Return the message rate
     # print(f"Messages: {[counter.count for counter in messages_recieved]}")
@@ -140,7 +140,7 @@ if __name__ == "__main__":
 
     for num in subscription_numbers:
         # results[num] = measure_sinewave_subscription(num, 100)
-        results[num] = measure_sinewave_subscription(num, 10000)
+        results[num] = measure_sinewave_subscription(num, 100)
 
     # with open("web_socket_results_sine.json", "w") as f:
     #     json.dump(results, f, indent=4)
