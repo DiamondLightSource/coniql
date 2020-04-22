@@ -52,7 +52,7 @@ function measureSineWave(size, updateTime, measureTime) {
           const messageFreq = count / executionTime;
           console.info(`Measured frequency: ${messageFreq} Hz`);
 
-          resolve();
+          resolve(messageFreq);
         }, measureTime);
       });
     })
