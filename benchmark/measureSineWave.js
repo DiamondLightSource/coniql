@@ -4,10 +4,16 @@ const errorCallback = (error) => {
   console.log("Error:", error);
 };
 
-async function measureSineWave(size, updateTime, measureTime, finishCallback) {
+// Size in integers, updateTime in seconds, measureTime in milliseconds
+function measureSineWave(size, updateTime, measureTime) {
+  console.log("--------- Measuring sinewave --------");
+  console.log(`Elements: ${size}`);
+  console.log(`Update Time: ${updateTime} s`);
+  console.log(`Measurement Time: ${measureTime / 1000} s`);
+
   let count = 0;
 
-  query({
+  const q = query({
     query: `subscription {
           subscribeChannel(id: "sim://sinewavesimple(${size},${updateTime})") {
             id
@@ -35,23 +41,24 @@ async function measureSineWave(size, updateTime, measureTime, finishCallback) {
     })
     .then((s) => {
       const t1 = process.hrtime();
-      setTimeout(() => {
-        s.unsubscribe();
-        const t2 = process.hrtime(t1);
-        const executionTime = (t2[0] * 1000 + t2[1] / 1000000) / 1000;
-        console.log("Unsubbing...");
-        console.log(`Final count: ${count}`);
-        console.info("Execution time (hr): %ds %dms", t2[0], t2[1] / 1000000);
-        console.log(`Execution Time: ${executionTime}`);
-        const messageFreq = count / executionTime;
-        console.info(`Measured frequency: ${messageFreq} Hz`);
+      // Forces extra .then to wait until completion
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          s.unsubscribe();
+          const t2 = process.hrtime(t1);
+          const executionTime = (t2[0] * 1000 + t2[1] / 1000000) / 1000;
+          console.log(`Final count: ${count}`);
+          console.log(`Execution Time: ${executionTime}`);
+          const messageFreq = count / executionTime;
+          console.info(`Measured frequency: ${messageFreq} Hz`);
 
-        if (finishCallback != undefined) {
-          finishCallback();
-        }
-      }, measureTime);
+          resolve();
+        }, measureTime);
+      });
     })
     .catch(errorCallback);
+
+  return q;
 }
 
 module.exports.measureSineWave = measureSineWave;
