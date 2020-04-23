@@ -1,4 +1,6 @@
 const { query } = require("graphqurl");
+const base64js = require("base64-js");
+const assert = require("assert");
 
 const errorCallback = (error) => {
   console.log("Error:", error);
@@ -10,6 +12,9 @@ function measureSineWave(size, updateTime, measureTime) {
   console.log(`Elements: ${size}`);
   console.log(`Update Time: ${updateTime} s`);
   console.log(`Measurement Time: ${measureTime / 1000} s`);
+
+  // Set of numbers to compare incoming data to
+  const matchingNumbers = new Set(Array(size).keys());
 
   let count = 0;
 
@@ -23,13 +28,25 @@ function measureSineWave(size, updateTime, measureTime) {
         `,
     endpoint: "ws://localhost:8000/subscriptions",
     headers: {
-      id: 1
+      id: size
     }
   })
     .then((observable) => {
       const s = observable.subscribe(
         (event) => {
           // console.log("Event received", event);
+          // console.log(event);
+          const encodedNumbers = event.data.subscribeChannel.value.base64;
+          const bd = base64js.toByteArray(encodedNumbers);
+          const numbers = new Float64Array(bd.buffer);
+          // console.log(numbers);
+          try {
+            assert(new Set(numbers).size === matchingNumbers.size);
+            assert(numbers.every((x) => matchingNumbers.has(x)));
+          } catch (e) {
+            console.log("Issue with incoming data");
+          }
+          // console.log(size);
           count++;
         },
         (error) => {

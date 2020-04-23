@@ -4,37 +4,9 @@
 
 const { measureSineWave } = require("./measureSineWave");
 
-function printGap() {
-  console.log("====================");
-}
-
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 let frequencies = [];
 
-measureSineWave(1, 0.1, 10000)
-  .then((f) => {
-    frequencies.push(f);
-    return measureSineWave(10, 0.1, 10000);
-  })
-  .then((f) => {
-    frequencies.push(f);
-    return measureSineWave(100, 0.1, 10000);
-  })
-  .then((f) => {
-    frequencies.push(f);
-    return measureSineWave(1000, 0.1, 10000);
-  })
-  .then((f) => {
-    frequencies.push(f);
-    return measureSineWave(10000, 0.1, 10000);
-  })
-  .then((f) => {
-    frequencies.push(f);
-    return measureSineWave(100000, 0.1, 10000);
-  })
+measureSineWave(100000, 0.1, 10000)
   .then((f) => {
     frequencies.push(f);
     return measureSineWave(200000, 0.1, 10000);
@@ -70,10 +42,6 @@ measureSineWave(1, 0.1, 10000)
   .then((f) => {
     frequencies.push(f);
     return measureSineWave(1000000, 0.1, 10000);
-  })
-  .then((f) => {
-    frequencies.push(f);
-    return measureSineWave(10000000, 0.1, 10000);
   })
   .then((f) => {
     frequencies.push(f);
