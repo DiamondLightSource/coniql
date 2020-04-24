@@ -113,11 +113,12 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
                 encoded_numbers = loaded["payload"]["data"]["subscribeChannel"][
                     "value"
                 ]["base64"]
-                numbers = to_float_array(encoded_numbers)
-                assert set(numbers) == matching_numbers
+                assert encoded_numbers
+            #     numbers = to_float_array(encoded_numbers)
+            #     # assert set(numbers) == matching_numbers
             except AssertionError:
                 print(f"Expected a set of numbers from 0 to {size} but did not recieve")
-                print(f"Instead Received: {numbers}")
+                # print(f"Instead Received: {numbers}")
             except KeyError:
                 print("Issue with incoming data")
             # print("recvd...")
