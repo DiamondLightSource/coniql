@@ -114,7 +114,8 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
                     "value"
                 ]["base64"]
                 assert encoded_numbers
-            #     numbers = to_float_array(encoded_numbers)
+                numbers = to_float_array(encoded_numbers)
+                assert numbers is not None
             #     # assert set(numbers) == matching_numbers
             except AssertionError:
                 print(f"Expected a set of numbers from 0 to {size} but did not recieve")
