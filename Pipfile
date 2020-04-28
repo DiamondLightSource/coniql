@@ -4,13 +4,20 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pytest = "*"
-p4p = "*"
+pytest-cov = "*"
+pytest-black = "*"
+pytest-flake8 = "*"
+flake8-isort = "*"
+pytest-mypy = "*"
+sphinx-rtd-theme = "*"
+doc8 = "*"
 
 [packages]
-graphql-core = "==3.0.0a2"
-aiohttp = "*"
-numpy = "*"
 
-[requires]
-python_version = "3.7"
+[scripts]
+# Put coverage here so we don't interfere with debugging in the IDE
+tests = "python -m pytest --cov-fail-under=90 --cov=coniql --cov-report term"
+docs = "sphinx-build -E -b html docs build/html"
+
+[pipenv]
+allow_prereleases = true
