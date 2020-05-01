@@ -23,9 +23,14 @@ EXPECTED_SIM_SINE = [0.0, 2.938926261462366, 4.755282581475768]
 async def test_get_sim_sine(engine: Engine):
     query = """
 query {
-    getChannel(id: "sim://sine") {
+    getChannel(id: "sim://sine(-5,5,10,1,60)") {
         value {
             float
+            string
+            base64Array {
+                numberType
+            }
+            stringArray
         }
     }
 }
@@ -35,7 +40,40 @@ query {
         if i != 0:
             await asyncio.sleep(1.0)
         result = await engine.execute(query, context=context)
-        assert result == dict(data=dict(getChannel=dict(value=dict(float=x))))
+        assert result == dict(
+            data=dict(
+                getChannel=dict(
+                    value=dict(
+                        float=x, string="%.5f" % x, base64Array=None, stringArray=None
+                    )
+                )
+            )
+        )
+
+
+@pytest.mark.asyncio
+async def test_put_sim_sine_fails(engine: Engine):
+    query = """
+mutation {
+    putChannel(id: "sim://sine", value: "32") {
+        value {
+            float
+        }
+    }
+}
+"""
+    context = make_context()
+    result = await engine.execute(query, context=context)
+    assert result == dict(
+        data=dict(putChannel=None),
+        errors=[
+            dict(
+                locations=[dict(column=5, line=3)],
+                message="Cannot put '32' to sim://sine, as it isn't writeable",
+                path=["putChannel"],
+            )
+        ],
+    )
 
 
 @pytest.mark.asyncio
@@ -68,8 +106,8 @@ query {
     getChannel(id: "sim://sinewave") {
         value {
             string
-            stringArray
-            base64Array {
+            stringArray(length: 10)
+            base64Array(length: 100) {
                 numberType
                 base64
             }
@@ -79,15 +117,32 @@ query {
 """
     context = make_context()
     result = await engine.execute(query, context=context)
-    expected = np.zeros(50)
     assert result == dict(
         data=dict(
             getChannel=dict(
                 value=dict(
-                    string=str(expected),
-                    stringArray=["%.5f" % x for x in expected],
+                    string=str(np.zeros(50)),
+                    stringArray=["%.5f" % x for x in np.zeros(10)],
                     base64Array=dict(
-                        numberType="FLOAT64", base64=base64.b64encode(expected).decode()
+                        numberType="FLOAT64",
+                        base64=base64.b64encode(np.zeros(50)).decode(),
+                    ),
+                )
+            )
+        )
+    )
+    await asyncio.sleep(1.0)
+    result = await engine.execute(query, context=context)
+    b64s = result["data"]["getChannel"]["value"]["base64Array"]["base64"]
+    value = np.frombuffer(base64.b64decode(b64s), dtype=np.float64)
+    assert result == dict(
+        data=dict(
+            getChannel=dict(
+                value=dict(
+                    string=str(value),
+                    stringArray=["%.5f" % x for x in value[:10]],
+                    base64Array=dict(
+                        numberType="FLOAT64", base64=base64.b64encode(value).decode(),
                     ),
                 )
             )

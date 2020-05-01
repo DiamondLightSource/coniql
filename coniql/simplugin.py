@@ -263,3 +263,8 @@ class SimPlugin(Plugin):
                 yield await q.get()
         finally:
             self.listeners[channel_id].remove(q)
+
+    async def put_channel(self, channel_id, value, timeout):
+        raise RuntimeError(
+            f"Cannot put {value!r} to {self.name}://{channel_id}, as it isn't writeable"
+        )
