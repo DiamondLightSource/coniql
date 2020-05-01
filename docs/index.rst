@@ -1,48 +1,94 @@
 coniql
-===========================
+======
 
-Write some introductory paragraphs here. They should describe:
-
-- What the module does
-- How it does it
-- Why you should use it
-
-If you have a diagram or screenshot, you can include it here.
+Control system interface in GraphQL
 
 Installation
 ------------
 
-This section describes how to install the module so you can try it out.
-For Python modules this often looks like this::
+Install the dependencies using instructions from:
 
-    pip install coniql
+https://confluence.diamond.ac.uk/display/SSCC/Python+3+User+Documentation
 
-Usage
------
+Then you can run the example::
 
-Once you have installed the module your readers would like to know how
-to get started with it. If it is a library then you might put some
-introductory code here:
+    pipenv run python -m coniql
 
-.. code:: python
+And see the graphiql interface here:
 
-    from coniql import HelloClass
+http://localhost:8080/graphiql
 
-    hello = HelloClass("me")
-    print(hello.format_greeting())
+With something like::
 
-Or if it is a commandline tool then you might put some example commands here::
+    subscription{
+      subscribeChannel(id: "sim://sine") {
+        id
+        value {
+          float
+        }
+        time {
+          datetime
+        }
+        status {
+          quality
+          message
+          mutable
+        }
+        display {
+          label
+          description
+          role
+          widget
+          controlRange {
+            min
+            max
+          }
+          displayRange {
+            min
+            max
+          }
+          alarmRange {
+            min
+            max
+          }
+          warningRange {
+            min
+            max
+          }
+          units
+          precision
+          form
+          choices
+        }
+      }
+    }
 
-    dls-python3-template-module person --times=2
+Sim Plugin
+----------
 
-The rest of the docs
---------------------
+The sim plugin provides a number of channels that accept keyword args. For a
+channel `channel` which takes up to 3 args, the allowed combinations are::
 
-Everything else depends very much on your target module. The `API` section
-should contain the reference material that a user of your module needs to use
-your module. Consider adding tutorials to walk users through using your module,
-how-to guides and FAQs to address particular problems, and explanations to say
-why things should be done a particular way. More details in this article on
-`writing good documentation`_
+    sim://channel
+    sim://channel(arg1)
+    sim://channel(arg1, arg2)
+    sim://channel(arg1, arg2, arg3)
 
-.. _writing good documentation: https://documentation.divio.com/
+Any unspecified arguments are defaulted.
+
+Available channels:
+
+- sim://sine(min_value, max_value, steps, update_seconds, warning_percent, alarm_percent)
+- sim://sinewave(period_seconds, sample_wavelength, size, update_seconds, min_value, max_value, warning_percent, alarm_percent)
+
+PVA Plugin
+----------
+
+Coniql will provide its values over pvAccess.
+This requires a working installation of `<EPICS 7 https://epics.anl.gov/base/R7-0/index.php>`_.
+
+Then set the environment variable **EPICS7_BASE** to the top level of the installation::
+
+    export EPICS7_BASE=/path/to/EPICS
+
+This should allow the values within the coniql database to be made available over pvAccess.

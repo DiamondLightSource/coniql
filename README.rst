@@ -3,8 +3,8 @@ coniql
 
 |build_status| |coverage| |pypi_version| |readthedocs|
 
-This is where you should write a short paragraph that describes what your module does,
-how it does it, and why people should use it.
+Control system interface in GraphQL with plugins for EPICS Channel Access and PV Access.
+Supports a web interface to get, put and monitor the value of PVs.
 
 Documentation
 -------------

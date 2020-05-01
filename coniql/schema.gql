@@ -1,0 +1,236 @@
+"""
+What access role has the Channel
+"""
+enum ChannelRole {
+    RO
+    WO
+    RW
+}
+
+"""
+Numeric type for arrays of numbers
+"""
+enum NumberType {
+    INT8
+    UINT8
+    INT16
+    UINT16
+    INT32
+    UINT32
+    INT64
+    UINT64
+    FLOAT32
+    FLOAT64
+}
+
+"""
+Indication of how the current value of a Channel should be interpreted
+"""
+enum ChannelQuality {
+    "Value is known, valid, nothing is wrong"
+    VALID
+    "Value is known, valid, but is in the range generating a warning"
+    WARNING
+    "Value is known, valid, but is in the range generating an alarm condition"
+    ALARM
+    "Value is known, but not valid, e.g. a RW before its first put"
+    INVALID
+    "The value is unknown, for instance because the channel is disconnected"
+    UNDEFINED
+    "The Channel is currently in the process of being changed"
+    CHANGING
+}
+
+"""
+Instructions for how a number should be formatted for display
+"""
+enum DisplayForm {
+    "Use the default representation from value"
+    DEFAULT
+    "Force string representation, most useful for array of bytes"
+    STRING
+    "Binary, precision determines number of binary digits"
+    BINARY
+    "Decimal, precision determines number of digits after decimal point"
+    DECIMAL
+    "Hexadecimal, precision determines number of hex digits"
+    HEX
+    "Exponential, precision determines number of digits after decimal point"
+    EXPONENTIAL
+    "Exponential where exponent is multiple of 3, precision determines number of digits after decimal point"
+    ENGINEERING
+}
+
+"""
+Base-64 encodable numeric array
+"""
+type Base64Array {
+    "Type of the native array"
+    numberType: NumberType
+
+    "Base64 encoded version of the array"
+    base64: String
+}
+
+"""
+Value that can be formatted in a number of ways
+"""
+type ChannelValue {
+    "The current value formatted as a string"
+    string: String!
+
+    "The current value formatted as a Float, Null if not expressable"
+    float: Float
+
+    "Array of base64 encoded numbers, Null if not expressable"
+    base64Array(
+        "Request a maximum number of elements, zero is native length"
+        length: Int = 0
+    ): Base64Array
+
+    "Array of strings, Null if not expressable"
+    stringArray(
+        "Request a maximum number of elements, zero is native length"
+        length: Int = 0
+    ): [String]
+}
+
+"""
+The current status of a Channel, including alarm and connection status
+"""
+type ChannelStatus {
+    "Of what quality is the current Channel value"
+    quality: ChannelQuality!
+
+    "Free form text describing the current status"
+    message: String!
+
+    "Whether the Channel will currently accept mutations"
+    mutable: Boolean!
+}
+
+
+"""
+Timestamp indicating when a value was last updated
+"""
+type ChannelTime {
+    "Floating point number of seconds since Jan 1, 1970 00:00:00 UTC"
+    seconds: Float!
+
+    "A more accurate version of the nanoseconds part of the seconds field"
+    nanoseconds: Int!
+
+    "An integer value whose interpretation is deliberately undefined"
+    userTag: Int!
+
+    "The timestamp as a datetime object"
+    datetime: DateTime!
+}
+
+"""
+A range of numbers. Null in either field means unbounded in that direction.
+A value is in range if min <= value <= max
+"""
+type Range {
+    "The minimum number that is in this range"
+    min: Float
+
+    "The maximum that is in this range"
+    max: Float
+}
+
+"""
+Default widget that should be used to display a Channel
+"""
+enum Widget {
+    TEXTINPUT
+    TEXTUPDATE
+    MULTILINETEXTUPDATE
+    LED
+    COMBO
+    CHECKBOX
+    TABLE
+    PLOT
+    METER
+    BUTTON
+}
+
+type ChannelDisplay {
+    "A short human readable label not longer than a few words"
+    label: String!
+    "A long human readable possibly multi-line description"
+    description: String!
+    "What access role does the Channel have"
+    role: ChannelRole!
+    "Default widget to display this Channel"
+    widget: Widget
+    "If numeric, the range the put value should be within"
+    controlRange: Range
+    "If numeric, the range the current value should be within"
+    displayRange: Range
+    "If numeric, the range outside of which an alarm will be produced"
+    alarmRange: Range
+    "If numeric, the range outside of which a warning will be produced"
+    warningRange: Range
+    "If numeric, the physical units for the value field"
+    units: String
+    "If numeric, the number of decimal places to display"
+    precision: Int
+    "If numeric, how should value be displayed"
+    form: DisplayForm
+    "If given, the value should be one of these choices"
+    choices: [String]
+}
+
+"""
+A single value with associated time, status and metadata. These values
+can be Null so that in a subscription they are only updated on change
+"""
+type Channel {
+
+    "ID that uniquely defines this Channel, normally a PV",
+    id: ID!
+
+    "The current value of this channel"
+    value: ChannelValue
+
+    "When was the value last updated"
+    time: ChannelTime
+
+    "Status of the connection, whether is is mutable, and alarm info"
+    status: ChannelStatus
+
+    "How should the Channel be displayed"
+    display: ChannelDisplay
+}
+
+
+type Query {
+    "Get the current value of a Channel"
+    getChannel(
+        "The ID of the Channel to connect to"
+        id: ID!,
+        "How long to wait for connection, negative is forever"
+        timeout: Float = 5.0,
+    ): Channel
+}
+
+type Mutation {
+    "Put a value to Channel"
+    putChannel(
+        "The ID of the Channel to connect to"
+        id: ID!,
+        "The value to put, as JSON encoded string",
+        value: String,
+        "How long to wait for completion, negative is forever"
+        timeout: Float = 5.0,
+    ): Channel
+}
+
+type Subscription {
+    "Subscribe to changes in the value of Channel"
+    subscribeChannel(
+        "The ID of the Channel to connect to"
+        id: ID!,
+    ): Channel
+}
