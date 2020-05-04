@@ -108,20 +108,20 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
         start_time = time.time()
         for i in range(messages_to_test):
             res = await ws.recv()
-            loaded = json.loads(res)
-            try:
-                encoded_numbers = loaded["payload"]["data"]["subscribeChannel"][
-                    "value"
-                ]["base64"]
-                assert encoded_numbers
-                numbers = to_float_array(encoded_numbers)
-                assert numbers is not None
-            #     # assert set(numbers) == matching_numbers
-            except AssertionError:
-                print(f"Expected a set of numbers from 0 to {size} but did not recieve")
-                # print(f"Instead Received: {numbers}")
-            except KeyError:
-                print("Issue with incoming data")
+            # loaded = json.loads(res)
+            # try:
+            #     encoded_numbers = loaded["payload"]["data"]["subscribeChannel"][
+            #         "value"
+            #     ]["base64"]
+            #     assert encoded_numbers
+            #     numbers = to_float_array(encoded_numbers)
+            #     assert numbers is not None
+            # #     # assert set(numbers) == matching_numbers
+            # except AssertionError:
+            #     print(f"Expected a set of numbers from 0 to {size} but did not recieve")
+            #     # print(f"Instead Received: {numbers}")
+            # except KeyError:
+            #     print("Issue with incoming data")
             # print("recvd...")
         end_time = time.time()
     print(f"Time taken: {end_time - start_time:2f} s")
