@@ -43,6 +43,7 @@ import asyncio
 import json
 import time
 
+import numpy as np
 import websockets
 
 from benchmark.sim_sinewave import to_float_array
@@ -77,12 +78,12 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
             f"--- Size: {size}, Update Time: {update_time} s, Messages to test: {messages_to_test}, ---"
         )
 
-        matching_numbers = set([x for x in range(size)])
+        matching_numbers = np.array([x for x in range(size)], dtype=np.float64)
 
         await ws.send(
             json.dumps({"payload": {"headers": None}, "type": "connection_init"})
         )
-        ack = await ws.recv()
+        await ws.recv()
         print("Connected...")
 
         await ws.send(
@@ -113,22 +114,20 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
         start_time = time.time()
         for i in range(messages_to_test):
             # await ws.recv()
-            res = await ws.recv()
-            loaded = json.loads(res)
-            # try:
-            #     encoded_numbers = loaded["payload"]["data"]["subscribeChannel"][
-            #         "value"
-            #     ]["base64Array"]["base64"]
-            #     assert encoded_numbers
-            #     numbers = to_float_array(encoded_numbers)
-            #     # print(numbers)
-            #     assert numbers is not None
-            #     # assert set(numbers) == matching_numbers
-            # except AssertionError:
-            #     print(f"Expected a set of numbers from 0 to {size} but did not recieve")
-            #     # print(f"Instead Received: {numbers}")
-            # except KeyError:
-            #     print("Issue with incoming data")
+            # res = await ws.recv()
+            # loaded = json.loads(res)
+            try:
+                encoded_numbers = json.loads(await ws.recv())["payload"]["data"][
+                    "subscribeChannel"
+                ]["value"]["base64Array"]["base64"]
+                # assert encoded_numbers
+                assert np.array_equal(matching_numbers, to_float_array(encoded_numbers))
+                matching_numbers = np.roll(matching_numbers, 1)
+            except AssertionError:
+                print(f"Expected a set of numbers from 0 to {size} but did not recieve")
+                matching_numbers = to_float_array(encoded_numbers)
+            except KeyError:
+                print("Issue with incoming data")
             # print("recvd...")
         end_time = time.time()
     print(f"Time taken: {end_time - start_time:2f} s")

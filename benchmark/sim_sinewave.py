@@ -8,8 +8,9 @@ from measure import measure_request_times, print_request_times
 
 
 def to_float_array(input_data: str) -> List[float]:
-    buffer = base64.decodebytes(input_data.encode("ascii"))
-    return np.frombuffer(buffer, dtype=np.float64)
+    return np.frombuffer(
+        base64.decodebytes(input_data.encode("ascii")), dtype=np.float64
+    )
 
 
 def measure_and_print_simple_sinewave(size: int, repeats: int = 100):
