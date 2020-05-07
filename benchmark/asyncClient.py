@@ -138,10 +138,7 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
 
 async def test_sizes():
     results = []
-    results.append(await subscribe(1000000, 0.1, 100))
-    results.append(await subscribe(2000000, 0.1, 100))
-    results.append(await subscribe(3000000, 0.1, 100))
-    results.append(await subscribe(4000000, 0.1, 100))
+    results.append(await subscribe(10, 0.1, 100))
 
     for r in results:
         print(r)
