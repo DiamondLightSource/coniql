@@ -244,7 +244,7 @@ class SineWaveSimpleSimChannel(SimChannel):
 
     def compute_changes(self):
         value = np.roll(self.channel.value.value, 1)
-        print(value)
+        # print(value)
         return self.apply_changes(value)
 
 

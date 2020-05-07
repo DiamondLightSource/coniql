@@ -121,9 +121,9 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
                 ]["base64Array"]["base64"]
                 assert encoded_numbers
                 numbers = to_float_array(encoded_numbers)
-                print(numbers)
-            #     assert numbers is not None
-            # #     # assert set(numbers) == matching_numbers
+                # print(numbers)
+                assert numbers is not None
+                assert set(numbers) == matching_numbers
             except AssertionError:
                 print(f"Expected a set of numbers from 0 to {size} but did not recieve")
                 # print(f"Instead Received: {numbers}")
@@ -138,7 +138,16 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
 
 async def test_sizes():
     results = []
-    results.append(await subscribe(10, 0.1, 100))
+    results.append(await subscribe(100000, 0.1, 100))
+    results.append(await subscribe(200000, 0.1, 100))
+    results.append(await subscribe(300000, 0.1, 100))
+    results.append(await subscribe(400000, 0.1, 100))
+    results.append(await subscribe(500000, 0.1, 100))
+    results.append(await subscribe(600000, 0.1, 100))
+    results.append(await subscribe(700000, 0.1, 100))
+    results.append(await subscribe(800000, 0.1, 100))
+    results.append(await subscribe(900000, 0.1, 100))
+    results.append(await subscribe(1000000, 0.1, 100))
 
     for r in results:
         print(r)
