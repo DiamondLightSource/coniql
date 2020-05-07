@@ -62,7 +62,7 @@ GQL_COMPLETE = "complete"
 GQL_CONNECTION_KEEP_ALIVE = "ka"
 
 
-TEST_SUBSCRIPTION_URL = "ws://localhost:8000/subscriptions"
+TEST_SUBSCRIPTION_URL = "ws://localhost:8080/ws"
 
 
 async def subscribe(size: int, update_time: float, messages_to_test: int) -> float:
@@ -92,9 +92,14 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
                     "payload": {
                         "headers": None,
                         "query": f"""subscription {{
-                            subscribeChannel(id: "sim://sinewavesimple({size},{update_time})") {{
+                            subscribeChannel(id: "sim://sinewavesimple({size}, {update_time})") {{
                                     id
-                                    value
+                                    value {{
+                                        base64Array {{
+                                            numberType
+                                            base64
+                                        }}
+                                    }}
                                 }}
                             }}
                         """,
@@ -108,21 +113,22 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
         start_time = time.time()
         for i in range(messages_to_test):
             await ws.recv()
-            # res = await ws.recv()
-            # loaded = json.loads(res)
-            # try:
-            #     encoded_numbers = loaded["payload"]["data"]["subscribeChannel"][
-            #         "value"
-            #     ]["base64"]
-            #     assert encoded_numbers
-            #     numbers = to_float_array(encoded_numbers)
+            res = await ws.recv()
+            loaded = json.loads(res)
+            try:
+                encoded_numbers = loaded["payload"]["data"]["subscribeChannel"][
+                    "value"
+                ]["base64Array"]["base64"]
+                assert encoded_numbers
+                numbers = to_float_array(encoded_numbers)
+                print(numbers)
             #     assert numbers is not None
             # #     # assert set(numbers) == matching_numbers
-            # except AssertionError:
-            #     print(f"Expected a set of numbers from 0 to {size} but did not recieve")
-            #     # print(f"Instead Received: {numbers}")
-            # except KeyError:
-            #     print("Issue with incoming data")
+            except AssertionError:
+                print(f"Expected a set of numbers from 0 to {size} but did not recieve")
+                # print(f"Instead Received: {numbers}")
+            except KeyError:
+                print("Issue with incoming data")
             # print("recvd...")
         end_time = time.time()
     print(f"Time taken: {end_time - start_time:2f} s")

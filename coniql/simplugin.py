@@ -209,6 +209,41 @@ class SineWaveSimChannel(SimChannel):
         x0 = t / self.period
         x = 2 * math.pi * (x0 + np.arange(self.size) / self.wavelength)
         value = self.min + (np.sin(x) + 1.0) / 2.0 * self.range
+        print(value)
+        return self.apply_changes(value)
+
+
+@register_channel("sinewavesimple")
+class SineWaveSimpleSimChannel(SimChannel):
+    """Create a simple float waveform
+
+    Args:
+        size: The size of the output waveform (min 10 elements)
+        update_seconds: The time between each step
+    """
+
+    def __init__(
+        self, id: str, size: int = 10, update_seconds: float = 1.0,
+    ):
+        super().__init__(id, update_seconds)
+        self.size = int(size)
+        self.channel.display = make_display(
+            0,
+            self.size,
+            self.size,
+            self.size,
+            label="Simple Sine Waveform",
+            description="A Sine waveform generator",
+            role="RO",
+            widget="PLOT",
+        )
+        self.channel.value = ChannelValue(
+            np.array([x for x in range(self.size)], dtype=np.float64),
+            self.channel.display.make_ndarray_formatter(),
+        )
+
+    def compute_changes(self):
+        value = np.roll(self.channel.value.value, 1)
         return self.apply_changes(value)
 
 
