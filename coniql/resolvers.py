@@ -36,7 +36,10 @@ async def resolve_query_time(parent: ChannelTime, args, ctx, info) -> datetime.d
 
 @Resolver("ChannelValue.string")
 async def resolve_value_string(parent: ChannelValue, args, ctx, info) -> str:
-    return parent.formatter.to_string(parent.value)
+    if args["units"]:
+        return parent.formatter.to_string_with_units(parent.value)
+    else:
+        return parent.formatter.to_string(parent.value)
 
 
 @Resolver("ChannelValue.float")

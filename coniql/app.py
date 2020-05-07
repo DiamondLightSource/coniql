@@ -22,7 +22,7 @@ async def error_coercer(exception: Exception, error: Dict[str, Any]) -> Dict[str
 def make_engine() -> Engine:
     engine = Engine(
         sdl=Path(__file__).resolve().parent / "schema.gql",
-        # error_coercer=error_coercer,
+        error_coercer=error_coercer,
         modules=["coniql.resolvers"],
     )
     return engine

@@ -77,7 +77,10 @@ Value that can be formatted in a number of ways
 """
 type ChannelValue {
     "The current value formatted as a string"
-    string: String!
+    string(
+        "Whether to include the units in the string"
+        units: Boolean = false
+    ): String!
 
     "The current value formatted as a Float, Null if not expressable"
     float: Float

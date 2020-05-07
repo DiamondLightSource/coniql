@@ -70,7 +70,11 @@ class ChannelDisplay:
     def make_number_formatter(self):
         formatter = ChannelFormatter()
         # number -> string uses given precision
-        formatter.to_string = self._number_format_string().format
+        number_format_string = self._number_format_string()
+        formatter.to_string = number_format_string.format
+        if self.units:
+            number_format_string += " %s" % self.units
+        formatter.to_string_with_units = number_format_string.format
         # number -> float just returns the number
         formatter.to_float = lambda value: value
         return formatter
@@ -85,6 +89,9 @@ class ChannelDisplay:
 
 
 class ChannelFormatter:
+    def to_string_with_units(self, value) -> str:
+        return str(value)
+
     def to_string(self, value) -> str:
         return str(value)
 

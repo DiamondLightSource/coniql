@@ -94,7 +94,7 @@ def make_display(
             min_value + (display_range - warning_range) / 2,
             max_value - (display_range - warning_range) / 2,
         ),
-        units="",
+        units="au",
         precision=5,
         form="DEFAULT",
     )
