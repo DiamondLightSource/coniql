@@ -2,6 +2,14 @@ import timeit
 
 import numpy as np
 
+
+def measure_numpy_comparison(size: int, runs: int) -> float:
+    x_nums = np.array([x for x in range(size)], dtype=np.float64)
+    y_nums = np.array([x for x in range(size)], dtype=np.float64)
+    t = timeit.timeit(lambda: np.array_equal(x_nums, y_nums), number=runs)
+    return t / runs
+
+
 if __name__ == "__main__":
 
     SIZE = 1000000
@@ -23,3 +31,7 @@ if __name__ == "__main__":
 
     t2 = timeit.timeit(lambda: np.array_equal(x_np_array, y_np_array), number=RUNS)
     print(f"NUMPY - Size: {SIZE} took: {t2 / RUNS} seconds on average")
+
+    for x in range(10):
+        size = x * 100000
+        print(f"Size: {x}e5 - {measure_numpy_comparison(size, 1000)}")
