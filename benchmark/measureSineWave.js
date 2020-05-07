@@ -49,8 +49,8 @@ function measureSineWave(size, updateTime, measureTime) {
           try {
             assert(encodedNumbers);
             assert(numbers);
-            assert(new Set(numbers).size === matchingNumbers.size);
-            assert(numbers.every((x) => matchingNumbers.has(x)));
+            // assert(new Set(numbers).size === matchingNumbers.size);
+            // assert(numbers.every((x) => matchingNumbers.has(x)));
           } catch (e) {
             console.log("Issue with incoming data");
           }
