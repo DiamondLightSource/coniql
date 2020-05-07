@@ -112,7 +112,7 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
 
         start_time = time.time()
         for i in range(messages_to_test):
-            await ws.recv()
+            # await ws.recv()
             res = await ws.recv()
             loaded = json.loads(res)
             try:
