@@ -22,11 +22,16 @@ function measureSineWave(size, updateTime, measureTime) {
     query: `subscription {
           subscribeChannel(id: "sim://sinewavesimple(${size},${updateTime})") {
             id
-            value
+            value {
+              base64Array {
+                  numberType
+                  base64
+              }
+            }
           }
         }
         `,
-    endpoint: "ws://localhost:8000/subscriptions",
+    endpoint: "ws://localhost:8080/ws",
     headers: {
       id: size
     }
@@ -36,15 +41,16 @@ function measureSineWave(size, updateTime, measureTime) {
         (event) => {
           // console.log("Event received", event);
           // console.log(event);
-          const encodedNumbers = event.data.subscribeChannel.value.base64;
+          const encodedNumbers =
+            event.data.subscribeChannel.value.base64Array.base64;
           const bd = base64js.toByteArray(encodedNumbers);
           const numbers = new Float64Array(bd.buffer);
           // // console.log(numbers);
           try {
             assert(encodedNumbers);
             assert(numbers);
-            //   // assert(new Set(numbers).size === matchingNumbers.size);
-            //   // assert(numbers.every((x) => matchingNumbers.has(x)));
+            assert(new Set(numbers).size === matchingNumbers.size);
+            assert(numbers.every((x) => matchingNumbers.has(x)));
           } catch (e) {
             console.log("Issue with incoming data");
           }
