@@ -62,14 +62,56 @@ enum DisplayForm {
 }
 
 """
+Widget that should be used to display a Channel
+"""
+enum Widget {
+    "Editable text input"
+    TEXTINPUT
+    "Read-only text display"
+    TEXTUPDATE
+    "Multiline read-only text display"
+    MULTILINETEXTUPDATE
+    "Read-only LED indicator"
+    LED
+    "Editable combo-box style menu for selecting between fixed choices"
+    COMBO
+    "Editable check box"
+    CHECKBOX
+    "Editable progress type bar"
+    BAR
+    "Clickable button to send default value to Channel"
+    BUTTON
+    "X-axis for lines on a graph. Only valid within a Group with widget Plot"
+    PLOTX
+    "Y-axis for a line on a graph. Only valid within a Group with widget Plot"
+    PLOTY
+}
+
+"""
+Widget that should be used to display a Group
+"""
+enum Layout{
+    "Screen with children in it"
+    SCREEN
+    "Group box with children vertically within it"
+    BOX
+    "Graph canvas with each Plot Y as a line in it against Plot X"
+    PLOT
+    "A single row of a table, containing Channels that aren't arrays"
+    ROW
+    "Table of Rows with same named fields, or columns of array Channels"
+    TABLE
+}
+
+"""
 Base-64 encodable numeric array
 """
 type Base64Array {
     "Type of the native array"
-    numberType: NumberType
+    numberType: NumberType!
 
     "Base64 encoded version of the array"
-    base64: String
+    base64: String!
 }
 
 """
@@ -95,7 +137,7 @@ type ChannelValue {
     stringArray(
         "Request a maximum number of elements, zero is native length"
         length: Int = 0
-    ): [String]
+    ): [String!]
 }
 
 """
@@ -142,47 +184,40 @@ type Range {
     max: Float
 }
 
-"""
-Default widget that should be used to display a Channel
-"""
-enum Widget {
-    TEXTINPUT
-    TEXTUPDATE
-    MULTILINETEXTUPDATE
-    LED
-    COMBO
-    CHECKBOX
-    TABLE
-    PLOT
-    METER
-    BUTTON
-}
 
 type ChannelDisplay {
-    "A short human readable label not longer than a few words"
-    label: String!
-    "A long human readable possibly multi-line description"
+    "A human readable possibly multi-line description for a tooltip"
     description: String!
+
     "What access role does the Channel have"
     role: ChannelRole!
+
     "Default widget to display this Channel"
     widget: Widget
+
     "If numeric, the range the put value should be within"
     controlRange: Range
+
     "If numeric, the range the current value should be within"
     displayRange: Range
+
     "If numeric, the range outside of which an alarm will be produced"
     alarmRange: Range
+
     "If numeric, the range outside of which a warning will be produced"
     warningRange: Range
+
     "If numeric, the physical units for the value field"
     units: String
+
     "If numeric, the number of decimal places to display"
     precision: Int
+
     "If numeric, how should value be displayed"
     form: DisplayForm
+
     "If given, the value should be one of these choices"
-    choices: [String]
+    choices: [String!]
 }
 
 """
@@ -190,8 +225,7 @@ A single value with associated time, status and metadata. These values
 can be Null so that in a subscription they are only updated on change
 """
 type Channel {
-
-    "ID that uniquely defines this Channel, normally a PV",
+    "ID that uniquely defines this Channel, normally a PV"
     id: ID!
 
     "The current value of this channel"
@@ -207,6 +241,67 @@ type Channel {
     display: ChannelDisplay
 }
 
+"""
+The static information (not passed over CA/PVA) held for a particular channel"
+"""
+type ChannelConfig {
+    "The pv to get from, None means not readable (an action)"
+    readPv: String
+
+    "The pv to put to, None means not writeable (a readback)"
+    writePv: String
+
+    "Which widget to use for the Channel"
+    widget: Widget
+
+    "Description of what the Channel does"
+    description: String
+
+    "How should numeric values be displayed"
+    displayForm: DisplayForm
+}
+
+union Child = Channel | Device | Group
+
+"""
+A Channel within a Device
+"""
+type NamedChild {
+    "The name of the child within this Device"
+    name: String!
+
+    "A short human readable label not longer than a few words"
+    label: String!
+
+    "The child structure"
+    child: Child!
+}
+
+"""
+A structure of Channels and other Devices
+"""
+type Group {
+    "How to graphically layout the children of this Group"
+    layout: Layout!
+
+    "The child Channels/Devices/Groups"
+    children: [NamedChild!]!
+}
+
+"""
+A structure of Channels and other Devices
+"""
+type Device {
+    "ID that uniquely defines this Device, normally a PV prefix"
+    id: ID!
+
+    "The child Channels/Devices/Groups"
+    children(
+        "If true, do a depth first walk of the tree, outputting nodes on the way down"
+        flatten: Boolean = false
+    ): [NamedChild!]!
+}
+
 
 type Query {
     "Get the current value of a Channel"
@@ -215,7 +310,37 @@ type Query {
         id: ID!,
         "How long to wait for connection, negative is forever"
         timeout: Float = 5.0,
-    ): Channel
+    ): Channel!
+
+    "Get a list of Channels, filtered by wildcard string"
+    getChannels(
+        "All returned Channels will have an ID matching this"
+        filter: String = "*",
+        "How long to wait for connection, negative is forever"
+        timeout: Float = 5.0,
+    ): [Channel!]!
+
+    "Get the static information (not passed over CA/PVA) held for a particular channel"
+    getChannelConfig(
+        "The ID of the Channel"
+        id: ID!
+    ): ChannelConfig
+
+    "Get a single Device by ID"
+    getDevice(
+        "The ID of the Device to connect to"
+        id: ID!,
+        "How long to wait for connection, negative is forever"
+        timeout: Float = 5.0,
+    ): Device!
+
+    "Get a list of Devices, filtered by wildcard string"
+    getDevices(
+        "All returned Devices will have an ID matching this"
+        filter: String = "*",
+        "How long to wait for connection, negative is forever"
+        timeout: Float = 5.0,
+    ): [Device!]!
 }
 
 type Mutation {
@@ -227,13 +352,13 @@ type Mutation {
         value: String,
         "How long to wait for completion, negative is forever"
         timeout: Float = 5.0,
-    ): Channel
+    ): Channel!
 }
 
 type Subscription {
-    "Subscribe to changes in the value of Channel"
+    "Subscribe to changes in top level fields of Channel, if they haven't changed they will be Null"
     subscribeChannel(
         "The ID of the Channel to connect to"
         id: ID!,
-    ): Channel
+    ): Channel!
 }

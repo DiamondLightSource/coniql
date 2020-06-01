@@ -6,6 +6,7 @@ from typing import Any, AsyncGenerator, Dict, Set, Type
 
 import numpy as np
 
+from coniql.coniql_schema import DisplayForm, Widget
 from coniql.plugin import Plugin
 from coniql.types import (
     Channel,
@@ -70,7 +71,7 @@ def make_display(
     label: str,
     description: str,
     role: str,
-    widget: str,
+    widget: Widget,
 ) -> ChannelDisplay:
     assert max_value > min_value, "max_value %s is not > min_value %s" % (
         max_value,
@@ -96,7 +97,7 @@ def make_display(
         ),
         units="au",
         precision=5,
-        form="DEFAULT",
+        form=DisplayForm.DEFAULT,
     )
     return display
 
@@ -137,7 +138,7 @@ class SineSimChannel(SimChannel):
             label="Sine Value",
             description="A Sine value generator",
             role="RO",
-            widget="TEXTUPDATE",
+            widget=Widget.TEXTUPDATE,
         )
         self.channel.value = ChannelValue(
             0, self.channel.display.make_number_formatter()
@@ -197,7 +198,7 @@ class SineWaveSimChannel(SimChannel):
             label="Sine Waveform",
             description="A Sine waveform generator",
             role="RO",
-            widget="PLOT",
+            widget=Widget.PLOTY,
         )
         self.channel.value = ChannelValue(
             np.zeros(size, dtype=np.float64),

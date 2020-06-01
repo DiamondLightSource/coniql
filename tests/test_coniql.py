@@ -1,12 +1,16 @@
 import asyncio
 import base64
+import os
 import time
+from pathlib import Path
 
 import numpy as np
 import pytest
 from tartiflette import Engine
 
 from coniql.app import make_context, make_engine
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
 
 
 @pytest.fixture(scope="module")
@@ -52,6 +56,63 @@ query {
 
 
 @pytest.mark.asyncio
+async def test_get_channels(engine: Engine):
+    query = """
+query {
+    getChannels {
+        id
+    }
+}
+"""
+    here = Path.cwd()
+    try:
+        os.chdir(ROOT_DIR)
+        context = make_context(Path("simdevices.coniql.yaml"))
+    finally:
+        os.chdir(here)
+    result = await engine.execute(query, context=context)
+    assert result == dict(
+        data=dict(
+            getChannels=[
+                dict(id="sim://sine(-10, 10, 100, 0.1)"),
+                dict(id="sim://sine"),
+                dict(id="sim://sinewave(0.1, 1000)"),
+                dict(id="sim://sinewave(5.0, 1000)"),
+            ]
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_channel_config(engine: Engine):
+    query = """
+query {
+    getChannelConfig(id:"sim://sine") {
+        readPv
+        writePv
+        description
+        displayForm
+        widget
+    }
+}
+"""
+    with ROOT_DIR:
+        context = make_context(Path("simdevices.coniql.yaml"))
+    result = await engine.execute(query, context=context)
+    assert result == dict(
+        data=dict(
+            getChannelConfig=dict(
+                readPv="sim://sine",
+                writePv=None,
+                description="A slow updating sine scalar value",
+                displayForm=None,
+                widget=None,
+            )
+        )
+    )
+
+
+@pytest.mark.asyncio
 async def test_put_sim_sine_fails(engine: Engine):
     query = """
 mutation {
@@ -65,7 +126,7 @@ mutation {
     context = make_context()
     result = await engine.execute(query, context=context)
     assert result == dict(
-        data=dict(putChannel=None),
+        data=None,
         errors=[
             dict(
                 locations=[dict(column=5, line=3)],

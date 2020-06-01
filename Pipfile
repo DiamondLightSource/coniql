@@ -18,6 +18,7 @@ flake8 = "==3.7.9"
 tartiflette-aiohttp = "*"
 aioca = "*"
 p4p = "*"
+ruamel-yaml = "*"
 
 [scripts]
 # Put coverage here so we don't interfere with debugging in the IDE
@@ -26,4 +27,3 @@ docs = "sphinx-build -E -b html docs build/html"
 
 [pipenv]
 allow_prereleases = true
-

@@ -1,0 +1,198 @@
+{
+  "title": "DeviceConfig",
+  "type": "object",
+  "properties": {
+    "children": {
+      "title": "Children",
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/definitions/Group"
+          },
+          {
+            "$ref": "#/definitions/ChannelConfig"
+          },
+          {
+            "$ref": "#/definitions/DeviceInstance"
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "children"
+  ],
+  "definitions": {
+    "ChannelConfig": {
+      "title": "ChannelConfig",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "description": "CamelCase name to uniquely identify this channel",
+          "pattern": "([A-Z][a-z0-9]*)*$",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "description": "The GUI Label for this, default is name converted to Title Case",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "const": "ChannelConfig",
+          "type": "string"
+        },
+        "read_pv": {
+          "title": "Read Pv",
+          "description": "The pv to get from, None means not readable (an action)",
+          "type": "string"
+        },
+        "write_pv": {
+          "title": "Write Pv",
+          "description": "The pv to put to, None means not writeable (a readback)",
+          "type": "string"
+        },
+        "widget": {
+          "title": "Widget",
+          "description": "Which widget to use for the Channel",
+          "enum": [
+            "TEXTINPUT",
+            "TEXTUPDATE",
+            "MULTILINETEXTUPDATE",
+            "LED",
+            "COMBO",
+            "CHECKBOX",
+            "BAR",
+            "BUTTON",
+            "PLOTX",
+            "PLOTY"
+          ]
+        },
+        "description": {
+          "title": "Description",
+          "description": "Description of what the Channel does",
+          "type": "string"
+        },
+        "display_form": {
+          "title": "Display Form",
+          "description": "How should numeric values be displayed",
+          "enum": [
+            "DEFAULT",
+            "STRING",
+            "BINARY",
+            "DECIMAL",
+            "HEX",
+            "EXPONENTIAL",
+            "ENGINEERING"
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ]
+    },
+    "DeviceInstance": {
+      "title": "DeviceInstance",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "description": "CamelCase name to uniquely identify this channel",
+          "pattern": "([A-Z][a-z0-9]*)*$",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "description": "The GUI Label for this, default is name converted to Title Case",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "const": "DeviceInstance",
+          "type": "string"
+        },
+        "id": {
+          "title": "Id",
+          "description": "The id of this device, None means use name",
+          "type": "string"
+        },
+        "file": {
+          "title": "File",
+          "description": "The filename to read device definition (ending .coniql.yaml)",
+          "type": "string",
+          "format": "path"
+        },
+        "macros": {
+          "title": "Macros",
+          "description": "The macros to substitute when instantiating device",
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "file"
+      ]
+    },
+    "Group": {
+      "title": "Group",
+      "type": "object",
+      "properties": {
+        "name": {
+          "title": "Name",
+          "description": "CamelCase name to uniquely identify this channel",
+          "pattern": "([A-Z][a-z0-9]*)*$",
+          "type": "string"
+        },
+        "label": {
+          "title": "Label",
+          "description": "The GUI Label for this, default is name converted to Title Case",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "const": "Group",
+          "type": "string"
+        },
+        "layout": {
+          "title": "Layout",
+          "description": "The layout to arrange the children within",
+          "default": "BOX",
+          "enum": [
+            "SCREEN",
+            "BOX",
+            "PLOT",
+            "ROW",
+            "TABLE"
+          ]
+        },
+        "children": {
+          "title": "Children",
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/definitions/Group"
+              },
+              {
+                "$ref": "#/definitions/ChannelConfig"
+              },
+              {
+                "$ref": "#/definitions/DeviceInstance"
+              }
+            ]
+          }
+        }
+      },
+      "required": [
+        "name",
+        "children"
+      ]
+    }
+  }
+}

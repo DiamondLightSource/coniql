@@ -1,41 +1,84 @@
+import asyncio
 import datetime
+from fnmatch import fnmatch
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from tartiflette import Resolver, Subscription
 
-from coniql.types import ChannelTime, ChannelValue
+from coniql.coniql_schema import DisplayForm
+from coniql.device_config import ChannelConfig, ConfigStore
+from coniql.plugin import PluginStore
+from coniql.types import Channel, ChannelTime, ChannelValue
 
 
 @Resolver("Query.getChannel")
-async def get_channel(parent, args: Dict[str, Any], ctx, info) -> Dict[str, Any]:
-    plugin, channel_id = ctx["plugins"].plugin_channel_id(args["id"])
-    data = await plugin.get_channel(channel_id, args["timeout"])
-    return data
+async def get_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
+    plugins: PluginStore = ctx["plugins"]
+    channel = await plugins.get_channel(args["id"], args["timeout"])
+    return channel
+
+
+@Resolver("Query.getChannels")
+async def get_channels(parent, args: Dict[str, Any], ctx, info) -> List[Channel]:
+    plugins: PluginStore = ctx["plugins"]
+    configs: ConfigStore = ctx["configs"]
+    coros = []
+    for channel_id in configs.channels:
+        if fnmatch(channel_id, args["filter"]):
+            coros.append(plugins.get_channel(channel_id, args["timeout"]))
+    channels = list(await asyncio.gather(*coros))
+    return channels
+
+
+@Resolver("Query.getChannelConfig")
+async def get_channel_config(parent, args: Dict[str, Any], ctx, info) -> ChannelConfig:
+    configs: ConfigStore = ctx["configs"]
+    channel_config = configs.channels[args["id"]]
+    return channel_config
+
+
+@Resolver("ChannelConfig.readPv")
+async def channel_config_read_pv(parent: ChannelConfig, args, ctx, info) -> str:
+    return parent.read_pv
+
+
+@Resolver("ChannelConfig.writePv")
+async def channel_config_write_pv(parent: ChannelConfig, args, ctx, info) -> str:
+    return parent.write_pv
+
+
+@Resolver("ChannelConfig.displayForm")
+async def channel_config_display_form(
+    parent: ChannelConfig, args, ctx, info
+) -> DisplayForm:
+    return parent.display_form
 
 
 @Resolver("Mutation.putChannel")
-async def put_channel(parent, args: Dict[str, Any], ctx, info) -> Dict[str, Any]:
-    plugin, channel_id = ctx["plugins"].plugin_channel_id(args["id"])
-    data = await plugin.put_channel(channel_id, args["value"], args["timeout"])
-    return data
+async def put_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
+    plugins: PluginStore = ctx["plugins"]
+    channel = await plugins.put_channel(args["id"], args["value"], args["timeout"])
+    return channel
 
 
 @Subscription("Subscription.subscribeChannel")
 async def subscribe_channel(
     parent, args: Dict[str, Any], ctx, info
 ) -> AsyncIterator[Dict[str, Any]]:
-    plugin, channel_id = ctx["plugins"].plugin_channel_id(args["id"])
-    async for data in plugin.subscribe_channel(channel_id):
-        yield dict(subscribeChannel=data)
+    plugins: PluginStore = ctx["plugins"]
+    async for channel in plugins.subscribe_channel(args["id"]):
+        yield dict(subscribeChannel=channel)
 
 
 @Resolver("ChannelTime.datetime")
-async def resolve_query_time(parent: ChannelTime, args, ctx, info) -> datetime.datetime:
+async def channel_time_datetime(
+    parent: ChannelTime, args, ctx, info
+) -> datetime.datetime:
     return datetime.datetime.fromtimestamp(parent.seconds)
 
 
 @Resolver("ChannelValue.string")
-async def resolve_value_string(parent: ChannelValue, args, ctx, info) -> str:
+async def channel_value_string(parent: ChannelValue, args, ctx, info) -> str:
     if args["units"]:
         return parent.formatter.to_string_with_units(parent.value)
     else:
@@ -43,19 +86,19 @@ async def resolve_value_string(parent: ChannelValue, args, ctx, info) -> str:
 
 
 @Resolver("ChannelValue.float")
-async def resolve_value_float(parent: ChannelValue, args, ctx, info) -> Optional[float]:
+async def channel_value_float(parent: ChannelValue, args, ctx, info) -> Optional[float]:
     return parent.formatter.to_float(parent.value)
 
 
 @Resolver("ChannelValue.base64Array")
-async def resolve_value_base64_array(
+async def channel_value_base64_array(
     parent: ChannelValue, args, ctx, info
 ) -> Optional[Dict[str, str]]:
     return parent.formatter.to_base64_array(parent.value, args["length"])
 
 
 @Resolver("ChannelValue.stringArray")
-async def resolve_value_string_array(
+async def channel_value_string_array(
     parent: ChannelValue, args, ctx, info
 ) -> Optional[List[str]]:
     return parent.formatter.to_string_array(parent.value, args["length"])

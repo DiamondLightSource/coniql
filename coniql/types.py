@@ -2,20 +2,11 @@ import base64
 import math
 import time
 from dataclasses import dataclass
-from enum import Enum
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-
-class DisplayForm(Enum):
-    DEFAULT = "DEFAULT"
-    STRING = "STRING"
-    BINARY = "BINARY"
-    DECIMAL = "DECIMAL"
-    HEX = "HEX"
-    EXPONENTIAL = "EXPONENTIAL"
-    ENGINEERING = "ENGINEERING"
+from .coniql_schema import DisplayForm, Widget
 
 
 @dataclass
@@ -34,14 +25,14 @@ class ChannelDisplay:
     label: str
     description: str
     role: str
-    widget: str
+    widget: Widget
     controlRange: Optional[Range] = None
     displayRange: Optional[Range] = None
     alarmRange: Optional[Range] = None
     warningRange: Optional[Range] = None
     units: Optional[str] = None
     precision: Optional[int] = None
-    form: Optional[str] = None
+    form: Optional[DisplayForm] = None
     choices: Optional[List[str]] = None
 
     def _number_format_string(self) -> str:

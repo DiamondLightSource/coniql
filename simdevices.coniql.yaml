@@ -1,0 +1,7 @@
+children:
+- type: DeviceInstance
+  file: simdevice.coniql.yaml
+  name: Sine1
+- type: DeviceInstance
+  file: simdevice.coniql.yaml
+  name: Sine2
