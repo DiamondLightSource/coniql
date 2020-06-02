@@ -19,6 +19,7 @@ tartiflette-aiohttp = "*"
 aioca = "*"
 p4p = "*"
 ruamel-yaml = "*"
+pydantic = "*"
 
 [scripts]
 # Put coverage here so we don't interfere with debugging in the IDE
