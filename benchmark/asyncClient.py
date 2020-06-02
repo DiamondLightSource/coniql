@@ -113,21 +113,21 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
 
         start_time = time.time()
         for i in range(messages_to_test):
-            # await ws.recv()
-            # res = await ws.recv()
-            # loaded = json.loads(res)
-            try:
-                encoded_numbers = json.loads(await ws.recv())["payload"]["data"][
-                    "subscribeChannel"
-                ]["value"]["base64Array"]["base64"]
-                # assert encoded_numbers
-                assert np.array_equal(matching_numbers, to_float_array(encoded_numbers))
-                matching_numbers = np.roll(matching_numbers, 1)
-            except AssertionError:
-                print(f"Expected a set of numbers from 0 to {size} but did not recieve")
-                matching_numbers = to_float_array(encoded_numbers)
-            except KeyError:
-                print("Issue with incoming data")
+            await ws.recv()
+            # # res = await ws.recv()
+            # # loaded = json.loads(res)
+            # try:
+            #     encoded_numbers = json.loads(await ws.recv())["payload"]["data"][
+            #         "subscribeChannel"
+            #     ]["value"]["base64Array"]["base64"]
+            #     # assert encoded_numbers
+            #     assert np.array_equal(matching_numbers, to_float_array(encoded_numbers))
+            #     matching_numbers = np.roll(matching_numbers, 1)
+            # except AssertionError:
+            #     print(f"Expected a set of numbers from 0 to {size} but did not recieve")
+            #     matching_numbers = to_float_array(encoded_numbers)
+            # except KeyError:
+            #     print("Issue with incoming data")
             # print("recvd...")
         end_time = time.time()
     print(f"Time taken: {end_time - start_time:2f} s")
@@ -137,16 +137,20 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
 
 async def test_sizes():
     results = []
+    results.append(await subscribe(100000, 0.1, 100))
+    results.append(await subscribe(200000, 0.1, 100))
+    results.append(await subscribe(300000, 0.1, 100))
+    results.append(await subscribe(400000, 0.1, 100))
+    results.append(await subscribe(500000, 0.1, 100))
+    results.append(await subscribe(600000, 0.1, 100))
+    results.append(await subscribe(700000, 0.1, 100))
+    results.append(await subscribe(800000, 0.1, 100))
+    results.append(await subscribe(900000, 0.1, 100))
     results.append(await subscribe(1000000, 0.1, 100))
     results.append(await subscribe(2000000, 0.1, 100))
     results.append(await subscribe(3000000, 0.1, 100))
     results.append(await subscribe(4000000, 0.1, 100))
     results.append(await subscribe(5000000, 0.1, 100))
-    results.append(await subscribe(6000000, 0.1, 100))
-    results.append(await subscribe(7000000, 0.1, 100))
-    results.append(await subscribe(8000000, 0.1, 100))
-    results.append(await subscribe(9000000, 0.1, 100))
-    results.append(await subscribe(10000000, 0.1, 100))
 
     for r in results:
         print(r)
