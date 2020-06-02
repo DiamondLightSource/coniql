@@ -1,9 +1,12 @@
+import os
 import re
 from pathlib import Path
 from typing import Dict, Iterator, Sequence, Union
 
 from pydantic import BaseModel, Field
 from ruamel.yaml import YAML
+
+from coniql.types import Channel
 
 from .coniql_schema import DisplayForm, Layout, Widget
 
@@ -115,25 +118,39 @@ class ConfigStore(BaseModel):
     )
     channels: Dict[str, ChannelConfig] = Field({}, description="{pv: channel_config}")
 
-    def add_device_config(self, device_config: DeviceConfig, device_id=""):
+    def add_device_config(self, path: Path, device_id="", macros=None):
         """Load a top level .coniql.yaml file with devices in it"""
-        if device_id:
-            self.devices[device_id] = device_config
-        for child in walk(device_config.children):
-            if isinstance(child, ChannelConfig):
-                # TODO: selectively update channel if already exists
-                self.channels[child.write_pv or child.read_pv] = child
-            elif isinstance(child, DeviceInstance):
-                # recursively load child devices
-                if child.id:
-                    child_device_id = child.id
-                elif device_id:
-                    child_device_id = device_id + "." + child.name
-                else:
-                    child_device_id = child.name
-                child_device_config = DeviceConfig.from_yaml(child.file, child.macros)
-                self.add_device_config(child_device_config, child_device_id)
+        # Relative paths are relative to the path being loaded, so go there
+        cwd = Path.cwd()
+        os.chdir(path.resolve().parent)
+        try:
+            device_config = DeviceConfig.from_yaml(path, macros)
+            if device_id:
+                self.devices[device_id] = device_config
+            for child in walk(device_config.children):
+                if isinstance(child, ChannelConfig):
+                    # TODO: selectively update channel if already exists
+                    self.channels[child.write_pv or child.read_pv] = child
+                elif isinstance(child, DeviceInstance):
+                    # recursively load child devices
+                    if child.id:
+                        child_device_id = child.id
+                    elif device_id:
+                        child_device_id = device_id + "." + child.name
+                    else:
+                        child_device_id = child.name
+                    self.add_device_config(child.file, child_device_id, child.macros)
+        finally:
+            os.chdir(cwd)
         return device_config
+
+    def update_channel(self, channel: Channel) -> Channel:
+        config = self.channels.get(channel.id, None)
+        if config and channel.display:
+            channel.display.description = config.description
+            channel.display.form = config.display_form
+            channel.display.widget = config.widget
+        return channel
 
 
 if __name__ == "__main__":

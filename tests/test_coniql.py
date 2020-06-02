@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import os
 import time
 from pathlib import Path
 
@@ -10,7 +9,7 @@ from tartiflette import Engine
 
 from coniql.app import make_context, make_engine
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+TEST_DIR = Path(__file__).resolve().parent
 
 
 @pytest.fixture(scope="module")
@@ -59,25 +58,32 @@ query {
 async def test_get_channels(engine: Engine):
     query = """
 query {
-    getChannels {
+    getChannels(filter:"sim://sinewave*") {
         id
+        display {
+            description
+        }
+        value {
+            stringArray(length:2)
+        }
     }
 }
 """
-    here = Path.cwd()
-    try:
-        os.chdir(ROOT_DIR)
-        context = make_context(Path("simdevices.coniql.yaml"))
-    finally:
-        os.chdir(here)
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
     result = await engine.execute(query, context=context)
     assert result == dict(
         data=dict(
             getChannels=[
-                dict(id="sim://sine(-10, 10, 100, 0.1)"),
-                dict(id="sim://sine"),
-                dict(id="sim://sinewave(0.1, 1000)"),
-                dict(id="sim://sinewave(5.0, 1000)"),
+                dict(
+                    id="sim://sinewave(0.1, 1000)",
+                    display=dict(description="A high frequency sine wave"),
+                    value=dict(stringArray=["0.00000", "0.00000"]),
+                ),
+                dict(
+                    id="sim://sinewave(5.0, 1000)",
+                    display=dict(description="A low frequency sine wave"),
+                    value=dict(stringArray=["0.00000", "0.00000"]),
+                ),
             ]
         )
     )
@@ -96,8 +102,7 @@ query {
     }
 }
 """
-    with ROOT_DIR:
-        context = make_context(Path("simdevices.coniql.yaml"))
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
     result = await engine.execute(query, context=context)
     assert result == dict(
         data=dict(

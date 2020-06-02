@@ -42,18 +42,3 @@ class PluginStore:
         except KeyError:
             raise ValueError("No plugin registered for scheme '%s'" % scheme)
         return plugin, channel_id
-
-    async def get_channel(self, id: str, timeout: float) -> Channel:
-        plugin, channel_id = self.plugin_channel_id(id)
-        channel = await plugin.get_channel(channel_id, timeout)
-        return channel
-
-    async def put_channel(self, id: str, value, timeout: float) -> Channel:
-        plugin, channel_id = self.plugin_channel_id(id)
-        channel = await plugin.put_channel(channel_id, value, timeout)
-        return channel
-
-    async def subscribe_channel(self, id: str) -> AsyncIterator[Channel]:
-        plugin, channel_id = self.plugin_channel_id(id)
-        async for channel in plugin.subscribe_channel(channel_id):
-            yield channel

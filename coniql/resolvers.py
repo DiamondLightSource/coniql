@@ -14,20 +14,47 @@ from coniql.types import Channel, ChannelTime, ChannelValue
 @Resolver("Query.getChannel")
 async def get_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
     plugins: PluginStore = ctx["plugins"]
-    channel = await plugins.get_channel(args["id"], args["timeout"])
+    configs: ConfigStore = ctx["configs"]
+    plugin, channel_id = plugins.plugin_channel_id(args["id"])
+    channel = await plugin.get_channel(channel_id, args["timeout"])
+    configs.update_channel(channel)
     return channel
 
 
 @Resolver("Query.getChannels")
 async def get_channels(parent, args: Dict[str, Any], ctx, info) -> List[Channel]:
-    plugins: PluginStore = ctx["plugins"]
     configs: ConfigStore = ctx["configs"]
     coros = []
     for channel_id in configs.channels:
         if fnmatch(channel_id, args["filter"]):
-            coros.append(plugins.get_channel(channel_id, args["timeout"]))
+            coros.append(
+                get_channel(
+                    parent, dict(id=channel_id, timeout=args["timeout"]), ctx, info
+                )
+            )
     channels = list(await asyncio.gather(*coros))
     return channels
+
+
+@Resolver("Mutation.putChannel")
+async def put_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
+    plugins: PluginStore = ctx["plugins"]
+    configs: ConfigStore = ctx["configs"]
+    plugin, channel_id = plugins.plugin_channel_id(args["id"])
+    channel = await plugin.put_channel(channel_id, args["value"], args["timeout"])
+    configs.update_channel(channel)
+    return channel
+
+
+@Subscription("Subscription.subscribeChannel")
+async def subscribe_channel(
+    parent, args: Dict[str, Any], ctx, info
+) -> AsyncIterator[Dict[str, Channel]]:
+    plugins: PluginStore = ctx["plugins"]
+    configs: ConfigStore = ctx["configs"]
+    plugin, channel_id = plugins.plugin_channel_id(args["id"])
+    async for channel in plugin.subscribe_channel(channel_id):
+        yield dict(subscribeChannel=configs.update_channel(channel))
 
 
 @Resolver("Query.getChannelConfig")
@@ -52,22 +79,6 @@ async def channel_config_display_form(
     parent: ChannelConfig, args, ctx, info
 ) -> DisplayForm:
     return parent.display_form
-
-
-@Resolver("Mutation.putChannel")
-async def put_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
-    plugins: PluginStore = ctx["plugins"]
-    channel = await plugins.put_channel(args["id"], args["value"], args["timeout"])
-    return channel
-
-
-@Subscription("Subscription.subscribeChannel")
-async def subscribe_channel(
-    parent, args: Dict[str, Any], ctx, info
-) -> AsyncIterator[Dict[str, Any]]:
-    plugins: PluginStore = ctx["plugins"]
-    async for channel in plugins.subscribe_channel(args["id"]):
-        yield dict(subscribeChannel=channel)
 
 
 @Resolver("ChannelTime.datetime")

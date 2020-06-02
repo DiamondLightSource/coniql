@@ -2,7 +2,8 @@ import asyncio
 import math
 import time
 from asyncio import Queue
-from typing import Any, AsyncGenerator, Dict, Set, Type
+from dataclasses import replace
+from typing import AsyncGenerator, Dict, Set, Type
 
 import numpy as np
 
@@ -33,19 +34,13 @@ def register_channel(func: str):
 
 
 class SimChannel:
-    def __init__(
-        self, id: str, update_seconds: float,
-    ):
+    def __init__(self, id: str, update_seconds: float):
         self.update_seconds = update_seconds
-        self.channel = Channel(
-            id, time=ChannelTime.now(), status=ChannelStatus.valid(),
-        )
+        self.channel = Channel(id, time=ChannelTime.now(), status=ChannelStatus.valid())
 
-    def apply_changes(self, value, **changes: Any) -> Dict[str, Any]:
-        for k, v in list(changes.items()):
-            # pop changes that are actually the same
-            if v == getattr(self.channel, k):
-                changes.pop(k)
+    def apply_changes(self, value, **changes) -> Channel:
+        # pop changes that haven't really changed
+        changes = {k: v for k, v in changes.items() if getattr(self.channel, k) != v}
         # value needs special treatment as might wrap a numpy array
         assert self.channel.value is not None, self.channel
         value_changed = value != self.channel.value.value
@@ -53,13 +48,15 @@ class SimChannel:
             value_changed = value_changed.any()
         if value_changed:
             changes["value"] = ChannelValue(value, self.channel.value.formatter)
+        # time always changes
         changes["time"] = ChannelTime.now()
-        for k, v in changes.items():
-            setattr(self.channel, k, v)
-        changes["id"] = self.channel.id
-        return changes
+        # replace our stored channel with an updated one
+        self.channel = replace(self.channel, **changes)
+        # a channel with our differences
+        channel = Channel(id=self.channel.id, **changes)
+        return channel
 
-    def compute_changes(self):
+    def compute_changes(self) -> Channel:
         raise NotImplementedError(self)
 
 
@@ -129,7 +126,7 @@ class SineSimChannel(SimChannel):
         self.min = min_value
         self.range = max_value - min_value
         self.step = 2 * math.pi / max(steps, 1)
-        self.x = 0
+        self.x = 0.0
         self.channel.display = make_display(
             min_value,
             max_value,
@@ -205,7 +202,7 @@ class SineWaveSimChannel(SimChannel):
             self.channel.display.make_ndarray_formatter(),
         )
 
-    def compute_changes(self):
+    def compute_changes(self) -> Channel:
         t = time.time() - self.start
         x0 = t / self.period
         x = 2 * math.pi * (x0 + np.arange(self.size) / self.wavelength)
@@ -218,7 +215,7 @@ class SimPlugin(Plugin):
         # {channel_id: SimChannel}
         self.sim_channels: Dict[str, SimChannel] = {}
         # {channel_id: {queue_for_each_listener}}
-        self.listeners: Dict[str, Set[Queue]] = {}
+        self.listeners: Dict[str, Set[Queue[Channel]]] = {}
 
     async def _start_computing(self, channel_id: str):
         sim = self.sim_channels[channel_id]
