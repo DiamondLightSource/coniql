@@ -35,7 +35,10 @@ query {
             }
             stringArray
         }
+        display {
+            widget
     }
+}
 }
 """
     context = make_context()
@@ -48,10 +51,11 @@ query {
                 getChannel=dict(
                     value=dict(
                         float=x, string="%.5f" % x, base64Array=None, stringArray=None
+                    ),
+                    display=dict(widget="TEXTUPDATE"),
+                ),
                     )
                 )
-            )
-        )
 
 
 @pytest.mark.asyncio

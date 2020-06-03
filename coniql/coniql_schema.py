@@ -3,7 +3,7 @@ from enum import Enum
 
 
 # These must match the types defined in schema.gql
-class DisplayForm(Enum):
+class DisplayForm(str, Enum):
     DEFAULT = "DEFAULT"
     STRING = "STRING"
     BINARY = "BINARY"
@@ -13,7 +13,7 @@ class DisplayForm(Enum):
     ENGINEERING = "ENGINEERING"
 
 
-class Widget(Enum):
+class Widget(str, Enum):
     TEXTINPUT = "TEXTINPUT"
     TEXTUPDATE = "TEXTUPDATE"
     MULTILINETEXTUPDATE = "MULTILINETEXTUPDATE"
@@ -26,7 +26,7 @@ class Widget(Enum):
     PLOTY = "PLOTY"
 
 
-class Layout(Enum):
+class Layout(str, Enum):
     SCREEN = "SCREEN"
     BOX = "BOX"
     PLOT = "PLOT"
