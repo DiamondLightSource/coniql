@@ -43,10 +43,8 @@ class SimChannel:
         changes = {k: v for k, v in changes.items() if getattr(self.channel, k) != v}
         # value needs special treatment as might wrap a numpy array
         assert self.channel.value is not None, self.channel
-        value_changed = value != self.channel.value.value
-        if hasattr(value_changed, "any"):
-            value_changed = value_changed.any()
-        if value_changed:
+        # Don't check numpy arrays as it's expensive, assume it changed
+        if isinstance(value, np.ndarray) or value != self.channel.value.value:
             changes["value"] = ChannelValue(value, self.channel.value.formatter)
         # time always changes
         changes["time"] = ChannelTime.now()

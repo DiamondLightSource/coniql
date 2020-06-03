@@ -120,13 +120,13 @@ class ConfigStore(BaseModel):
 
     def add_device_config(self, path: Path, device_id="", macros=None):
         """Load a top level .coniql.yaml file with devices in it"""
+        device_config = DeviceConfig.from_yaml(path, macros)
+        if device_id:
+            self.devices[device_id] = device_config
         # Relative paths are relative to the path being loaded, so go there
         cwd = Path.cwd()
         os.chdir(path.resolve().parent)
         try:
-            device_config = DeviceConfig.from_yaml(path, macros)
-            if device_id:
-                self.devices[device_id] = device_config
             for child in walk(device_config.children):
                 if isinstance(child, ChannelConfig):
                     # TODO: selectively update channel if already exists

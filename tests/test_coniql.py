@@ -37,8 +37,8 @@ query {
         }
         display {
             widget
+        }
     }
-}
 }
 """
     context = make_context()
@@ -54,8 +54,8 @@ query {
                     ),
                     display=dict(widget="TEXTUPDATE"),
                 ),
-                    )
-                )
+            )
+        )
 
 
 @pytest.mark.asyncio
@@ -116,6 +116,53 @@ query {
                 description="A slow updating sine scalar value",
                 displayForm=None,
                 widget=None,
+            )
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_device(engine: Engine):
+    query = """
+query {
+  getDevice(id:"Sine1") {
+    id
+    children {
+      name
+      label
+      child {
+        ... on Channel {
+          id
+          value {
+            float
+          }
+        }
+      }
+    }
+  }
+}
+"""
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
+    result = await engine.execute(query, context=context)
+    assert result == dict(
+        data=dict(
+            getDevice=dict(
+                id="Sine1",
+                children=[
+                    dict(
+                        name="FastSine",
+                        label="Fast Sine",
+                        child=dict(
+                            id="sim://sine(-10, 10, 100, 0.1)", value=dict(float=0.0),
+                        ),
+                    ),
+                    dict(
+                        name="SlowSine",
+                        label="Slow Sine",
+                        child=dict(id="sim://sine", value=dict(float=0.0),),
+                    ),
+                    dict(name="Waves", label="Waves", child={}),
+                ],
             )
         )
     )

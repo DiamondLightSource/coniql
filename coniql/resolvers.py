@@ -6,7 +6,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from tartiflette import Resolver, Subscription
 
 from coniql.coniql_schema import DisplayForm
-from coniql.device_config import ChannelConfig, ConfigStore
+from coniql.device_config import ChannelConfig, Child, ConfigStore
 from coniql.plugin import PluginStore
 from coniql.types import Channel, ChannelTime, ChannelValue
 
@@ -36,6 +36,20 @@ async def get_channels(parent, args: Dict[str, Any], ctx, info) -> List[Channel]
     return channels
 
 
+@Resolver("Query.getChannelConfig")
+async def get_channel_config(parent, args: Dict[str, Any], ctx, info) -> ChannelConfig:
+    configs: ConfigStore = ctx["configs"]
+    channel_config = configs.channels[args["id"]]
+    return channel_config
+
+
+@Resolver("Query.getDevice")
+async def get_device(parent, args: Dict[str, Any], ctx, info) -> Dict[str, Any]:
+    configs: ConfigStore = ctx["configs"]
+    device_config = configs.devices[args["id"]]
+    return dict(id=args["id"], children=device_config.children)
+
+
 @Resolver("Mutation.putChannel")
 async def put_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
     plugins: PluginStore = ctx["plugins"]
@@ -57,11 +71,24 @@ async def subscribe_channel(
         yield dict(subscribeChannel=configs.update_channel(channel))
 
 
-@Resolver("Query.getChannelConfig")
-async def get_channel_config(parent, args: Dict[str, Any], ctx, info) -> ChannelConfig:
-    configs: ConfigStore = ctx["configs"]
-    channel_config = configs.channels[args["id"]]
-    return channel_config
+@Resolver("NamedChild.label")
+async def named_child_label(parent: Child, args, ctx, info) -> str:
+    return parent.get_label()
+
+
+def child_type_resolver(result, ctx, info, abstract_type):
+    return type(result).__name__
+
+
+@Resolver("NamedChild.child", type_resolver=child_type_resolver)
+async def maed_child_child(parent: Child, args, ctx, info):
+    if isinstance(parent, ChannelConfig):
+        channel = await get_channel(
+            parent, dict(id=parent.write_pv or parent.read_pv, timeout=5), ctx, info
+        )
+        return channel
+    else:
+        return parent
 
 
 @Resolver("ChannelConfig.readPv")
