@@ -22,8 +22,8 @@ async def get_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
     plugins: PluginStore = ctx["plugins"]
     configs: ConfigStore = ctx["configs"]
     plugin, channel_id = plugins.plugin_channel_id(args["id"])
-    channel = await plugin.get_channel(channel_id, args["timeout"])
-    configs.update_channel(channel)
+    config = configs.channels.get(args["id"], None)
+    channel = await plugin.get_channel(channel_id, args["timeout"], config)
     return channel
 
 
@@ -61,8 +61,10 @@ async def put_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
     plugins: PluginStore = ctx["plugins"]
     configs: ConfigStore = ctx["configs"]
     plugin, channel_id = plugins.plugin_channel_id(args["id"])
-    channel = await plugin.put_channel(channel_id, args["value"], args["timeout"])
-    configs.update_channel(channel)
+    config = configs.channels.get(args["id"], None)
+    channel = await plugin.put_channel(
+        channel_id, args["value"], args["timeout"], config
+    )
     return channel
 
 
@@ -73,8 +75,9 @@ async def subscribe_channel(
     plugins: PluginStore = ctx["plugins"]
     configs: ConfigStore = ctx["configs"]
     plugin, channel_id = plugins.plugin_channel_id(args["id"])
-    async for channel in plugin.subscribe_channel(channel_id):
-        yield dict(subscribeChannel=configs.update_channel(channel))
+    config = configs.channels.get(args["id"], None)
+    async for channel in plugin.subscribe_channel(channel_id, config):
+        yield dict(subscribeChannel=channel)
 
 
 @Resolver("NamedChild.label")

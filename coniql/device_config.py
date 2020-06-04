@@ -6,8 +6,6 @@ from typing import Dict, Iterator, Sequence, Union
 from pydantic import BaseModel, Field
 from ruamel.yaml import YAML
 
-from coniql.types import Channel
-
 from .coniql_schema import DisplayForm, Layout, Widget
 
 
@@ -139,14 +137,6 @@ class ConfigStore(BaseModel):
         finally:
             os.chdir(cwd)
         return device_config
-
-    def update_channel(self, channel: Channel) -> Channel:
-        config = self.channels.get(channel.id, None)
-        if config and channel.display:
-            channel.display.description = config.description
-            channel.display.form = config.display_form
-            channel.display.widget = config.widget
-        return channel
 
 
 if __name__ == "__main__":

@@ -3,11 +3,12 @@ import math
 import time
 from asyncio import Queue
 from dataclasses import replace
-from typing import AsyncGenerator, Dict, Set, Type
+from typing import AsyncGenerator, Dict, Optional, Set, Type
 
 import numpy as np
 
 from coniql.coniql_schema import DisplayForm, Widget
+from coniql.device_config import ChannelConfig
 from coniql.plugin import Plugin
 from coniql.types import (
     Channel,
@@ -230,7 +231,9 @@ class SimPlugin(Plugin):
         del self.sim_channels[channel_id]
         del self.listeners[channel_id]
 
-    async def get_channel(self, channel_id: str, timeout: float = 0) -> Channel:
+    async def get_channel(
+        self, channel_id: str, timeout: float, config: Optional[ChannelConfig]
+    ) -> Channel:
         if channel_id not in self.sim_channels:
             if "(" in channel_id:
                 assert channel_id.endswith(")"), (
@@ -242,17 +245,24 @@ class SimPlugin(Plugin):
                 func = channel_id
                 parameters = []
             cls = CHANNEL_CLASSES[func]
-            self.sim_channels[channel_id] = cls(
-                f"{self.name}://{channel_id}", *parameters
-            )
+            inst = cls(f"{self.name}://{channel_id}", *parameters)
+            display = inst.channel.display
+            if config and display:
+                # Use config values in preference to defaults
+                display.description = config.description or display.description
+                display.form = config.display_form or display.form
+                display.widget = config.widget or display.widget
+            self.sim_channels[channel_id] = inst
             self.listeners[channel_id] = set()
             asyncio.create_task(self._start_computing(channel_id))
         return self.sim_channels[channel_id].channel
 
-    async def subscribe_channel(self, channel_id: str) -> AsyncGenerator[Channel, None]:
+    async def subscribe_channel(
+        self, channel_id: str, config: Optional[ChannelConfig]
+    ) -> AsyncGenerator[Channel, None]:
         q: Queue[Channel] = asyncio.Queue()
         try:
-            channel = await self.get_channel(channel_id)
+            channel = await self.get_channel(channel_id, 0, config)
             self.listeners[channel_id].add(q)
             yield channel
             while True:
@@ -260,7 +270,7 @@ class SimPlugin(Plugin):
         finally:
             self.listeners[channel_id].remove(q)
 
-    async def put_channel(self, channel_id, value, timeout):
+    async def put_channel(self, channel_id, value, timeout, config):
         raise RuntimeError(
             f"Cannot put {value!r} to {self.name}://{channel_id}, as it isn't writeable"
         )
