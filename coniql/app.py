@@ -50,7 +50,7 @@ def main(args=None) -> None:
         "config_paths",
         metavar="PATH",
         type=Path,
-        nargs="+",
+        nargs="*",
         help="Paths to .coniql.yaml files describing Channels and Devices",
     )
     parsed_args = parser.parse_args(args)
