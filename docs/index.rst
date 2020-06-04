@@ -92,3 +92,45 @@ Then set the environment variable **EPICS7_BASE** to the top level of the instal
     export EPICS7_BASE=/path/to/EPICS
 
 This should allow the values within the coniql database to be made available over pvAccess.
+
+
+Devices
+-------
+
+Then you can run the example::
+
+    pipenv run python -m coniql tests/simdevices.coniql.yaml
+
+And see the graphiql interface here:
+
+http://localhost:8080/graphiql
+
+With something like::
+
+  query {
+    getDevice(id:"Xspress3") {
+      id
+      children(flatten:true) {
+        name
+        label
+        child {
+          __typename
+          ... on Channel {
+            id
+          }
+          ... on Device {
+            id
+          }
+          ... on Group {
+            layout
+            children {
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+
+Then you will see a Device output, showing a flattened view of its child Channels
+and Devices. You can then recurse down to see "Xspress3.Channel1".
