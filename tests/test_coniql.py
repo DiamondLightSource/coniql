@@ -182,6 +182,125 @@ query {
 
 
 @pytest.mark.asyncio
+async def test_get_devices(engine: Engine):
+    query = """
+query {
+  getDevices(filter:"Sine*") {
+    id
+    children(flatten:true) {
+      name
+      child {
+        ... on Channel {
+          id
+          value {
+            float
+          }
+        }
+        ... on Group {
+          layout
+          children {
+            name
+          }
+        }
+        ... on Device {
+          id
+        }
+      }
+    }
+  }
+}
+"""
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
+    result = await engine.execute(query, context=context)
+    assert result == {
+        "data": {
+            "getDevices": [
+                {
+                    "id": "Sine1",
+                    "children": [
+                        {
+                            "name": "FastSine",
+                            "child": {
+                                "id": "sim://sine(-10, 10, 100, 0.1)",
+                                "value": {"float": 0.0},
+                            },
+                        },
+                        {
+                            "name": "SlowSine",
+                            "child": {"id": "sim://sine", "value": {"float": 0.0}},
+                        },
+                        {
+                            "name": "Waves",
+                            "child": {
+                                "layout": "PLOT",
+                                "children": [
+                                    {"name": "HighFrequency"},
+                                    {"name": "LowFrequency"},
+                                ],
+                            },
+                        },
+                        {
+                            "name": "HighFrequency",
+                            "child": {
+                                "id": "sim://sinewave(0.1, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                        {
+                            "name": "LowFrequency",
+                            "child": {
+                                "id": "sim://sinewave(5.0, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                    ],
+                },
+                {
+                    "children": [
+                        {
+                            "name": "FastSine",
+                            "child": {
+                                "id": "sim://sine(-10, 10, 100, 0.1)",
+                                "value": {"float": 0.0},
+                            },
+                        },
+                        {
+                            "name": "SlowSine",
+                            "child": {"id": "sim://sine", "value": {"float": 0.0}},
+                        },
+                        {
+                            "name": "Waves",
+                            "child": {
+                                "layout": "PLOT",
+                                "children": [
+                                    {"name": "HighFrequency"},
+                                    {"name": "LowFrequency"},
+                                ],
+                            },
+                        },
+                        {
+                            "name": "HighFrequency",
+                            "child": {
+                                "id": "sim://sinewave(0.1, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                        {
+                            "name": "LowFrequency",
+                            "child": {
+                                "id": "sim://sinewave(5.0, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                    ],
+                    "id": "Sine2",
+                },
+            ]
+        }
+    }
+
+
+@pytest.mark.asyncio
 async def test_put_sim_sine_fails(engine: Engine):
     query = """
 mutation {

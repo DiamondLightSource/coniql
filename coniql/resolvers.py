@@ -12,6 +12,7 @@ from coniql.device_config import (
     ConfigStore,
     DeviceInstance,
     Group,
+    walk,
 )
 from coniql.plugin import PluginStore
 from coniql.types import Channel, ChannelTime, ChannelValue
@@ -56,6 +57,16 @@ async def get_device(parent, args: Dict[str, Any], ctx, info) -> Dict[str, Any]:
     return dict(id=args["id"], children=device_config.children)
 
 
+@Resolver("Query.getDevices")
+async def get_devices(parent, args: Dict[str, Any], ctx, info) -> List[Dict[str, Any]]:
+    configs: ConfigStore = ctx["configs"]
+    devices = []
+    for device_id, device_config in configs.devices.items():
+        if fnmatch(device_id, args["filter"]):
+            devices.append(dict(id=device_id, children=device_config.children))
+    return devices
+
+
 @Resolver("Mutation.putChannel")
 async def put_channel(parent, args: Dict[str, Any], ctx, info) -> Channel:
     plugins: PluginStore = ctx["plugins"]
@@ -78,6 +89,14 @@ async def subscribe_channel(
     config = configs.channels.get(args["id"], None)
     async for channel in plugin.subscribe_channel(channel_id, config):
         yield dict(subscribeChannel=channel)
+
+
+@Resolver("Device.children")
+async def device_children(parent: Dict[str, Any], args, ctx, info) -> List:
+    children = parent["children"]
+    if args["flatten"]:
+        children = list(walk(children))
+    return children
 
 
 @Resolver("NamedChild.label")
