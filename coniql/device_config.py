@@ -38,10 +38,7 @@ class WithLabel(BaseModel):
     def get_label(self) -> str:
         """If the component has a label, use that, otherwise
         return the Title Case version of its camelCase name"""
-        label = self.label
-        if label is None:
-            label = camel_to_title(self.name)
-        return label
+        return self.label or camel_to_title(self.name)
 
 
 class ChannelConfig(WithLabel):
@@ -133,13 +130,12 @@ class ConfigStore(BaseModel):
                     self.channels[child.write_pv or child.read_pv] = child
                 elif isinstance(child, DeviceInstance):
                     # recursively load child devices
-                    if child.id:
-                        child_device_id = child.id
-                    elif device_id:
-                        child_device_id = device_id + "." + child.name
-                    else:
-                        child_device_id = child.name
-                    self.add_device_config(child.file, child_device_id, child.macros)
+                    if child.id is None:
+                        if device_id:
+                            child.id = device_id + "." + child.name
+                        else:
+                            child.id = child.name
+                    self.add_device_config(child.file, child.id, child.macros)
         finally:
             os.chdir(cwd)
         return device_config

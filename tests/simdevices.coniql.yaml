@@ -5,3 +5,6 @@ children:
 - type: DeviceInstance
   file: simdevice.coniql.yaml
   name: Sine2
+- type: DeviceInstance
+  file: xspress3.coniql.yaml
+  name: Xspress3

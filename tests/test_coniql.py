@@ -62,7 +62,7 @@ query {
 async def test_get_channels(engine: Engine):
     query = """
 query {
-    getChannels(filter:"sim://sinewave*") {
+    getChannels(filter:"sim://sinewave(5*") {
         id
         display {
             description
@@ -78,11 +78,6 @@ query {
     assert result == dict(
         data=dict(
             getChannels=[
-                dict(
-                    id="sim://sinewave(0.1, 1000)",
-                    display=dict(description="A high frequency sine wave"),
-                    value=dict(stringArray=["0.00000", "0.00000"]),
-                ),
                 dict(
                     id="sim://sinewave(5.0, 1000)",
                     display=dict(description="A low frequency sine wave"),
@@ -125,7 +120,7 @@ query {
 async def test_get_device(engine: Engine):
     query = """
 query {
-  getDevice(id:"Sine1") {
+  getDevice(id:"Xspress3") {
     id
     children {
       name
@@ -137,6 +132,12 @@ query {
             float
           }
         }
+        ... on Group {
+          layout
+        }
+        ... on Device {
+          id
+        }
       }
     }
   }
@@ -144,28 +145,40 @@ query {
 """
     context = make_context(TEST_DIR / "simdevices.coniql.yaml")
     result = await engine.execute(query, context=context)
-    assert result == dict(
-        data=dict(
-            getDevice=dict(
-                id="Sine1",
-                children=[
-                    dict(
-                        name="FastSine",
-                        label="Fast Sine",
-                        child=dict(
-                            id="sim://sine(-10, 10, 100, 0.1)", value=dict(float=0.0),
-                        ),
-                    ),
-                    dict(
-                        name="SlowSine",
-                        label="Slow Sine",
-                        child=dict(id="sim://sine", value=dict(float=0.0),),
-                    ),
-                    dict(name="Waves", label="Waves", child={}),
+    assert result == {
+        "data": {
+            "getDevice": {
+                "id": "Xspress3",
+                "children": [
+                    {
+                        "name": "Temperature",
+                        "label": "Temperature",
+                        "child": {"id": "sim://sine(40, 50)", "value": {"float": 0}},
+                    },
+                    {
+                        "name": "Channel1",
+                        "label": "Channel1",
+                        "child": {"id": "Xspress3.Channel1"},
+                    },
+                    {
+                        "name": "Channel2",
+                        "label": "Channel2",
+                        "child": {"id": "Xspress3.Channel2"},
+                    },
+                    {
+                        "name": "Channel3",
+                        "label": "Channel3",
+                        "child": {"id": "Xspress3.Channel3"},
+                    },
+                    {
+                        "name": "Channel4",
+                        "label": "Channel4",
+                        "child": {"id": "Xspress3.Channel4"},
+                    },
                 ],
-            )
-        )
-    )
+            }
+        }
+    }
 
 
 @pytest.mark.asyncio

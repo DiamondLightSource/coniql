@@ -6,7 +6,13 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 from tartiflette import Resolver, Subscription
 
 from coniql.coniql_schema import DisplayForm
-from coniql.device_config import ChannelConfig, Child, ConfigStore
+from coniql.device_config import (
+    ChannelConfig,
+    Child,
+    ConfigStore,
+    DeviceInstance,
+    Group,
+)
 from coniql.plugin import PluginStore
 from coniql.types import Channel, ChannelTime, ChannelValue
 
@@ -77,16 +83,24 @@ async def named_child_label(parent: Child, args, ctx, info) -> str:
 
 
 def child_type_resolver(result, ctx, info, abstract_type):
-    return type(result).__name__
+    if isinstance(result, Channel):
+        return "Channel"
+    elif isinstance(result, Group):
+        return "Group"
+    else:
+        return "Device"
 
 
 @Resolver("NamedChild.child", type_resolver=child_type_resolver)
-async def maed_child_child(parent: Child, args, ctx, info):
+async def named_child_child(parent: Child, args, ctx, info):
     if isinstance(parent, ChannelConfig):
         channel = await get_channel(
             parent, dict(id=parent.write_pv or parent.read_pv, timeout=5), ctx, info
         )
         return channel
+    elif isinstance(parent, DeviceInstance):
+        device = await get_device(parent, dict(id=parent.id, timeout=5), ctx, info)
+        return device
     else:
         return parent
 

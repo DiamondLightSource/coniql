@@ -171,7 +171,7 @@ class SineWaveSimChannel(SimChannel):
         id: str,
         period_seconds: float = 1.0,
         sample_wavelength: float = 10.0,
-        size: int = 50,
+        size: float = 50.0,
         update_seconds: float = 1.0,
         min_value: float = -5.0,
         max_value: float = 5.0,
@@ -182,7 +182,7 @@ class SineWaveSimChannel(SimChannel):
         self.min = min_value
         self.range = max_value - min_value
         self.period = max(period_seconds, 0.001)
-        self.size = size
+        self.size = int(size)
         self.wavelength = sample_wavelength
         self.start = time.time()
         self.channel.display = make_display(
@@ -196,7 +196,7 @@ class SineWaveSimChannel(SimChannel):
             widget=Widget.PLOTY,
         )
         self.channel.value = ChannelValue(
-            np.zeros(size, dtype=np.float64),
+            np.zeros(self.size, dtype=np.float64),
             self.channel.display.make_ndarray_formatter(),
         )
 
