@@ -22,7 +22,6 @@ class Range:
 
 @dataclass
 class ChannelDisplay:
-    label: str
     description: str
     role: str
     widget: Widget
@@ -35,51 +34,68 @@ class ChannelDisplay:
     form: Optional[DisplayForm] = None
     choices: Optional[List[str]] = None
 
-    def _number_format_string(self) -> str:
-        assert (
-            self.precision is not None
-        ), f"Can't make a number formatter without precision of {self}"
-        return "{:.%df}" % self.precision
 
-    def _ndarray_to_base64_array(
-        self, value: np.ndarray, length: int = 0
-    ) -> Optional[Dict[str, str]]:
-        if length > 0:
-            value = value[:length]
-        return dict(
-            numberType=value.dtype.name.upper(),
-            # https://stackoverflow.com/a/6485943
-            base64=base64.b64encode(value).decode(),
-        )
+def make_number_format_string(form: DisplayForm, precision: int) -> str:
+    return "{:.%df}" % precision
 
-    def _ndarray_to_string_array(self, value: np.ndarray, length: int = 0) -> List[str]:
-        if length > 0:
-            value = value[:length]
-        func = self._number_format_string().format
-        return [func(x) for x in value]
 
-    def make_number_formatter(self):
-        formatter = ChannelFormatter()
+class ChannelFormatter:
+    @classmethod
+    def for_number(
+        cls, form: DisplayForm, precision: int, units: str
+    ) -> "ChannelFormatter":
+        formatter = cls()
+        number_format_string = make_number_format_string(form, precision)
         # number -> string uses given precision
-        number_format_string = self._number_format_string()
         formatter.to_string = number_format_string.format
-        if self.units:
-            number_format_string += " %s" % self.units
+        if units:
+            number_format_string += " %s" % units
         formatter.to_string_with_units = number_format_string.format
         # number -> float just returns the number
         formatter.to_float = lambda value: value
         return formatter
 
-    def make_ndarray_formatter(self):
-        formatter = ChannelFormatter()
+    @classmethod
+    def for_ndarray(
+        cls, form: DisplayForm, precision: int, units: str
+    ) -> "ChannelFormatter":
+        formatter = cls()
+        number_format_string = make_number_format_string(form, precision)
+
         # ndarray -> base64 encoded array
-        formatter.to_base64_array = self._ndarray_to_base64_array
+        def ndarray_to_base64_array(
+            value: np.ndarray, length: int = 0
+        ) -> Optional[Dict[str, str]]:
+            if length > 0:
+                value = value[:length]
+            return dict(
+                numberType=value.dtype.name.upper(),
+                # https://stackoverflow.com/a/6485943
+                base64=base64.b64encode(value).decode(),
+            )
+
+        formatter.to_base64_array = ndarray_to_base64_array
+
         # ndarray -> [str] uses given precision
-        formatter.to_string_array = self._ndarray_to_string_array
+        def _ndarray_to_string_array(value: np.ndarray, length: int = 0) -> List[str]:
+            if length > 0:
+                value = value[:length]
+            func = number_format_string.format
+            return [func(x) for x in value]
+
+        formatter.to_string_array = _ndarray_to_string_array
+
         return formatter
 
+    @classmethod
+    def for_enum(cls, choices: List[str]) -> "ChannelFormatter":
+        formatter = cls()
+        # enum string value
+        formatter.to_string = choices.__getitem__
+        # enum index as a float
+        formatter.to_float = float
+        return formatter
 
-class ChannelFormatter:
     def to_string_with_units(self, value) -> str:
         return str(value)
 
@@ -142,13 +158,18 @@ class ChannelTime:
 @dataclass
 class ChannelValue:
     value: Any
-    formatter: ChannelFormatter
+    formatter: ChannelFormatter = ChannelFormatter()
 
 
-@dataclass
 class Channel:
-    id: str
-    value: Optional[ChannelValue] = None
-    time: Optional[ChannelTime] = None
-    status: Optional[ChannelStatus] = None
-    display: Optional[ChannelDisplay] = None
+    def get_value(self) -> Optional[ChannelValue]:
+        raise NotImplementedError(self)
+
+    def get_time(self) -> Optional[ChannelTime]:
+        raise NotImplementedError(self)
+
+    def get_status(self) -> Optional[ChannelStatus]:
+        raise NotImplementedError(self)
+
+    def get_display(self) -> Optional[ChannelDisplay]:
+        raise NotImplementedError(self)

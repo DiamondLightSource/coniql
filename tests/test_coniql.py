@@ -7,16 +7,9 @@ import numpy as np
 import pytest
 from tartiflette import Engine
 
-from coniql.app import make_context, make_engine
+from coniql.app import make_context
 
 TEST_DIR = Path(__file__).resolve().parent
-
-
-@pytest.fixture(scope="module")
-async def engine():
-    engine = make_engine()
-    await engine.cook()
-    yield engine
 
 
 EXPECTED_SIM_SINE = [0.0, 2.938926261462366, 4.755282581475768]

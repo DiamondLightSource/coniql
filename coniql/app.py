@@ -9,6 +9,7 @@ from tartiflette_aiohttp import register_graphql_handlers
 
 from coniql.device_config import ConfigStore
 from coniql.plugin import PluginStore
+from coniql.pvaplugin import PVAPlugin
 from coniql.simplugin import SimPlugin
 
 
@@ -34,6 +35,7 @@ def make_engine() -> Engine:
 def make_context(*schema_paths: Path) -> Dict[str, Any]:
     plugins = PluginStore()
     plugins.add_plugin("sim", SimPlugin())
+    plugins.add_plugin("pva", PVAPlugin())
     configs = ConfigStore()
     for path in schema_paths:
         configs.add_device_config(path)
@@ -55,10 +57,11 @@ def main(args=None) -> None:
     )
     parsed_args = parser.parse_args(args)
 
+    context = make_context(*parsed_args.config_paths)
     web.run_app(
         register_graphql_handlers(
             app=web.Application(),
-            executor_context=make_context(*parsed_args.config_paths),
+            executor_context=context,
             executor_http_endpoint="/graphql",
             subscription_ws_endpoint="/ws",
             graphiql_enabled=True,

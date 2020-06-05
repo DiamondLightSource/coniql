@@ -1,7 +1,6 @@
 import asyncio
 import math
 import time
-from asyncio import Queue
 from dataclasses import replace
 from typing import AsyncGenerator, Dict, Optional, Set, Type
 
@@ -64,7 +63,6 @@ def make_display(
     max_value: float,
     warning_percent: float,
     alarm_percent: float,
-    label: str,
     description: str,
     role: str,
     widget: Widget,
@@ -77,7 +75,6 @@ def make_display(
     alarm_range = display_range * alarm_percent / 100
     warning_range = display_range * warning_percent / 100
     display = ChannelDisplay(
-        label=label,
         description=description,
         role=role,
         widget=widget,
@@ -131,7 +128,6 @@ class SineSimChannel(SimChannel):
             max_value,
             warning_percent,
             alarm_percent,
-            label="Sine Value",
             description="A Sine value generator",
             role="RO",
             widget=Widget.TEXTUPDATE,
@@ -191,7 +187,6 @@ class SineWaveSimChannel(SimChannel):
             max_value,
             warning_percent,
             alarm_percent,
-            label="Sine Waveform",
             description="A Sine waveform generator",
             role="RO",
             widget=Widget.PLOTY,
@@ -214,7 +209,7 @@ class SimPlugin(Plugin):
         # {channel_id: SimChannel}
         self.sim_channels: Dict[str, SimChannel] = {}
         # {channel_id: {queue_for_each_listener}}
-        self.listeners: Dict[str, Set[Queue[Channel]]] = {}
+        self.listeners: Dict[str, Set[asyncio.Queue[Channel]]] = {}
 
     async def _start_computing(self, channel_id: str):
         sim = self.sim_channels[channel_id]
@@ -245,7 +240,7 @@ class SimPlugin(Plugin):
                 func = channel_id
                 parameters = []
             cls = CHANNEL_CLASSES[func]
-            inst = cls(f"{self.name}://{channel_id}", *parameters)
+            inst = cls(self.full_id(channel_id), *parameters)
             display = inst.channel.display
             if config and display:
                 # Use config values in preference to defaults
@@ -260,7 +255,7 @@ class SimPlugin(Plugin):
     async def subscribe_channel(
         self, channel_id: str, config: Optional[ChannelConfig]
     ) -> AsyncGenerator[Channel, None]:
-        q: Queue[Channel] = asyncio.Queue()
+        q: asyncio.Queue[Channel] = asyncio.Queue()
         try:
             channel = await self.get_channel(channel_id, 0, config)
             self.listeners[channel_id].add(q)
@@ -272,5 +267,5 @@ class SimPlugin(Plugin):
 
     async def put_channel(self, channel_id, value, timeout, config):
         raise RuntimeError(
-            f"Cannot put {value!r} to {self.name}://{channel_id}, as it isn't writeable"
+            f"Cannot put {value!r} to {self.full_id(channel_id)}, as it isn't writeable"
         )

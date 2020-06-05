@@ -7,6 +7,9 @@ from coniql.types import Channel
 class Plugin:
     name: str
 
+    def full_id(self, channel_id: str):
+        return f"{self.name}://{channel_id}"
+
     async def get_channel(
         self, channel_id: str, timeout: float, config: Optional[ChannelConfig]
     ) -> Channel:
