@@ -2,7 +2,7 @@ import base64
 import math
 import time
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -20,6 +20,18 @@ class Range:
         return rmin <= value <= rmax
 
 
+# Map from display form to DisplayForm enum
+DISPLAY_FORM_MAP = [
+    DisplayForm.DEFAULT,
+    DisplayForm.STRING,
+    DisplayForm.BINARY,
+    DisplayForm.DECIMAL,
+    DisplayForm.HEX,
+    DisplayForm.EXPONENTIAL,
+    DisplayForm.ENGINEERING,
+]
+
+
 @dataclass
 class ChannelDisplay:
     description: str
@@ -35,31 +47,44 @@ class ChannelDisplay:
     choices: Optional[List[str]] = None
 
 
-def make_number_format_string(form: DisplayForm, precision: int) -> str:
+def make_number_format_string(
+    form: Optional[DisplayForm], precision: Optional[int]
+) -> str:
+    assert precision is not None
     return "{:.%df}" % precision
+
+
+def return_unchanged(value):
+    return value
+
+
+def return_none(*args, **kwargs):
+    return None
 
 
 class ChannelFormatter:
     @classmethod
     def for_number(
-        cls, form: DisplayForm, precision: int, units: str
+        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
     ) -> "ChannelFormatter":
-        formatter = cls()
         number_format_string = make_number_format_string(form, precision)
-        # number -> string uses given precision
-        formatter.to_string = number_format_string.format
         if units:
-            number_format_string += " %s" % units
-        formatter.to_string_with_units = number_format_string.format
-        # number -> float just returns the number
-        formatter.to_float = lambda value: value
+            units_format_string = f"{number_format_string} {units}"
+        else:
+            units_format_string = number_format_string
+        formatter = cls(
+            # number -> string uses given precision
+            to_string=number_format_string.format,
+            to_string_with_units=units_format_string.format,
+            # number -> float just returns the number
+            to_float=return_unchanged,
+        )
         return formatter
 
     @classmethod
     def for_ndarray(
-        cls, form: DisplayForm, precision: int, units: str
+        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
     ) -> "ChannelFormatter":
-        formatter = cls()
         number_format_string = make_number_format_string(form, precision)
 
         # ndarray -> base64 encoded array
@@ -74,42 +99,53 @@ class ChannelFormatter:
                 base64=base64.b64encode(value).decode(),
             )
 
-        formatter.to_base64_array = ndarray_to_base64_array
-
         # ndarray -> [str] uses given precision
-        def _ndarray_to_string_array(value: np.ndarray, length: int = 0) -> List[str]:
+        def ndarray_to_string_array(value: np.ndarray, length: int = 0) -> List[str]:
             if length > 0:
                 value = value[:length]
             func = number_format_string.format
             return [func(x) for x in value]
 
-        formatter.to_string_array = _ndarray_to_string_array
+        formatter = cls(
+            to_base64_array=ndarray_to_base64_array,
+            to_string_array=ndarray_to_string_array,
+        )
 
         return formatter
 
     @classmethod
     def for_enum(cls, choices: List[str]) -> "ChannelFormatter":
-        formatter = cls()
-        # enum string value
-        formatter.to_string = choices.__getitem__
-        # enum index as a float
-        formatter.to_float = float
+        formatter = cls(
+            # enum string value
+            to_string=choices.__getitem__,
+            # enum index as a float
+            to_float=float,
+        )
         return formatter
 
-    def to_string_with_units(self, value) -> str:
-        return str(value)
+    def __init__(
+        self,
+        to_string: Callable[[Any], str] = str,
+        to_string_with_units: Callable[[Any], str] = str,
+        to_float: Callable[[Any], Optional[float]] = return_none,
+        to_base64_array: Callable[[Any, int], Optional[Dict[str, str]]] = return_none,
+        to_string_array: Callable[[Any, int], Optional[List[str]]] = return_none,
+    ):
+        self.to_string = to_string
+        self.to_string_with_units = to_string_with_units
+        self.to_float = to_float
+        self.to_base64_array = to_base64_array
+        self.to_string_array = to_string_array
 
-    def to_string(self, value) -> str:
-        return str(value)
 
-    def to_float(self, value) -> Optional[float]:
-        return None
-
-    def to_base64_array(self, value, length: int = 0) -> Optional[Dict[str, str]]:
-        return None
-
-    def to_string_array(self, value, length: int = 0) -> Optional[List[str]]:
-        return None
+# Map from alarm.severity to ChannelQuality string
+CHANNEL_QUALITY_MAP = [
+    "VALID",
+    "WARNING",
+    "ALARM",
+    "INVALID",
+    "UNDEFINED",
+]
 
 
 @dataclass

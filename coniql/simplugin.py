@@ -1,7 +1,7 @@
 import asyncio
 import math
 import time
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from typing import AsyncGenerator, Dict, Optional, Set, Type
 
 import numpy as np
@@ -12,6 +12,7 @@ from coniql.plugin import Plugin
 from coniql.types import (
     Channel,
     ChannelDisplay,
+    ChannelFormatter,
     ChannelStatus,
     ChannelTime,
     ChannelValue,
@@ -22,21 +23,41 @@ from coniql.types import (
 SIM_DESTROY_TIMEOUT = 10
 
 # Map of channel_id func to its Sim class
-CHANNEL_CLASSES: Dict[str, Type["SimChannel"]] = {}
+CHANNEL_CLASSES: Dict[str, Type["Sim"]] = {}
 
 
 def register_channel(func: str):
-    def decorator(cls: Type[SimChannel]):
+    def decorator(cls: Type[Sim]):
         CHANNEL_CLASSES[func] = cls
         return cls
 
     return decorator
 
 
-class SimChannel:
-    def __init__(self, id: str, update_seconds: float):
+@dataclass
+class SimChannel(Channel):
+    value: Optional[ChannelValue] = None
+    display: Optional[ChannelDisplay] = None
+    time: Optional[ChannelTime] = None
+    status: Optional[ChannelStatus] = None
+
+    def get_value(self) -> Optional[ChannelValue]:
+        return self.value
+
+    def get_display(self) -> Optional[ChannelDisplay]:
+        return self.display
+
+    def get_time(self) -> Optional[ChannelTime]:
+        return self.time
+
+    def get_status(self) -> Optional[ChannelStatus]:
+        return self.status
+
+
+class Sim:
+    def __init__(self, update_seconds: float):
         self.update_seconds = update_seconds
-        self.channel = Channel(id, time=ChannelTime.now(), status=ChannelStatus.valid())
+        self.channel = SimChannel(time=ChannelTime.now(), status=ChannelStatus.valid())
 
     def apply_changes(self, value, **changes) -> Channel:
         # pop changes that haven't really changed
@@ -51,7 +72,7 @@ class SimChannel:
         # replace our stored channel with an updated one
         self.channel = replace(self.channel, **changes)
         # a channel with our differences
-        channel = Channel(id=self.channel.id, **changes)
+        channel = SimChannel(**changes)
         return channel
 
     def compute_changes(self) -> Channel:
@@ -96,7 +117,7 @@ def make_display(
 
 
 @register_channel("sine")
-class SineSimChannel(SimChannel):
+class SineSim(Sim):
     """Create a simulated float sine value
 
     Args:
@@ -110,7 +131,6 @@ class SineSimChannel(SimChannel):
 
     def __init__(
         self,
-        id: str,
         min_value: float = -5.0,
         max_value: float = 5.0,
         steps: float = 10.0,
@@ -118,12 +138,12 @@ class SineSimChannel(SimChannel):
         warning_percent: float = 80.0,
         alarm_percent: float = 90.0,
     ):
-        super().__init__(id, update_seconds)
+        super().__init__(update_seconds)
         self.min = min_value
         self.range = max_value - min_value
         self.step = 2 * math.pi / max(steps, 1)
         self.x = 0.0
-        self.channel.display = make_display(
+        display = make_display(
             min_value,
             max_value,
             warning_percent,
@@ -132,8 +152,10 @@ class SineSimChannel(SimChannel):
             role="RO",
             widget=Widget.TEXTUPDATE,
         )
+        self.channel.display = display
         self.channel.value = ChannelValue(
-            0, self.channel.display.make_number_formatter()
+            0,
+            ChannelFormatter.for_number(display.form, display.precision, display.units),
         )
 
     def compute_changes(self):
@@ -149,7 +171,7 @@ class SineSimChannel(SimChannel):
 
 
 @register_channel("sinewave")
-class SineWaveSimChannel(SimChannel):
+class SineWaveSim(Sim):
     """Create a simulated float waveform
 
     Args:
@@ -165,7 +187,6 @@ class SineWaveSimChannel(SimChannel):
 
     def __init__(
         self,
-        id: str,
         period_seconds: float = 1.0,
         sample_wavelength: float = 10.0,
         size: float = 50.0,
@@ -175,14 +196,14 @@ class SineWaveSimChannel(SimChannel):
         warning_percent: float = 80.0,
         alarm_percent: float = 90.0,
     ):
-        super().__init__(id, update_seconds)
+        super().__init__(update_seconds)
         self.min = min_value
         self.range = max_value - min_value
         self.period = max(period_seconds, 0.001)
         self.size = int(size)
         self.wavelength = sample_wavelength
         self.start = time.time()
-        self.channel.display = make_display(
+        display = make_display(
             min_value,
             max_value,
             warning_percent,
@@ -191,9 +212,12 @@ class SineWaveSimChannel(SimChannel):
             role="RO",
             widget=Widget.PLOTY,
         )
+        self.channel.display = display
         self.channel.value = ChannelValue(
             np.zeros(self.size, dtype=np.float64),
-            self.channel.display.make_ndarray_formatter(),
+            ChannelFormatter.for_ndarray(
+                display.form, display.precision, display.units
+            ),
         )
 
     def compute_changes(self) -> Channel:
@@ -206,13 +230,13 @@ class SineWaveSimChannel(SimChannel):
 
 class SimPlugin(Plugin):
     def __init__(self):
-        # {channel_id: SimChannel}
-        self.sim_channels: Dict[str, SimChannel] = {}
+        # {channel_id: Sim}
+        self.sims: Dict[str, Sim] = {}
         # {channel_id: {queue_for_each_listener}}
         self.listeners: Dict[str, Set[asyncio.Queue[Channel]]] = {}
 
     async def _start_computing(self, channel_id: str):
-        sim = self.sim_channels[channel_id]
+        sim = self.sims[channel_id]
         next_compute = time.time()
         last_had_listeners = next_compute
         while next_compute - last_had_listeners < SIM_DESTROY_TIMEOUT:
@@ -223,13 +247,13 @@ class SimPlugin(Plugin):
                 last_had_listeners = next_compute
                 await q.put(changes)
         # no-one listening, remove sim
-        del self.sim_channels[channel_id]
+        del self.sims[channel_id]
         del self.listeners[channel_id]
 
     async def get_channel(
-        self, channel_id: str, timeout: float, config: Optional[ChannelConfig]
+        self, channel_id: str, timeout: float, config: ChannelConfig
     ) -> Channel:
-        if channel_id not in self.sim_channels:
+        if channel_id not in self.sims:
             if "(" in channel_id:
                 assert channel_id.endswith(")"), (
                     "Missing closing bracket in %r" % channel_id
@@ -240,20 +264,20 @@ class SimPlugin(Plugin):
                 func = channel_id
                 parameters = []
             cls = CHANNEL_CLASSES[func]
-            inst = cls(self.full_id(channel_id), *parameters)
+            inst = cls(*parameters)
             display = inst.channel.display
-            if config and display:
-                # Use config values in preference to defaults
-                display.description = config.description or display.description
-                display.form = config.display_form or display.form
-                display.widget = config.widget or display.widget
-            self.sim_channels[channel_id] = inst
+            assert display
+            # Use config values in preference to defaults
+            display.description = config.description or display.description
+            display.form = config.display_form or display.form
+            display.widget = config.widget or display.widget
+            self.sims[channel_id] = inst
             self.listeners[channel_id] = set()
             asyncio.create_task(self._start_computing(channel_id))
-        return self.sim_channels[channel_id].channel
+        return self.sims[channel_id].channel
 
     async def subscribe_channel(
-        self, channel_id: str, config: Optional[ChannelConfig]
+        self, channel_id: str, config: ChannelConfig
     ) -> AsyncGenerator[Channel, None]:
         q: asyncio.Queue[Channel] = asyncio.Queue()
         try:

@@ -7,6 +7,7 @@ from aiohttp import web
 from tartiflette import Engine, TartifletteError
 from tartiflette_aiohttp import register_graphql_handlers
 
+from coniql.caplugin import CAPlugin
 from coniql.device_config import ConfigStore
 from coniql.plugin import PluginStore
 from coniql.pvaplugin import PVAPlugin
@@ -36,6 +37,7 @@ def make_context(*schema_paths: Path) -> Dict[str, Any]:
     plugins = PluginStore()
     plugins.add_plugin("sim", SimPlugin())
     plugins.add_plugin("pva", PVAPlugin())
+    plugins.add_plugin("ca", CAPlugin())
     configs = ConfigStore()
     for path in schema_paths:
         configs.add_device_config(path)

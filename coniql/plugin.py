@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Dict, Optional, Tuple
+from typing import AsyncIterator, Dict, Tuple
 
 from coniql.device_config import ChannelConfig
 from coniql.types import Channel
@@ -11,19 +11,19 @@ class Plugin:
         return f"{self.name}://{channel_id}"
 
     async def get_channel(
-        self, channel_id: str, timeout: float, config: Optional[ChannelConfig]
+        self, channel_id: str, timeout: float, config: ChannelConfig
     ) -> Channel:
         """Get the current structure of a Channel"""
         raise NotImplementedError(self)
 
     async def put_channel(
-        self, channel_id: str, value, timeout: float, config: Optional[ChannelConfig]
+        self, channel_id: str, value, timeout: float, config: ChannelConfig
     ) -> Channel:
         """Put a value to a channel, returning the value after put"""
         raise NotImplementedError(self)
 
     async def subscribe_channel(
-        self, channel_id: str, config: Optional[ChannelConfig]
+        self, channel_id: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
         """Subscribe to the structure of the value, yielding dict structures
         where only changing top level fields are filled in"""
