@@ -25,12 +25,13 @@ class CAChannel(Channel):
         value: AugmentedValue,
         config: ChannelConfig,
         meta_value: AugmentedValue,
-        last_value: AugmentedValue = None,
+        last_channel: "CAChannel" = None,
     ):
         self.value = value
         self.meta_value = meta_value
         self.config = config
-        self.last_value = last_value
+        self.last_channel = last_channel
+        self.formatter: Optional[ChannelFormatter] = None
 
     def get_time(self) -> Optional[ChannelTime]:
         time = ChannelTime(
@@ -40,7 +41,10 @@ class CAChannel(Channel):
 
     def get_status(self) -> Optional[ChannelStatus]:
         status = None
-        if self.last_value and self.last_value.severity != self.value.severity:
+        if (
+            self.last_channel is None
+            or self.last_channel.value.severity != self.value.severity
+        ):
             status = ChannelStatus(
                 quality=CHANNEL_QUALITY_MAP[self.value.severity],
                 message="",
@@ -50,34 +54,39 @@ class CAChannel(Channel):
 
     def get_value(self) -> Optional[ChannelValue]:
         precision = getattr(self.meta_value, "precision", 0)
-        if hasattr(self.value, "dtype"):
+        if self.last_channel:
+            # the last channel had one
+            assert self.last_channel.formatter, "Last channel doesn't have a formatter"
+            self.formatter = self.last_channel.formatter
+        elif hasattr(self.value, "dtype"):
             # numpy array
-            formatter = ChannelFormatter.for_ndarray(
+            self.formatter = ChannelFormatter.for_ndarray(
                 self.config.display_form, precision, self.meta_value.units,
             )
         elif hasattr(self.meta_value, "enums"):
             # enum
-            formatter = ChannelFormatter.for_enum(self.meta_value.enums)
+            self.formatter = ChannelFormatter.for_enum(self.meta_value.enums)
         elif isinstance(self.value, (int, float)):
             # number
-            formatter = ChannelFormatter.for_number(
+            self.formatter = ChannelFormatter.for_number(
                 self.config.display_form, precision, self.meta_value.units,
             )
         else:
-            formatter = ChannelFormatter()
-        value = ChannelValue(self.value, formatter)
+            self.formatter = ChannelFormatter()
+        value = ChannelValue(self.value, self.formatter)
         return value
 
     def get_display(self) -> Optional[ChannelDisplay]:
         display = None
-        if self.last_value is None:
+        if self.last_channel is None:
             # Only produce display the first time
             display = ChannelDisplay(
                 description=self.value.name,
                 role="RW",
                 widget=self.config.widget or Widget.TEXTINPUT,
+                form=self.config.display_form,
             )
-            if hasattr(self.meta_value, "precision"):
+            if hasattr(self.meta_value, "units"):
                 display.controlRange = Range(
                     min=self.meta_value.lower_ctrl_limit,
                     max=self.meta_value.upper_ctrl_limit,
@@ -95,7 +104,10 @@ class CAChannel(Channel):
                     max=self.meta_value.upper_warning_limit,
                 )
                 display.units = self.meta_value.units
+            if hasattr(self.meta_value, "precision"):
                 display.precision = self.meta_value.precision
+            if hasattr(self.meta_value, "enums"):
+                display.choices = self.meta_value.enums
         return display
 
 
@@ -125,12 +137,12 @@ class CAPlugin(Plugin):
         meta_value = await caget(channel_id, format=FORMAT_CTRL)
         m = camonitor(channel_id, q.put, format=FORMAT_TIME)
         try:
-            # This will hold the current version of alarm data
-            last_value = None
+            # Hold last channel for squashing identical alarms
+            last_channel = None
             while True:
                 value = await q.get()
-                channel = CAChannel(value, config, meta_value, last_value)
-                last_value = value
+                channel = CAChannel(value, config, meta_value, last_channel)
                 yield channel
+                last_channel = channel
         finally:
             m.close()

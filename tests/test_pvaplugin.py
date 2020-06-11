@@ -1,3 +1,10 @@
+import random
+import string
+import time
+from dataclasses import dataclass
+from unittest.mock import ANY
+
+import numpy as np
 import pytest
 from p4p.nt import NTEnum, NTScalar
 from p4p.server import Server
@@ -7,28 +14,53 @@ from tartiflette import Engine
 from coniql.app import make_context
 
 
-@pytest.fixture(scope="module")
+@dataclass
+class SimIoc:
+    double: SharedPV
+    enum: SharedPV
+    int_array: SharedPV
+    server: Server
+
+
+PV_PREFIX = "".join(random.choice(string.ascii_uppercase) for _ in range(12))
+
+
+@pytest.fixture
 async def ioc():
-    pv = SharedPV(
+    double = SharedPV(
         nt=NTScalar("d", display=True, control=True, valueAlarm=True), initial=2.0
     )
-    pv2 = SharedPV(nt=NTEnum(), initial=dict(index=1, choices=["ZERO", "ONE", "TWO"]))
 
-    @pv.put
+    @double.put
     def handle(pv, op):
         pv.post(op.value())  # just store and update subscribers
         op.done()
 
-    s = Server(providers=[{"demo:float": pv, "demo:enum": pv2}])
-    yield s
-    s.stop()
+    enum = SharedPV(nt=NTEnum(), initial=dict(index=1, choices=["ZERO", "ONE", "TWO"]))
+
+    int_array = SharedPV(
+        nt=NTScalar("ai", display=True, control=True, valueAlarm=True), initial=[]
+    )
+
+    server = Server(
+        providers=[
+            {
+                f"{PV_PREFIX}double": double,
+                f"{PV_PREFIX}enum": enum,
+                f"{PV_PREFIX}int_array": int_array,
+            }
+        ]
+    )
+    yield SimIoc(double, enum, int_array, server)
+    server.stop()
 
 
 @pytest.mark.asyncio
-async def test_get_float_pv(engine: Engine, ioc: Server):
-    query = """
+async def test_get_float_pv(engine: Engine, ioc: SimIoc):
+    query = (
+        """
 query {
-    getChannel(id: "pva://demo:float") {
+    getChannel(id: "pva://%sdouble") {
         value {
             float
             string
@@ -39,6 +71,8 @@ query {
     }
 }
 """
+        % PV_PREFIX
+    )
     context = make_context()
     result = await engine.execute(query, context=context)
     assert result == dict(
@@ -52,9 +86,10 @@ query {
 
 @pytest.mark.asyncio
 async def test_get_enum_pv(engine: Engine, ioc: Server):
-    query = """
+    query = (
+        """
 query {
-    getChannel(id: "pva://demo:enum") {
+    getChannel(id: "pva://%senum") {
         value {
             float
             string
@@ -66,6 +101,8 @@ query {
     }
 }
 """
+        % PV_PREFIX
+    )
     context = make_context()
     result = await engine.execute(query, context=context)
     assert result == dict(
@@ -76,3 +113,69 @@ query {
             ),
         )
     )
+
+
+@pytest.mark.asyncio
+async def test_put_float_pv(engine: Engine, ioc: SimIoc):
+    query = (
+        """
+mutation {
+    putChannel(id: "pva://%sdouble", value: "40") {
+        value {
+            float
+            string
+        }
+        status {
+            quality
+            message
+        }
+        time {
+            seconds
+        }
+    }
+}
+"""
+        % PV_PREFIX
+    )
+    context = make_context()
+    result = await engine.execute(query, context=context)
+    assert result == dict(
+        data=dict(
+            putChannel=dict(
+                value=dict(float=40.0, string="40.000"),
+                status=dict(message="", quality="VALID"),
+                time=dict(seconds=ANY),
+            ),
+        )
+    )
+    now = time.time()
+    assert now - result["data"]["putChannel"]["time"]["seconds"] < 0.2
+
+
+@pytest.mark.asyncio
+async def test_subscribe_int_pv(engine: Engine, ioc: SimIoc):
+    query = (
+        """
+subscription {
+    subscribeChannel(id: "pva://%sint_array") {
+        value {
+            stringArray
+        }
+    }
+}
+"""
+        % PV_PREFIX
+    )
+    context = make_context()
+    expected = np.ndarray(0, dtype=np.int32)
+    async for result in engine.subscribe(query, context=context):
+        assert result == dict(
+            data=dict(subscribeChannel=dict(value=dict(stringArray=ANY)))
+        )
+        actual = result["data"]["subscribeChannel"]["value"]["stringArray"]
+        assert ["%.3f" % x for x in expected] == actual
+        num = len(actual)
+        if num > 5:
+            break
+        expected = np.arange(num + 1, dtype=np.int32)
+        ioc.int_array.post(expected)

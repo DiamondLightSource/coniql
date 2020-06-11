@@ -1,8 +1,11 @@
 import asyncio
+import base64
 import datetime
+import json
 from fnmatch import fnmatch
 from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 
+import numpy as np
 from tartiflette import Resolver, Subscription
 
 from coniql.coniql_schema import DisplayForm
@@ -112,11 +115,19 @@ async def put_channel(parent, args: Dict[str, Any], ctx, info) -> DeferredChanne
     configs: ConfigStore = ctx["configs"]
     plugin, channel_id = plugins.plugin_channel_id(args["id"])
     config = configs.channels.get(args["id"], NO_CONFIG)
+    value = args["value"]
+    if value[:1] in "[{":
+        # need to json decode
+        value = json.loads(value)
+        if isinstance(value, dict):
+            # decode base64 array
+            dtype = np.dtype(value["numberType"].lower())
+            value_b = base64.b64decode(value["base64"])
+            # https://stackoverflow.com/a/6485943
+            value = np.frombuffer(value_b, dtype=dtype)
     channel = ResolvedChannel(
         id=plugin.full_id(channel_id),
-        channel=await plugin.put_channel(
-            channel_id, args["value"], args["timeout"], config
-        ),
+        channel=await plugin.put_channel(channel_id, value, args["timeout"], config),
     )
     return channel
 
