@@ -1,7 +1,4 @@
-rhel7_job:
-  tags:
-    - rhel7
-  before_script:
-    - pipenv install --dev
-  script:
-    - pipenv run python -m pytest test
+include:
+  - project: 'controls/reports/ci_templates'
+    ref: master
+    file: 'python3/dls_py3_template.yml'

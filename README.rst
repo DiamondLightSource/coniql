@@ -1,108 +1,61 @@
 coniql
 ======
 
-Control system interface in GraphQL
+|build_status| |coverage| |pypi_version| |readthedocs|
+
+Control system interface in GraphQL with plugins for EPICS Channel Access and PV Access.
+Supports a web interface to get, put and monitor the value of PVs.
+
+Documentation
+-------------
+
+Full documentation is available at http://coniql.readthedocs.io
+
+Source Code
+-----------
+
+Available from http://github.com/dls-controls/coniql
 
 Installation
 ------------
 
-Install the dependencies using instructions from:
+To install the latest release, type::
 
-https://confluence.diamond.ac.uk/display/SSCC/Python+3+User+Documentation
+    pip install coniql
 
-Then you can run the example::
-    
-    pipenv run python -m coniql.server
+or::
 
-And see the graphiql interface here:
+    git clone http://github.com/dls-controls/coniql
+    pipenv install
 
-http://localhost:8000/graphiql
+Contributing
+------------
 
-With something like::
+See `CONTRIBUTING`_
 
-    subscription {
-      subscribeChannel(id: "sim://sine") {
-        id
-        meta {
-          __typename
-          description
-          tags
-          label
-          ... on ObjectMeta {
-            array
-            type
-          }
-          ... on NumberMeta {
-            array
-            numberType
-            display {
-              controlRange {
-                min
-                max
-              }
-              displayRange {
-                min
-                max
-              }
-              alarmRange {
-                min
-                max
-              }
-              warningRange {
-                min
-                max
-              }
-              units
-              precision
-              form
-            }
-          }
-          ... on EnumMeta {
-            array
-            choices
-          }
-        }
-        value
-        time {
-          seconds
-          nanoseconds
-          userTag
-        }
-        status {
-          quality
-          message
-          mutable
-        }
-      }
-    }
+License
+-------
+APACHE License. (see `LICENSE`_)
 
 
-Sim Plugin
-----------
+.. |build_status| image:: https://travis-ci.com/dls-controls/coniql.svg?branch=master
+    :target: https://travis-ci.com/dls-controls/coniql
+    :alt: Build Status
 
-The sim plugin provides a number of channels that accept keyword args. For a
-channel `channel` which takes up to 3 args, the allowed combinations are::
+.. |coverage| image:: https://coveralls.io/repos/github/dls-controls/coniql/badge.svg?branch=master
+    :target: https://coveralls.io/github/dls-controls/coniql?branch=master
+    :alt: Test Coverage
 
-    sim://channel
-    sim://channel(arg1)
-    sim://channel(arg1, arg2)
-    sim://channel(arg1, arg2, arg3)
+.. |pypi_version| image:: https://badge.fury.io/py/coniql.svg
+    :target: https://badge.fury.io/py/coniql
+    :alt: Latest PyPI version
 
-Any unspecified arguments are defaulted.
+.. |readthedocs| image:: https://readthedocs.org/projects/coniql/badge/?version=latest
+    :target: http://coniql.readthedocs.io
+    :alt: Documentation
 
-Available channels:
+.. _CONTRIBUTING:
+    https://github.com/dls-controls/coniql/blob/master/CONTRIBUTING.rst
 
-- sim://sine(min_value, max_value, steps, update_seconds, warning_percent, alarm_percent)
-- sim://sinewave(period_seconds, sample_wavelength, size, update_seconds, min_value, max_value, warning_percent, alarm_percent)
-
-PVA Plugin
-----------
-
-Coniql will provide its values over pvAccess.
-This requires a working installation of `<EPICS 7 https://epics.anl.gov/base/R7-0/index.php>`_.
-
-Then set the environment variable **EPICS7_BASE** to the top level of the installation::
-
-    export EPICS7_BASE=/path/to/EPICS
-
-This should allow the values within the coniql database to be made available over pvAccess.
+.. _LICENSE:
+    https://github.com/dls-controls/coniql/blob/master/LICENSE

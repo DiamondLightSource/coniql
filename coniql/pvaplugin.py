@@ -1,267 +1,220 @@
 import asyncio
-import base64
-import os
-from pathlib import Path
+import atexit
+from typing import AsyncIterator, Dict, Optional, Tuple, Type
 
 from p4p.client.asyncio import Context, Value
 
-from coniql import EPICS7_BASE
-from .plugin import Plugin
-from ._types import NumberType, ChannelQuality, DisplayForm, Range, \
-    NumberDisplay, Channel, ChannelStatus, Time, EnumMeta, NumberMeta, \
-    ObjectMeta, ArrayWrapper
+from coniql.coniql_schema import DisplayForm, Widget
+from coniql.device_config import ChannelConfig
+from coniql.plugin import Plugin
+from coniql.types import (
+    CHANNEL_QUALITY_MAP,
+    DISPLAY_FORM_MAP,
+    Channel,
+    ChannelDisplay,
+    ChannelFormatter,
+    ChannelStatus,
+    ChannelTime,
+    ChannelValue,
+    Range,
+)
 
 # https://mdavidsaver.github.io/p4p/values.html
-NUMBER_TYPES = {
-    'b': NumberType.INT8,
-    'B': NumberType.UINT8,
-    'h': NumberType.INT16,
-    'H': NumberType.UINT16,
-    'i': NumberType.INT32,
-    'I': NumberType.UINT32,
-    'l': NumberType.INT64,
-    'L': NumberType.UINT64,
-    'f': NumberType.FLOAT32,
-    'd': NumberType.FLOAT64,
+NUMBER_TYPES = {"b", "B", "h", "H", "i", "I", "l", "L", "f", "d"}
+OTHER_TYPES = {"?", "s"}
+
+
+class PVAChannel(Channel):
+    def __init__(
+        self, value: Value, config: ChannelConfig, last_channel: "PVAChannel" = None
+    ):
+        self.value = value
+        self.config = config
+        self.last_channel = last_channel
+        self.formatter: Optional[ChannelFormatter] = None
+
+    def get_status(self) -> Optional[ChannelStatus]:
+        status = None
+        v_alarm = self.value.alarm
+        # Alarms change each time, so compare them
+        if self.last_channel is None or self.last_channel.value.alarm != v_alarm:
+            status = ChannelStatus(
+                quality=CHANNEL_QUALITY_MAP[v_alarm.severity],
+                message=v_alarm.message,
+                mutable=True,
+            )
+        return status
+
+    def get_time(self) -> Optional[ChannelTime]:
+        time = None
+        v_timestamp = self.value.timeStamp
+        if self.last_channel is None or v_timestamp.changed():
+            time = ChannelTime(
+                seconds=v_timestamp.secondsPastEpoch + v_timestamp.nanoseconds * 1e-9,
+                nanoseconds=v_timestamp.nanoseconds,
+                userTag=v_timestamp.userTag,
+            )
+        return time
+
+
+def update_display(display: ChannelDisplay, config: ChannelConfig):
+    # Role defined by presence of PVs, delete modes without PV
+    if config.read_pv or config.write_pv:
+        if config.read_pv is None:
+            display.role = display.role[1:]
+        if config.write_pv is None:
+            display.role = display.role[:-1]
+    # Override description and widget
+    display.description = config.description or display.description
+    display.widget = config.widget or display.widget
+    display.form = config.display_form or display.form
+
+
+class ScalarPVAChannel(PVAChannel):
+    def is_number(self) -> bool:
+        type_specifier: str = self.value.type()["value"]
+        return type_specifier.strip("a") in NUMBER_TYPES
+
+    def is_array(self) -> bool:
+        type_specifier: str = self.value.type()["value"]
+        return type_specifier.startswith("a")
+
+    def get_form_precision_units(self) -> Tuple[DisplayForm, int, str]:
+        v_display = self.value.display
+        try:
+            form = DISPLAY_FORM_MAP[v_display.form.index]
+            precision = v_display.precision
+        except AttributeError:
+            # Test version doesn't have these
+            form = DisplayForm.DEFAULT
+            precision = 3
+        units = v_display.units
+        form = self.config.display_form or form
+        return (form, precision, units)
+
+    def get_value(self) -> Optional[ChannelValue]:
+        value = None
+        if self.last_channel is None or self.value.changed("value"):
+            if self.last_channel and not self.value.display.changed():
+                # the last channel had one
+                assert (
+                    self.last_channel.formatter
+                ), "Last channel doesn't have a formatter"
+                self.formatter = self.last_channel.formatter
+            elif self.is_number():
+                form, prec, units = self.get_form_precision_units()
+                if self.is_array():
+                    self.formatter = ChannelFormatter.for_ndarray(form, prec, units)
+                else:
+                    self.formatter = ChannelFormatter.for_number(form, prec, units)
+            else:
+                self.formatter = ChannelFormatter()
+            value = ChannelValue(self.value.value, self.formatter)
+        return value
+
+    def get_display(self) -> Optional[ChannelDisplay]:
+        display = None
+        v_display = self.value.display
+        if self.last_channel is None or v_display.changed():
+            display = ChannelDisplay(
+                description=v_display.description, role="RW", widget=Widget.TEXTINPUT
+            )
+            if self.is_number():
+                v_control = self.value.control
+                v_value_alarm = self.value.valueAlarm
+                display.controlRange = Range(
+                    min=v_control.limitLow, max=v_control.limitHigh
+                )
+                display.displayRange = Range(
+                    min=v_display.limitLow, max=v_display.limitHigh
+                )
+                display.alarmRange = Range(
+                    min=v_value_alarm.lowAlarmLimit, max=v_value_alarm.highAlarmLimit
+                )
+                display.warningRange = Range(
+                    min=v_value_alarm.lowWarningLimit,
+                    max=v_value_alarm.highWarningLimit,
+                )
+                (
+                    display.form,
+                    display.precision,
+                    display.units,
+                ) = self.get_form_precision_units()
+            update_display(display, self.config)
+        return display
+
+
+class EnumPVAChannel(PVAChannel):
+    def get_value(self) -> Optional[ChannelValue]:
+        value = None
+        v_value = self.value.value
+        if self.last_channel is None or v_value.changed():
+            if self.last_channel and not v_value.changed("choices"):
+                # use the last channel's formatter
+                assert (
+                    self.last_channel.formatter
+                ), "Last channel doesn't have a formatter"
+                self.formatter = self.last_channel.formatter
+            else:
+                self.formatter = ChannelFormatter.for_enum(v_value.choices)
+            value = ChannelValue(v_value.index, self.formatter)
+        return value
+
+    def get_display(self) -> Optional[ChannelDisplay]:
+        display = None
+        v_value = self.value.value
+        if self.last_channel is None or v_value.changed("choices"):
+            display = ChannelDisplay(
+                description="", role="RW", widget=Widget.COMBO, choices=v_value.choices,
+            )
+            update_display(display, self.config)
+        return display
+
+
+CHANNEL_CLASS: Dict[str, Type[PVAChannel]] = {
+    "epics:nt/NTScalar:1.0": ScalarPVAChannel,
+    "epics:nt/NTScalarArray:1.0": ScalarPVAChannel,
+    "epics:nt/NTEnum:1.0": EnumPVAChannel,
 }
-
-OTHER_TYPES = {
-    "?": "Boolean",
-    "s": "String"
-}
-
-# Map from alarm.severity to ChannelQuality string
-CHANNEL_QUALITY_MAP = [
-    ChannelQuality.VALID,
-    ChannelQuality.WARNING,
-    ChannelQuality.ALARM,
-    ChannelQuality.INVALID,
-    ChannelQuality.UNDEFINED,
-]
-
-# Map from display form to DisplayForm enum
-DISPLAY_FORM_MAP = {
-    "Default": DisplayForm.DEFAULT,
-    "String": DisplayForm.STRING,
-    "Binary": DisplayForm.BINARY,
-    "Decimal": DisplayForm.DECIMAL,
-    "Hex": DisplayForm.HEX,
-    "Exponential": DisplayForm.EXPONENTIAL,
-    "Engineering": DisplayForm.ENGINEERING,
-}
-
-
-def label(channel_id):
-    return channel_id.split(":")[-1].split(".")[0].title()
-
-
-def convert_value(value: Value, channel: Channel):
-    type_specifier = value.type()["value"]
-    scalar_types = list(NUMBER_TYPES) + list(OTHER_TYPES)
-    assert type_specifier in scalar_types, \
-        "Expected a scalar type, got %r" % type_specifier
-    if type_specifier in ("l", "L"):
-        # 64-bit signed and unsigned numbers in javascript can overflow, use
-        # a string conversion
-        channel.value = str(value.value)
-    else:
-        # Native type is fine
-        channel.value = value.value
-
-
-def convert_value_array(value: Value, channel: Channel):
-    type_specifier = value.type()["value"]
-    assert type_specifier[0] == "a", \
-        "Expected an array type, got %r" % type_specifier
-    type_specifier = type_specifier[1:]
-    if type_specifier in NUMBER_TYPES:
-        channel.value = ArrayWrapper(value.value)
-    else:
-        raise ValueError("Don't support %r at the moment" % type_specifier)
-
-
-def convert_alarm(value: Value, channel: Channel):
-    v_alarm = value.alarm
-    channel.status = ChannelStatus(
-        quality=CHANNEL_QUALITY_MAP[v_alarm.severity],
-        message=v_alarm.message,
-        mutable=True
-    )
-
-
-def convert_timestamp(value: Value, channel: Channel):
-    v_timestamp = value.timeStamp
-    channel.time = Time(
-        seconds=v_timestamp.secondsPastEpoch + v_timestamp.nanoseconds * 1e-9,
-        nanoseconds=v_timestamp.nanoseconds,
-        userTag=v_timestamp.userTag
-    )
-
-
-def convert_display(value: Value, channel: Channel):
-    type_specifier = value.type()["value"]
-    v_display = value.display
-    meta_args = dict(
-        description=v_display.description,
-        label=label(channel.id)
-    )
-    if type_specifier.startswith("a"):
-        meta_args["tags"] = ["widget:table", "role:user"]
-        meta_args["array"] = True
-        type_specifier = type_specifier[1:]
-    else:
-        meta_args["tags"] = ["widget:textinput", "role:user"]
-        meta_args["array"] = False
-    if type_specifier in NUMBER_TYPES:
-        v_control = value.control
-        v_value_alarm = value.valueAlarm
-        display = NumberDisplay(
-            controlRange=Range(
-                min=v_control.limitLow,
-                max=v_control.limitHigh),
-            displayRange=Range(
-                min=v_display.limitLow,
-                max=v_display.limitHigh),
-            alarmRange=Range(
-                min=v_value_alarm.lowAlarmLimit,
-                max=v_value_alarm.highAlarmLimit),
-            warningRange=Range(
-                min=v_value_alarm.lowWarningLimit,
-                max=v_value_alarm.highWarningLimit),
-            units=v_display.units,
-            precision=v_display.precision,
-            form=DISPLAY_FORM_MAP[v_display.form.choices[v_display.form.index]])
-        channel.meta = NumberMeta(
-            numberType=NUMBER_TYPES[type_specifier],
-            display=display,
-            **meta_args)
-    elif type_specifier in OTHER_TYPES:
-        channel.meta = ObjectMeta(
-            type=OTHER_TYPES[type_specifier],
-            **meta_args)
-    else:
-        raise ValueError("Can't deal with type specifier %r" % type_specifier)
-
-
-def convert_enum_value(value: Value, channel: Channel):
-    channel.value = value.value.index
-
-
-def convert_enum_choices(value: Value, channel: Channel):
-    channel.meta = EnumMeta(
-        description=channel.id,
-        tags=["widget:combo", "role:user"],
-        label=label(channel.id),
-        choices=value["value.choices"],
-        array=False,
-    )
-
-
-CONVERTERS = {
-    "epics:nt/NTScalar:1.0": {
-        "value": convert_value,
-        "alarm": convert_alarm,
-        "timeStamp": convert_timestamp,
-        "display": convert_display,
-        "control": convert_display,
-        "valueAlarm": convert_display,
-    },
-    "epics:nt/NTScalarArray:1.0": {
-        "value": convert_value_array,
-        "alarm": convert_alarm,
-        "timeStamp": convert_timestamp,
-        "display": convert_display,
-        "control": convert_display,
-        "valueAlarm": convert_display,
-    },
-    "epics:nt/NTEnum:1.0": {
-        "value.index": convert_enum_value,
-        "value.choices": convert_enum_choices,
-        "alarm": convert_alarm,
-        "timeStamp": convert_timestamp
-    }
-}
-
-
-DB = Path(__file__).parent / "database.db"
-
-
-async def run_ioc():
-    soft_ioc_pva = Path(os.environ[EPICS7_BASE]) / "bin" / "linux-x86_64" / "softIocPVA"
-
-    cmd = f'{soft_ioc_pva} -d {DB}'
-    print(f'{cmd!r}')
-    proc = await asyncio.create_subprocess_shell(
-        cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE)
-
-    stdout, stderr = await proc.communicate()
-
-    print(f'[{cmd!r} exited with {proc.returncode}]')
-    if stdout:
-        print(f'[stdout]\n{stdout.decode()}')
-    if stderr:
-        print(f'[stderr]\n{stderr.decode()}')
 
 
 class PVAPlugin(Plugin):
     def __init__(self):
         self.ctxt = Context("pva", nt=False)
-        self.ioc = None
+        atexit.register(self.ctxt.close)
 
-    async def get_channel(self, channel_id: str, timeout: float) -> Channel:
+    async def get_channel(
+        self, channel_id: str, timeout: float, config: ChannelConfig
+    ) -> Channel:
         try:
-            value = await asyncio.wait_for(self.ctxt.get(channel_id), timeout)
+            value: Value = await asyncio.wait_for(self.ctxt.get(channel_id), timeout)
         except TimeoutError:
             raise TimeoutError("Timeout while getting %s" % channel_id)
-        # Put in channel id so converters can see it
-        channel = Channel(id=channel_id)
-        converters = CONVERTERS[value.getID()]
-        for convert in set(converters.values()):
-            convert(value, channel)
+        channel = CHANNEL_CLASS[value.getID()](value, config)
         return channel
 
-    async def put_channel(self, channel_id: str, value, timeout: float):
-        # TODO: make enums work again by getting and updating
+    async def put_channel(
+        self, channel_id: str, value, timeout: float, config: ChannelConfig
+    ) -> Channel:
         try:
             await asyncio.wait_for(self.ctxt.put(channel_id, value), timeout)
         except TimeoutError:
             raise TimeoutError("Timeout while putting to %s" % channel_id)
-        channel = await self.get_channel(channel_id, timeout)
+        channel = await self.get_channel(channel_id, timeout, config)
         return channel
 
-    async def subscribe_channel(self, channel_id: str):
-        q = asyncio.Queue()
+    async def subscribe_channel(
+        self, channel_id: str, config: ChannelConfig
+    ) -> AsyncIterator[Channel]:
+        q: asyncio.Queue[Value] = asyncio.Queue()
         m = self.ctxt.monitor(channel_id, q.put)
         try:
-            # This will hold the current version of alarm data
-            last_status = None
-            value = await q.get()
-            converters = CONVERTERS[value.getID()]
+            # Hold last channel for squashing identical alarms
+            last_channel = None
             while True:
-                channel = Channel(id=channel_id)
-                # Work out which converters to call
-                triggers = value.changedSet(
-                    parents=True).intersection(converters)
-                # Add any data that has changed
-                for convert in set(converters[x] for x in triggers):
-                    convert(value, channel)
-                # Alarms are always published, but we only want to display it
-                # if it has changed
-                if channel.status:
-                    if last_status == channel.status:
-                        channel.status = None
-                    else:
-                        last_status = channel.status
+                value = await q.get()
+                channel = CHANNEL_CLASS[value.getID()](value, config, last_channel)
                 yield channel
-                value = await q.get()  # type: Value
+                last_channel = channel
         finally:
             m.close()
-
-    def startup(self):
-        # Need asyncio, so have to do it here
-        self.ioc = asyncio.create_task(run_ioc())
-
-    def shutdown(self):
-        self.ctxt.close()

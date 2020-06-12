@@ -1,2 +1,1 @@
-* module-contact=tmc43
-coniql/_git_version.py export-subst
+*/_version_git.py export-subst
