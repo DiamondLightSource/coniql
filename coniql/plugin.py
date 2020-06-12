@@ -19,13 +19,15 @@ class Plugin:
     async def put_channel(
         self, channel_id: str, value, timeout: float, config: ChannelConfig
     ) -> Channel:
-        """Put a value to a channel, returning the value after put"""
+        """Put a value to a channel, returning the structure after put"""
         raise NotImplementedError(self)
+
+    # TODO: Add a put_channels function to allow atomic puts for tables
 
     async def subscribe_channel(
         self, channel_id: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
-        """Subscribe to the structure of the value, yielding dict structures
+        """Subscribe to the structure of the Channel, yielding structures
         where only changing top level fields are filled in"""
         raise NotImplementedError(self)
         yield

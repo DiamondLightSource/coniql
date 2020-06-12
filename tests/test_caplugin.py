@@ -16,7 +16,7 @@ from coniql.app import make_context
 
 SOFT_RECORDS = str(Path(__file__).parent / "soft_records.db")
 
-PV_PREFIX = "".join(random.choice(string.ascii_uppercase) for _ in range(12))
+PV_PREFIX = "".join(random.choice(string.ascii_uppercase) for _ in range(12)) + ":"
 
 
 @pytest.fixture
@@ -197,11 +197,10 @@ subscription {
 
 
 @pytest.mark.asyncio
-async def test_put_long(engine: Engine, ioc: Popen):
-    query = (
-        """
+async def test_put_long_and_enum(engine: Engine, ioc: Popen):
+    query = """
 mutation {
-    putChannel(id: "ca://%slongout", value: "55") {
+    long: putChannel(id: "ca://%slongout", value: "55") {
         value {
             float
         }
@@ -209,13 +208,24 @@ mutation {
             datetime
         }
     }
+    enum: putChannel(id: "ca://%senum", value: "1") {
+        value {
+            string
+        }
+    }
 }
-"""
-        % PV_PREFIX
+""" % (
+        PV_PREFIX,
+        PV_PREFIX,
     )
     result = await engine.execute(query, context=make_context())
-    assert result == dict(data=dict(putChannel=dict(value=dict(float=55.0), time=ANY)))
-    then = datetime.fromisoformat(result["data"]["putChannel"]["time"]["datetime"])
+    assert result == dict(
+        data=dict(
+            long=dict(value=dict(float=55.0), time=ANY),
+            enum=dict(value=dict(string="mm")),
+        )
+    )
+    then = datetime.fromisoformat(result["data"]["long"]["time"]["datetime"])
     now = datetime.now()
     diff = now - then
     # Shouldn't take more than this time to get the result of a put out

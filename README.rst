@@ -1,5 +1,5 @@
 coniql
-===========================
+======
 
 |build_status| |coverage| |pypi_version| |readthedocs|
 
@@ -19,9 +19,14 @@ Available from http://github.com/dls-controls/coniql
 Installation
 ------------
 
-To start using this template::
+To install the latest release, type::
 
-    git clone https://github.com/dls-controls/coniql
+    pip install coniql
+
+or::
+
+    git clone http://github.com/dls-controls/coniql
+    pipenv install
 
 Contributing
 ------------

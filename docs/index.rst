@@ -1,73 +1,145 @@
 coniql
 ======
 
-Control system interface in GraphQL
+Control system interface in GraphQL with plugins for EPICS Channel Access and PV Access.
+Supports a web interface to get, put and monitor the value of PVs.
 
 Installation
 ------------
 
-Install the dependencies using instructions from:
+To install the latest release, type::
 
-https://confluence.diamond.ac.uk/display/SSCC/Python+3+User+Documentation
+  pip install coniql
 
-Then you can run the example::
+or::
 
-    pipenv run python -m coniql
+  git clone http://github.com/dls-controls/coniql
+  pipenv install
 
-And see the graphiql interface here:
+For development you should use::
+
+  pipenv install --dev
+
+Terms
+-----
+
+Coniql exposes an interface to Channels and Devices. A Channel maps to a single
+value, with timeStamp, status information, and display level metadata. A Device
+consists of nested Groups of named Channels. Channels can be backed by different
+data stores, provided via a plugin interface.
+
+For example:
+
+.. image:: concrete-device-layer.svg
+
+Running a server
+----------------
+
+You can run up a simulation server like this::
+
+  pipenv run python -m coniql
+
+Then you can test the connection with the graphiql interface:
 
 http://localhost:8080/graphiql
 
-With something like::
+You can type in queries, pressing Ctrl + space to autocomplete. Below are some examples to try.
 
-    subscription{
-      subscribeChannel(id: "sim://sine") {
-        id
-        value {
-          float
-        }
-        time {
-          datetime
-        }
-        status {
-          quality
-          message
-          mutable
-        }
-        display {
-          label
-          description
-          role
-          widget
-          controlRange {
-            min
-            max
-          }
-          displayRange {
-            min
-            max
-          }
-          alarmRange {
-            min
-            max
-          }
-          warningRange {
-            min
-            max
-          }
-          units
-          precision
-          form
-          choices
+Getting a channel
+~~~~~~~~~~~~~~~~~
+
+A query like the following::
+
+  query {
+    getChannel(id: "sim://sine") {
+      value {
+        float
+      }
+      time {
+        datetime
+      }
+    }
+  }
+
+Will ask for the current value of the given Channel, selecting the value as a
+float, and the time as a datetime. It returns::
+
+  {
+    "data": {
+      "getChannel": {
+        "value": {
+          "float": -4.755282581475768
+        },
+        "time": {
+          "datetime": "2020-06-12T13:10:39.875753"
         }
       }
     }
+  }
+
+The first part of the id is the protocol to get the Channel from, and the
+second part is the channel name. See the sections on plugins below for
+details.
+
+Subscribing to a Channel
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+To get updates whenever a Channel changes, you can use subscribeChannel. This returns
+Channel objects with non-changing top level fields set to null. For example, if we
+ask for the value, status and display of the same Channel::
+
+  subscription {
+    subscribeChannel(id: "sim://sine") {
+      value {
+        string
+      }
+      status {
+        quality
+      }
+      display {
+        description
+        precision
+      }
+    }
+  }
+
+The first update will be the same as a get::
+
+  {
+    "subscribeChannel": {
+      "value": {
+        "string": "2.93893"
+      },
+      "status": {
+        "quality": "VALID"
+      },
+      "display": {
+        "description": "A Sine value generator",
+        "precision": 5
+      }
+    }
+  }
+
+While subsequent updates will show a null status and display to indicate they have not changed::
+
+  {
+    "subscribeChannel": {
+      "value": {
+        "string": "-0.00000"
+      },
+      "status": null,
+      "display": null
+    }
+  }
+
+You can explore the graphiql interface, using Ctrl + . to autocomplete, and
+using the documentation explorer on the right to see what else you can do.
 
 Sim Plugin
 ----------
 
 The sim plugin provides a number of channels that accept keyword args. For a
-channel `channel` which takes up to 3 args, the allowed combinations are::
+channel ``channel`` which takes up to 3 args, the allowed combinations are::
 
     sim://channel
     sim://channel(arg1)
@@ -81,31 +153,64 @@ Available channels:
 - sim://sine(min_value, max_value, steps, update_seconds, warning_percent, alarm_percent)
 - sim://sinewave(period_seconds, sample_wavelength, size, update_seconds, min_value, max_value, warning_percent, alarm_percent)
 
+
+CA Plugin
+---------
+
+Coniql can provide values of Channel Access. To try this out, point it at some
+running PVs on Diamond's network. If you need a softIoc, you can run one up
+using the epicscorelibs Python package that is a dependency of coniql. Inside
+the coniql directory type::
+
+  pipenv run python -m epicscorelibs.ioc -m P=$(hostname -s): -d tests/soft_records.db
+
+This will then let you get the current values of the PVs in that database file::
+
+  query {
+    getChannel(id: "ca://pc0105:longout") {
+      value {
+        string(units: true)
+      }
+    }
+  }
+
+You can also put to a PV::
+
+  mutation {
+    putChannel(id: "ca://pc0105:longout", value: "45") {
+      value {
+        string(units: true)
+      }
+    }
+  }
+
+
 PVA Plugin
 ----------
 
-Coniql will provide its values over pvAccess.
-This requires a working installation of `<EPICS 7 https://epics.anl.gov/base/R7-0/index.php>`_.
-
-Then set the environment variable **EPICS7_BASE** to the top level of the installation::
-
-    export EPICS7_BASE=/path/to/EPICS
-
-This should allow the values within the coniql database to be made available over pvAccess.
+Coniql can also provide its values over pvAccess. To try this out you will need a
+working installation of `<EPICS 7 https://epics.anl.gov/base/R7-0/index.php>`_. You can
+then start a soft IOC, or add the PVA plugin to IOCs to expose PVs. The PVs work
+like CA, but have the prefix ``pva://``
 
 
 Devices
 -------
 
-Then you can run the example::
+If you run up coniql with a configuration file, it can also expose Devices. For instance
+of you run the example::
 
     pipenv run python -m coniql tests/simdevices.coniql.yaml
 
-And see the graphiql interface here:
+You can ask for a list of all the Devices with something like::
 
-http://localhost:8080/graphiql
+  query {
+    getDevices(filter: "*") {
+      id
+    }
+  }
 
-With something like::
+You can get more details about a particular device with this::
 
   query {
     getDevice(id:"Xspress3") {

@@ -59,7 +59,10 @@ class GetChannel(DeferredChannel):
         self.lock = asyncio.Lock()
 
     async def populate_channel(self) -> Channel:
-        return await self.plugin.get_channel(self.channel_id, self.timeout, self.config)
+        channel = await self.plugin.get_channel(
+            self.channel_id, self.timeout, self.config
+        )
+        return channel
 
 
 class ResolvedChannel(DeferredChannel):
