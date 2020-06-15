@@ -2,7 +2,7 @@ import asyncio
 import math
 import time
 from dataclasses import dataclass, replace
-from typing import AsyncGenerator, Dict, Optional, Set, Type
+from typing import Any, AsyncGenerator, Dict, List, Optional, Set, Type
 
 import numpy as np
 
@@ -22,7 +22,7 @@ from coniql.types import (
 # How long to keep Sim alive after the last listener has gone
 SIM_DESTROY_TIMEOUT = 10
 
-# Map of channel_id func to its Sim class
+# Map of pv func to its Sim class
 CHANNEL_CLASSES: Dict[str, Type["Sim"]] = {}
 
 
@@ -230,38 +230,36 @@ class SineWaveSim(Sim):
 
 class SimPlugin(Plugin):
     def __init__(self):
-        # {channel_id: Sim}
+        # {pv: Sim}
         self.sims: Dict[str, Sim] = {}
-        # {channel_id: {queue_for_each_listener}}
+        # {pv: {queue_for_each_listener}}
         self.listeners: Dict[str, Set[asyncio.Queue[Channel]]] = {}
 
-    async def _start_computing(self, channel_id: str):
-        sim = self.sims[channel_id]
+    async def _start_computing(self, pv: str):
+        sim = self.sims[pv]
         next_compute = time.time()
         last_had_listeners = next_compute
         while next_compute - last_had_listeners < SIM_DESTROY_TIMEOUT:
             next_compute += sim.update_seconds
             await asyncio.sleep(next_compute - time.time())
             changes = sim.compute_changes()
-            for q in self.listeners[channel_id]:
+            for q in self.listeners[pv]:
                 last_had_listeners = next_compute
                 await q.put(changes)
         # no-one listening, remove sim
-        del self.sims[channel_id]
-        del self.listeners[channel_id]
+        del self.sims[pv]
+        del self.listeners[pv]
 
     async def get_channel(
-        self, channel_id: str, timeout: float, config: ChannelConfig
+        self, pv: str, timeout: float, config: ChannelConfig
     ) -> Channel:
-        if channel_id not in self.sims:
-            if "(" in channel_id:
-                assert channel_id.endswith(")"), (
-                    "Missing closing bracket in %r" % channel_id
-                )
-                func, param_str = channel_id[:-1].split("(", 1)
+        if pv not in self.sims:
+            if "(" in pv:
+                assert pv.endswith(")"), "Missing closing bracket in %r" % pv
+                func, param_str = pv[:-1].split("(", 1)
                 parameters = [float(param.strip()) for param in param_str.split(",")]
             else:
-                func = channel_id
+                func = pv
                 parameters = []
             cls = CHANNEL_CLASSES[func]
             inst = cls(*parameters)
@@ -271,25 +269,23 @@ class SimPlugin(Plugin):
             display.description = config.description or display.description
             display.form = config.display_form or display.form
             display.widget = config.widget or display.widget
-            self.sims[channel_id] = inst
-            self.listeners[channel_id] = set()
-            asyncio.create_task(self._start_computing(channel_id))
-        return self.sims[channel_id].channel
+            self.sims[pv] = inst
+            self.listeners[pv] = set()
+            asyncio.create_task(self._start_computing(pv))
+        return self.sims[pv].channel
 
     async def subscribe_channel(
-        self, channel_id: str, config: ChannelConfig
+        self, pv: str, config: ChannelConfig
     ) -> AsyncGenerator[Channel, None]:
         q: asyncio.Queue[Channel] = asyncio.Queue()
         try:
-            channel = await self.get_channel(channel_id, 0, config)
-            self.listeners[channel_id].add(q)
+            channel = await self.get_channel(pv, 0, config)
+            self.listeners[pv].add(q)
             yield channel
             while True:
                 yield await q.get()
         finally:
-            self.listeners[channel_id].remove(q)
+            self.listeners[pv].remove(q)
 
-    async def put_channel(self, channel_id, value, timeout, config):
-        raise RuntimeError(
-            f"Cannot put {value!r} to {self.full_id(channel_id)}, as it isn't writeable"
-        )
+    async def put_channels(self, pvs: List[str], values: List[Any], timeout: float):
+        raise RuntimeError(f"Cannot put {values!r} to {pvs}, as they aren't writeable")

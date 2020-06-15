@@ -1,6 +1,6 @@
 import asyncio
 import atexit
-from typing import AsyncIterator, Dict, Optional, Tuple, Type
+from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Type
 
 from p4p.client.asyncio import Context, Value
 
@@ -184,30 +184,26 @@ class PVAPlugin(Plugin):
         atexit.register(self.ctxt.close)
 
     async def get_channel(
-        self, channel_id: str, timeout: float, config: ChannelConfig
+        self, pv: str, timeout: float, config: ChannelConfig
     ) -> Channel:
         try:
-            value: Value = await asyncio.wait_for(self.ctxt.get(channel_id), timeout)
+            value: Value = await asyncio.wait_for(self.ctxt.get(pv), timeout)
         except TimeoutError:
-            raise TimeoutError("Timeout while getting %s" % channel_id)
+            raise TimeoutError("Timeout while getting %s" % pv)
         channel = CHANNEL_CLASS[value.getID()](value, config)
         return channel
 
-    async def put_channel(
-        self, channel_id: str, value, timeout: float, config: ChannelConfig
-    ) -> Channel:
+    async def put_channels(self, pvs: List[str], values: List[Any], timeout: float):
         try:
-            await asyncio.wait_for(self.ctxt.put(channel_id, value), timeout)
+            await asyncio.wait_for(self.ctxt.put(pvs, values), timeout)
         except TimeoutError:
-            raise TimeoutError("Timeout while putting to %s" % channel_id)
-        channel = await self.get_channel(channel_id, timeout, config)
-        return channel
+            raise TimeoutError("Timeout while putting to %s" % pvs)
 
     async def subscribe_channel(
-        self, channel_id: str, config: ChannelConfig
+        self, pv: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
         q: asyncio.Queue[Value] = asyncio.Queue()
-        m = self.ctxt.monitor(channel_id, q.put)
+        m = self.ctxt.monitor(pv, q.put)
         try:
             # Hold last channel for squashing identical alarms
             last_channel = None

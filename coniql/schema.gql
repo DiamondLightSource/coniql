@@ -309,15 +309,15 @@ type Query {
         "The ID of the Channel to connect to"
         id: ID!,
         "How long to wait for connection, negative is forever"
-        timeout: Float = 5.0,
+        timeout: Float! = 5.0,
     ): Channel!
 
     "Get a list of Channels, filtered by wildcard string"
     getChannels(
         "All returned Channels will have an ID matching this"
-        filter: String = "*",
+        filter: String! = "*",
         "How long to wait for connection, negative is forever"
-        timeout: Float = 5.0,
+        timeout: Float! = 5.0,
     ): [Channel!]!
 
     "Get the static information (not passed over CA/PVA) held for a particular channel"
@@ -331,28 +331,28 @@ type Query {
         "The ID of the Device to connect to"
         id: ID!,
         "How long to wait for connection, negative is forever"
-        timeout: Float = 5.0,
+        timeout: Float! = 5.0,
     ): Device!
 
     "Get a list of Devices, filtered by wildcard string"
     getDevices(
         "All returned Devices will have an ID matching this"
-        filter: String = "*",
+        filter: String! = "*",
         "How long to wait for connection, negative is forever"
-        timeout: Float = 5.0,
+        timeout: Float! = 5.0,
     ): [Device!]!
 }
 
 type Mutation {
-    "Put a value to Channel"
-    putChannel(
-        "The ID of the Channel to connect to"
-        id: ID!,
-        "The value to put, as JSON encoded string",
-        value: String,
+    "Put a list of values to a list of Channels"
+    putChannels(
+        "The ID of the Channels to connect to"
+        ids: [ID!]!,
+        "The values to put, as JSON encoded strings, one for each channel id",
+        values: [String!]!,
         "How long to wait for completion, negative is forever"
-        timeout: Float = 5.0,
-    ): Channel!
+        timeout: Float! = 5.0,
+    ): [Channel!]!
 }
 
 type Subscription {

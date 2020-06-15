@@ -9,14 +9,7 @@ import numpy as np
 from tartiflette import Resolver, Subscription
 
 from coniql.coniql_schema import DisplayForm
-from coniql.device_config import (
-    ChannelConfig,
-    Child,
-    ConfigStore,
-    DeviceInstance,
-    Group,
-    walk,
-)
+from coniql.device_config import ChannelConfig, Child, DeviceInstance, Group, walk
 from coniql.plugin import PluginStore
 from coniql.types import (
     Channel,
@@ -49,103 +42,111 @@ NO_CONFIG = ChannelConfig(name="")
 
 
 class GetChannel(DeferredChannel):
-    def __init__(self, id: str, timeout: float, ctx):
-        plugins: PluginStore = ctx["plugins"]
-        configs: ConfigStore = ctx["configs"]
-        self.config = configs.channels.get(id, NO_CONFIG)
+    def __init__(self, channel_id: str, timeout: float, store: PluginStore):
+        self.plugin, self.config, self.id = store.plugin_config_id(channel_id)
+        # Remove the transport prefix from the read pv
+        self.pv = store.transport_pv(self.config.read_pv)[1]
         self.timeout = timeout
-        self.plugin, self.channel_id = plugins.plugin_channel_id(id)
-        self.id = self.plugin.full_id(self.channel_id)
         self.lock = asyncio.Lock()
 
     async def populate_channel(self) -> Channel:
-        channel = await self.plugin.get_channel(
-            self.channel_id, self.timeout, self.config
-        )
+        channel = await self.plugin.get_channel(self.pv, self.timeout, self.config)
         return channel
 
 
-class ResolvedChannel(DeferredChannel):
-    def __init__(self, id: str, channel: Channel):
-        self.id = id
+class SubscribeChannel(DeferredChannel):
+    def __init__(self, channel_id: str, channel: Channel):
+        self.id = channel_id
         self.channel = channel
 
 
 @Resolver("Query.getChannel")
 async def get_channel(parent, args: Dict[str, Any], ctx, info) -> DeferredChannel:
-    return GetChannel(args["id"], args["timeout"], ctx)
+    return GetChannel(args["id"], args["timeout"], ctx["store"])
 
 
 @Resolver("Query.getChannels")
 async def get_channels(
     parent, args: Dict[str, Any], ctx, info
 ) -> Sequence[DeferredChannel]:
-    configs: ConfigStore = ctx["configs"]
+    store: PluginStore = ctx["store"]
     channels = []
-    for channel_id in configs.channels:
+    for channel_id in store.channels:
         if fnmatch(channel_id, args["filter"]):
-            channels.append(GetChannel(channel_id, args["timeout"], ctx))
+            channels.append(GetChannel(channel_id, args["timeout"], store))
     return channels
 
 
 @Resolver("Query.getChannelConfig")
 async def get_channel_config(parent, args: Dict[str, Any], ctx, info) -> ChannelConfig:
-    configs: ConfigStore = ctx["configs"]
-    channel_config = configs.channels[args["id"]]
+    store: PluginStore = ctx["store"]
+    channel_config = store.plugin_config_id(args["id"])[1]
     return channel_config
 
 
 @Resolver("Query.getDevice")
 async def get_device(parent, args: Dict[str, Any], ctx, info) -> Dict[str, Any]:
-    configs: ConfigStore = ctx["configs"]
-    device_config = configs.devices[args["id"]]
+    store: PluginStore = ctx["store"]
+    device_config = store.devices[args["id"]]
     return dict(id=args["id"], children=device_config.children)
 
 
 @Resolver("Query.getDevices")
 async def get_devices(parent, args: Dict[str, Any], ctx, info) -> List[Dict[str, Any]]:
-    configs: ConfigStore = ctx["configs"]
+    store: PluginStore = ctx["store"]
     devices = []
-    for device_id, device_config in configs.devices.items():
+    for device_id, device_config in store.devices.items():
         if fnmatch(device_id, args["filter"]):
             devices.append(dict(id=device_id, children=device_config.children))
     return devices
 
 
-@Resolver("Mutation.putChannel")
-async def put_channel(parent, args: Dict[str, Any], ctx, info) -> DeferredChannel:
-    plugins: PluginStore = ctx["plugins"]
-    configs: ConfigStore = ctx["configs"]
-    plugin, channel_id = plugins.plugin_channel_id(args["id"])
-    config = configs.channels.get(args["id"], NO_CONFIG)
-    value = args["value"]
-    if value[:1] in "[{":
-        # need to json decode
-        value = json.loads(value)
-        if isinstance(value, dict):
-            # decode base64 array
-            dtype = np.dtype(value["numberType"].lower())
-            value_b = base64.b64decode(value["base64"])
-            # https://stackoverflow.com/a/6485943
-            value = np.frombuffer(value_b, dtype=dtype)
-    channel = ResolvedChannel(
-        id=plugin.full_id(channel_id),
-        channel=await plugin.put_channel(channel_id, value, args["timeout"], config),
-    )
-    return channel
+@Resolver("Mutation.putChannels")
+async def put_channel(
+    parent, args: Dict[str, Any], ctx, info
+) -> Sequence[DeferredChannel]:
+    store: PluginStore = ctx["store"]
+    pvs = []
+    plugins = set()
+    for channel_id in args["ids"]:
+        plugin, config, channel_id = store.plugin_config_id(channel_id)
+        pv = config.write_pv
+        assert pv, f"{channel_id} is configured read-only"
+        plugins.add(plugin)
+        pvs.append(store.transport_pv(pv)[1])
+    values = []
+    for value in args["values"]:
+        if value[:1] in "[{":
+            # need to json decode
+            value = json.loads(value)
+            if isinstance(value, dict):
+                # decode base64 array
+                dtype = np.dtype(value["numberType"].lower())
+                value_b = base64.b64decode(value["base64"])
+                # https://stackoverflow.com/a/6485943
+                value = np.frombuffer(value_b, dtype=dtype)
+        values.append(value)
+    assert len(values) == len(pvs), "Mismatch in ids and values length"
+    assert len(plugins) == 1, "Can only put to pvs with the same transport, not %s" % [
+        p.transport for p in plugins
+    ]
+    await plugins.pop().put_channels(pvs, values, args["timeout"])
+    channels = [
+        GetChannel(channel_id, args["timeout"], store) for channel_id in args["ids"]
+    ]
+    return channels
 
 
 @Subscription("Subscription.subscribeChannel")
 async def subscribe_channel(
     parent, args: Dict[str, Any], ctx, info
 ) -> AsyncIterator[Dict[str, Any]]:
-    plugins: PluginStore = ctx["plugins"]
-    configs: ConfigStore = ctx["configs"]
-    plugin, channel_id = plugins.plugin_channel_id(args["id"])
-    full_id = plugin.full_id(channel_id)
-    config = configs.channels.get(args["id"], NO_CONFIG)
-    async for channel in plugin.subscribe_channel(channel_id, config):
-        yield dict(subscribeChannel=ResolvedChannel(full_id, channel))
+    store: PluginStore = ctx["store"]
+    plugin, config, channel_id = store.plugin_config_id(args["id"])
+    # Remove the transport prefix from the read pv
+    pv = store.transport_pv(config.read_pv)[1]
+    async for channel in plugin.subscribe_channel(pv, config):
+        yield dict(subscribeChannel=SubscribeChannel(channel_id, channel))
 
 
 @Resolver("Device.children")
@@ -174,7 +175,7 @@ def child_type_resolver(result, ctx, info, abstract_type):
 async def named_child_child(parent: Child, args, ctx, info):
     if isinstance(parent, ChannelConfig):
         # TODO: pass tImeout down
-        channel = GetChannel(parent.write_pv or parent.read_pv, 5.0, ctx)
+        channel = GetChannel(parent.write_pv or parent.read_pv, 5.0, ctx["store"])
         return channel
     elif isinstance(parent, DeviceInstance):
         device = await get_device(parent, dict(id=parent.id), ctx, info)

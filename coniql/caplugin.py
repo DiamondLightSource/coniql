@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncIterator, Optional
+from typing import Any, AsyncIterator, List, Optional
 
 from aioca import FORMAT_CTRL, FORMAT_TIME, caget, camonitor, caput
 from aioca.types import AugmentedValue
@@ -113,29 +113,25 @@ class CAChannel(Channel):
 
 class CAPlugin(Plugin):
     async def get_channel(
-        self, channel_id: str, timeout: float, config: ChannelConfig
+        self, pv: str, timeout: float, config: ChannelConfig
     ) -> Channel:
         meta_value, value = await asyncio.gather(
-            caget(channel_id, format=FORMAT_CTRL, timeout=timeout),
-            caget(channel_id, format=FORMAT_TIME, timeout=timeout),
+            caget(pv, format=FORMAT_CTRL, timeout=timeout),
+            caget(pv, format=FORMAT_TIME, timeout=timeout),
         )
         # Put in channel id so converters can see it
         channel = CAChannel(value, config, meta_value)
         return channel
 
-    async def put_channel(
-        self, channel_id: str, value, timeout: float, config: ChannelConfig
-    ) -> Channel:
-        await caput(channel_id, value, timeout=timeout)
-        channel = await self.get_channel(channel_id, timeout, config)
-        return channel
+    async def put_channels(self, pvs: List[str], values: List[Any], timeout: float):
+        await caput(pvs, values, timeout=timeout)
 
     async def subscribe_channel(
-        self, channel_id: str, config: ChannelConfig
+        self, pv: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
         q: asyncio.Queue[AugmentedValue] = asyncio.Queue()
-        meta_value = await caget(channel_id, format=FORMAT_CTRL)
-        m = camonitor(channel_id, q.put, format=FORMAT_TIME)
+        meta_value = await caget(pv, format=FORMAT_CTRL)
+        m = camonitor(pv, q.put, format=FORMAT_TIME)
         try:
             # Hold last channel for squashing identical alarms
             last_channel = None

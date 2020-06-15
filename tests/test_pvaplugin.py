@@ -120,7 +120,7 @@ async def test_put_float_pv(engine: Engine, ioc: SimIoc):
     query = (
         """
 mutation {
-    putChannel(id: "pva://%sdouble", value: "40") {
+    putChannels(ids: ["pva://%sdouble"], values: ["40"]) {
         value {
             float
             string
@@ -141,15 +141,17 @@ mutation {
     result = await engine.execute(query, context=context)
     assert result == dict(
         data=dict(
-            putChannel=dict(
-                value=dict(float=40.0, string="40.000"),
-                status=dict(message="", quality="VALID"),
-                time=dict(seconds=ANY),
-            ),
+            putChannels=[
+                dict(
+                    value=dict(float=40.0, string="40.000"),
+                    status=dict(message="", quality="VALID"),
+                    time=dict(seconds=ANY),
+                )
+            ]
         )
     )
     now = time.time()
-    assert now - result["data"]["putChannel"]["time"]["seconds"] < 0.2
+    assert now - result["data"]["putChannels"][0]["time"]["seconds"] < 0.2
 
 
 @pytest.mark.asyncio

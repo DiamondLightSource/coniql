@@ -200,17 +200,12 @@ subscription {
 async def test_put_long_and_enum(engine: Engine, ioc: Popen):
     query = """
 mutation {
-    long: putChannel(id: "ca://%slongout", value: "55") {
+    putChannels(ids: ["ca://%slongout", "ca://%senum"], values: ["55", "1"]) {
         value {
-            float
+            string
         }
         time {
             datetime
-        }
-    }
-    enum: putChannel(id: "ca://%senum", value: "1") {
-        value {
-            string
         }
     }
 }
@@ -221,15 +216,21 @@ mutation {
     result = await engine.execute(query, context=make_context())
     assert result == dict(
         data=dict(
-            long=dict(value=dict(float=55.0), time=ANY),
-            enum=dict(value=dict(string="mm")),
+            putChannels=[
+                dict(value=dict(string="55"), time=ANY),
+                dict(value=dict(string="mm"), time=ANY),
+            ]
         )
     )
-    then = datetime.fromisoformat(result["data"]["long"]["time"]["datetime"])
+    thens = [
+        datetime.fromisoformat(r["time"]["datetime"])
+        for r in result["data"]["putChannels"]
+    ]
     now = datetime.now()
-    diff = now - then
-    # Shouldn't take more than this time to get the result of a put out
-    assert diff.total_seconds() < 0.2
+    for then in thens:
+        diff = now - then
+        # Shouldn't take more than this time to get the result of a put out
+        assert diff.total_seconds() < 0.2
 
 
 BASE64_0_1688_2 = dict(numberType="FLOAT64", base64="AAAAAAAAAAA1XrpJDAL7PwAAAAAAAABA")
@@ -240,7 +241,7 @@ async def test_put_list(engine: Engine, ioc: Popen):
     query = (
         r"""
 mutation {
-    putChannel(id: "ca://%swaveform", value: "[0, 1.688, \"2\"]") {
+    putChannels(ids: ["ca://%swaveform"], values: ["[0, 1.688, \"2\"]"]) {
         value {
             stringArray
             base64Array {
@@ -256,11 +257,13 @@ mutation {
     result = await engine.execute(query, context=make_context())
     assert result == dict(
         data=dict(
-            putChannel=dict(
-                value=dict(
-                    stringArray=["0.0", "1.7", "2.0"], base64Array=BASE64_0_1688_2
+            putChannels=[
+                dict(
+                    value=dict(
+                        stringArray=["0.0", "1.7", "2.0"], base64Array=BASE64_0_1688_2
+                    )
                 )
-            )
+            ]
         )
     )
 
@@ -272,7 +275,7 @@ async def test_put_base64(engine: Engine, ioc: Popen):
     value = json.dumps(json.dumps(BASE64_0_1688_2))
     query = r"""
 mutation {
-    putChannel(id: "ca://%swaveform", value: %s) {
+    putChannels(ids: ["ca://%swaveform"], values: [%s]) {
         value {
             stringArray
         }
@@ -284,5 +287,5 @@ mutation {
     )
     result = await engine.execute(query, context=make_context())
     assert result == dict(
-        data=dict(putChannel=dict(value=dict(stringArray=["0.0", "1.7", "2.0"]),))
+        data=dict(putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]))])
     )

@@ -1,4 +1,3 @@
-import os
 import re
 from pathlib import Path
 from typing import Dict, Iterator, Sequence, Union
@@ -105,38 +104,6 @@ def walk(tree: Sequence[Child]) -> Iterator[Child]:
         yield t
         if isinstance(t, Group):
             yield from walk(t.children)
-
-
-class ConfigStore(BaseModel):
-    devices: Dict[str, DeviceConfig] = Field(
-        {}, description="{device_id: device_config}"
-    )
-    channels: Dict[str, ChannelConfig] = Field({}, description="{pv: channel_config}")
-
-    def add_device_config(self, path: Path, device_id="", macros=None):
-        """Load a top level .coniql.yaml file with devices in it"""
-        device_config = DeviceConfig.from_yaml(path, macros)
-        if device_id:
-            self.devices[device_id] = device_config
-        # Relative paths are relative to the path being loaded, so go there
-        cwd = Path.cwd()
-        os.chdir(path.resolve().parent)
-        try:
-            for child in walk(device_config.children):
-                if isinstance(child, ChannelConfig):
-                    # TODO: selectively update channel if already exists
-                    self.channels[child.write_pv or child.read_pv] = child
-                elif isinstance(child, DeviceInstance):
-                    # recursively load child devices
-                    if child.id is None:
-                        if device_id:
-                            child.id = device_id + "." + child.name
-                        else:
-                            child.id = child.name
-                    self.add_device_config(child.file, child.id, child.macros)
-        finally:
-            os.chdir(cwd)
-        return device_config
 
 
 if __name__ == "__main__":

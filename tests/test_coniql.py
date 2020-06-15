@@ -297,7 +297,7 @@ query {
 async def test_put_sim_sine_fails(engine: Engine):
     query = """
 mutation {
-    putChannel(id: "sim://sine", value: "32") {
+    putChannels(ids: ["sim://sine"], values: ["32"]) {
         value {
             float
         }
@@ -311,8 +311,8 @@ mutation {
         errors=[
             dict(
                 locations=[dict(column=5, line=3)],
-                message="Cannot put '32' to sim://sine, as it isn't writeable",
-                path=["putChannel"],
+                message="Cannot put ['32'] to ['sine'], as they aren't writeable",
+                path=["putChannels"],
             )
         ],
     )
