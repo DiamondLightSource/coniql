@@ -1,9 +1,13 @@
 import os
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, List, Tuple
+from typing import AsyncIterator, Dict, List, Tuple, Union
+
+import numpy as np
 
 from coniql.device_config import ChannelConfig, DeviceConfig, DeviceInstance, walk
 from coniql.types import Channel
+
+PutValue = Union[bool, int, float, str, List[str], np.ndarray]
 
 
 class Plugin:
@@ -15,7 +19,9 @@ class Plugin:
         """Get the current structure of a Channel"""
         raise NotImplementedError(self)
 
-    async def put_channels(self, pvs: List[str], values: List[Any], timeout: float):
+    async def put_channels(
+        self, pvs: List[str], values: List[PutValue], timeout: float
+    ):
         """Put a value to a channel, returning the structure after put"""
         raise NotImplementedError(self)
 

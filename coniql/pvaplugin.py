@@ -1,12 +1,12 @@
 import asyncio
 import atexit
-from typing import Any, AsyncIterator, Dict, List, Optional, Tuple, Type
+from typing import AsyncIterator, Dict, List, Optional, Tuple, Type
 
 from p4p.client.asyncio import Context, Value
 
 from coniql.coniql_schema import DisplayForm, Widget
 from coniql.device_config import ChannelConfig
-from coniql.plugin import Plugin
+from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     CHANNEL_QUALITY_MAP,
     DISPLAY_FORM_MAP,
@@ -193,7 +193,9 @@ class PVAPlugin(Plugin):
         channel = CHANNEL_CLASS[value.getID()](value, config)
         return channel
 
-    async def put_channels(self, pvs: List[str], values: List[Any], timeout: float):
+    async def put_channels(
+        self, pvs: List[str], values: List[PutValue], timeout: float
+    ):
         try:
             await asyncio.wait_for(self.ctxt.put(pvs, values), timeout)
         except TimeoutError:

@@ -2,13 +2,13 @@ import asyncio
 import math
 import time
 from dataclasses import dataclass, replace
-from typing import Any, AsyncGenerator, Dict, List, Optional, Set, Type
+from typing import AsyncGenerator, Dict, List, Optional, Set, Type
 
 import numpy as np
 
 from coniql.coniql_schema import DisplayForm, Widget
 from coniql.device_config import ChannelConfig
-from coniql.plugin import Plugin
+from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     Channel,
     ChannelDisplay,
@@ -287,5 +287,7 @@ class SimPlugin(Plugin):
         finally:
             self.listeners[pv].remove(q)
 
-    async def put_channels(self, pvs: List[str], values: List[Any], timeout: float):
+    async def put_channels(
+        self, pvs: List[str], values: List[PutValue], timeout: float
+    ):
         raise RuntimeError(f"Cannot put {values!r} to {pvs}, as they aren't writeable")

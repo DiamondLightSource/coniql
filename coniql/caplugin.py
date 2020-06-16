@@ -1,12 +1,12 @@
 import asyncio
-from typing import Any, AsyncIterator, List, Optional
+from typing import AsyncIterator, List, Optional
 
 from aioca import FORMAT_CTRL, FORMAT_TIME, caget, camonitor, caput
 from aioca.types import AugmentedValue
 
 from coniql.coniql_schema import Widget
 from coniql.device_config import ChannelConfig
-from coniql.plugin import Plugin
+from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     CHANNEL_QUALITY_MAP,
     Channel,
@@ -123,7 +123,9 @@ class CAPlugin(Plugin):
         channel = CAChannel(value, config, meta_value)
         return channel
 
-    async def put_channels(self, pvs: List[str], values: List[Any], timeout: float):
+    async def put_channels(
+        self, pvs: List[str], values: List[PutValue], timeout: float
+    ):
         await caput(pvs, values, timeout=timeout)
 
     async def subscribe_channel(
