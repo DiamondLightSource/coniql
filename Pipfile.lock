@@ -16,11 +16,11 @@
     "default": {
         "aioca": {
             "hashes": [
-                "sha256:aebaa0d7b5a44b2f1042c4ff4b7d1e4921c6f85590a57236ef74854277ce3457",
-                "sha256:b6af68ef2b5e4cdca40524d414dd1011c50770ac1765eb8e69f66631a2db402d"
+                "sha256:4d4016565d4be7502941b765bfa678a173fee0a576555cc78de7ab69c07a5027",
+                "sha256:da2ff474df172c2227e7bf5c222143552c0b980aa6c40977474d5f5e42dc0884"
             ],
             "index": "pypi",
-            "version": "==0.2"
+            "version": "==0.2.1"
         },
         "aiohttp": {
             "hashes": [
