@@ -10,9 +10,7 @@ pytest-flake8 = "*"
 flake8-isort = "*"
 pytest-mypy = "*"
 sphinx-rtd-theme = "*"
-doc8 = "*"
 pytest-asyncio = "*"
-flake8 = "==3.7.9"
 
 [packages]
 tartiflette-aiohttp = "*"
