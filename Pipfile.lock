@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "f419e5b534820b0d8fe40bd4fb2c9ca85ca1f0bc8a55699688010e73e7b1f906"
+            "sha256": "6621df4eb538c6f2a3b3d403a97b81f75cf5d3e3738a90c891764e23caeed918"
         },
         "pipfile-spec": 6,
         "requires": {},
@@ -16,12 +16,11 @@
     "default": {
         "aioca": {
             "hashes": [
-                "sha256:4d4016565d4be7502941b765bfa678a173fee0a576555cc78de7ab69c07a5027",
-                "sha256:da2ff474df172c2227e7bf5c222143552c0b980aa6c40977474d5f5e42dc0884",
-                "sha256:10ee721f1471a3a4f229fb47580b9b79a80d55245a6f47d272232b18332a5983"
+                "sha256:462f01bfc0de4a04997e7e28e347b8f00cc39b90a4a12e1f439ec471662469e0",
+                "sha256:cfacd16d2be447bf061288d6f5ab1680d8f8f7902ff50f1c0964cf5ed34ab790"
             ],
             "index": "pypi",
-            "version": "==0.2.1"
+            "version": "==0.2.3"
         },
         "aiohttp": {
             "hashes": [
@@ -39,6 +38,14 @@
                 "sha256:b778ce0c909a2653741cb4b1ac7015b5c130ab9c897611df43ae6a58523cb965"
             ],
             "version": "==3.6.2"
+        },
+        "aiohttp-cors": {
+            "hashes": [
+                "sha256:0451ba59fdf6909d0e2cd21e4c0a43752bc0703d33fc78ae94d9d9321710193e",
+                "sha256:4d39c6d7100fd9764ed1caf8cebf0eb01bf5e3f24e2e073fda6234bc48b19f5d"
+            ],
+            "index": "pypi",
+            "version": "==0.7.0"
         },
         "async-timeout": {
             "hashes": [
