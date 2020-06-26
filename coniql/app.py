@@ -3,6 +3,7 @@ from argparse import ArgumentParser
 from pathlib import Path
 from typing import Any, Dict
 
+import aiohttp_cors
 from aiohttp import web
 from tartiflette import Engine, TartifletteError
 from tartiflette_aiohttp import register_graphql_handlers
@@ -58,13 +59,21 @@ def main(args=None) -> None:
     parsed_args = parser.parse_args(args)
 
     context = make_context(*parsed_args.config_paths)
-    web.run_app(
-        register_graphql_handlers(
-            app=web.Application(),
-            executor_context=context,
-            executor_http_endpoint="/graphql",
-            subscription_ws_endpoint="/ws",
-            graphiql_enabled=True,
-            engine=make_engine(),
-        )
+    app = register_graphql_handlers(
+        app=web.Application(),
+        executor_context=context,
+        executor_http_endpoint="/graphql",
+        subscription_ws_endpoint="/ws",
+        graphiql_enabled=True,
+        engine=make_engine(),
     )
+    cors = aiohttp_cors.setup(app)
+    for route in app.router.routes():
+        allow_all = {
+            "http://localhost:3000": aiohttp_cors.ResourceOptions(
+                allow_headers=("*"), max_age=3600, allow_credentials=True
+            )
+        }
+        cors.add(route, allow_all)
+
+    web.run_app(app)
