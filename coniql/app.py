@@ -35,7 +35,7 @@ def make_engine() -> Engine:
 
 def make_context(*schema_paths: Path) -> Dict[str, Any]:
     store = PluginStore()
-    store.add_plugin("sim", SimPlugin())
+    store.add_plugin("ssim", SimPlugin())
     store.add_plugin("pva", PVAPlugin())
     store.add_plugin("ca", CAPlugin())
     for path in schema_paths:

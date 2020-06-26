@@ -51,7 +51,7 @@ Getting a channel
 A query like the following::
 
   query {
-    getChannel(id: "sim://sine") {
+    getChannel(id: "ssim://sine") {
       value {
         float
       }
@@ -89,7 +89,7 @@ Channel objects with non-changing top level fields set to null. For example, if 
 ask for the value, status and display of the same Channel::
 
   subscription {
-    subscribeChannel(id: "sim://sine") {
+    subscribeChannel(id: "ssim://sine") {
       value {
         string
       }
@@ -141,17 +141,17 @@ Sim Plugin
 The sim plugin provides a number of channels that accept keyword args. For a
 channel ``channel`` which takes up to 3 args, the allowed combinations are::
 
-    sim://channel
-    sim://channel(arg1)
-    sim://channel(arg1, arg2)
-    sim://channel(arg1, arg2, arg3)
+    ssim://channel
+    ssim://channel(arg1)
+    ssim://channel(arg1, arg2)
+    ssim://channel(arg1, arg2, arg3)
 
 Any unspecified arguments are defaulted.
 
 Available channels:
 
-- sim://sine(min_value, max_value, steps, update_seconds, warning_percent, alarm_percent)
-- sim://sinewave(period_seconds, sample_wavelength, size, update_seconds, min_value, max_value, warning_percent, alarm_percent)
+- ssim://sine(min_value, max_value, steps, update_seconds, warning_percent, alarm_percent)
+- ssim://sinewave(period_seconds, sample_wavelength, size, update_seconds, min_value, max_value, warning_percent, alarm_percent)
 
 
 CA Plugin
