@@ -70,6 +70,7 @@ def main(args=None) -> None:
     cors = aiohttp_cors.setup(app)
     for route in app.router.routes():
         allow_all = {
+            # Allow connections from cs-web-proto dev server
             "http://localhost:3000": aiohttp_cors.ResourceOptions(
                 allow_headers=("*"), max_age=3600, allow_credentials=True
             )
