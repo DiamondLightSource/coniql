@@ -19,7 +19,7 @@ EXPECTED_SIM_SINE = [0.0, 2.938926261462366, 4.755282581475768]
 async def test_get_sim_sine(engine: Engine):
     query = """
 query {
-    getChannel(id: "sim://sine(-5,5,10,1,60)") {
+    getChannel(id: "ssim://sine(-5,5,10,1,60)") {
         value {
             float
             string
@@ -55,7 +55,7 @@ query {
 async def test_get_channels(engine: Engine):
     query = """
 query {
-    getChannels(filter:"sim://sinewave(5*") {
+    getChannels(filter:"ssim://sinewave(5*") {
         id
         display {
             description
@@ -72,7 +72,7 @@ query {
         data=dict(
             getChannels=[
                 dict(
-                    id="sim://sinewave(5.0, 1000)",
+                    id="ssim://sinewave(5.0, 1000)",
                     display=dict(description="A low frequency sine wave"),
                     value=dict(stringArray=["0.00000", "0.00000"]),
                 ),
@@ -85,7 +85,7 @@ query {
 async def test_get_channel_config(engine: Engine):
     query = """
 query {
-    getChannelConfig(id:"sim://sine") {
+    getChannelConfig(id:"ssim://sine") {
         readPv
         writePv
         description
@@ -99,7 +99,7 @@ query {
     assert result == dict(
         data=dict(
             getChannelConfig=dict(
-                readPv="sim://sine",
+                readPv="ssim://sine",
                 writePv=None,
                 description="A slow updating sine scalar value",
                 displayForm=None,
@@ -146,7 +146,7 @@ query {
                     {
                         "name": "Temperature",
                         "label": "Temperature",
-                        "child": {"id": "sim://sine(40, 50)", "value": {"float": 0}},
+                        "child": {"id": "ssim://sine(40, 50)", "value": {"float": 0}},
                     },
                     {
                         "name": "Channel1",
@@ -214,13 +214,13 @@ query {
                         {
                             "name": "FastSine",
                             "child": {
-                                "id": "sim://sine(-10, 10, 100, 0.1)",
+                                "id": "ssim://sine(-10, 10, 100, 0.1)",
                                 "value": {"float": 0.0},
                             },
                         },
                         {
                             "name": "SlowSine",
-                            "child": {"id": "sim://sine", "value": {"float": 0.0}},
+                            "child": {"id": "ssim://sine", "value": {"float": 0.0}},
                         },
                         {
                             "name": "Waves",
@@ -235,14 +235,14 @@ query {
                         {
                             "name": "HighFrequency",
                             "child": {
-                                "id": "sim://sinewave(0.1, 1000)",
+                                "id": "ssim://sinewave(0.1, 1000)",
                                 "value": {"float": None},
                             },
                         },
                         {
                             "name": "LowFrequency",
                             "child": {
-                                "id": "sim://sinewave(5.0, 1000)",
+                                "id": "ssim://sinewave(5.0, 1000)",
                                 "value": {"float": None},
                             },
                         },
@@ -253,13 +253,13 @@ query {
                         {
                             "name": "FastSine",
                             "child": {
-                                "id": "sim://sine(-10, 10, 100, 0.1)",
+                                "id": "ssim://sine(-10, 10, 100, 0.1)",
                                 "value": {"float": 0.0},
                             },
                         },
                         {
                             "name": "SlowSine",
-                            "child": {"id": "sim://sine", "value": {"float": 0.0}},
+                            "child": {"id": "ssim://sine", "value": {"float": 0.0}},
                         },
                         {
                             "name": "Waves",
@@ -274,14 +274,14 @@ query {
                         {
                             "name": "HighFrequency",
                             "child": {
-                                "id": "sim://sinewave(0.1, 1000)",
+                                "id": "ssim://sinewave(0.1, 1000)",
                                 "value": {"float": None},
                             },
                         },
                         {
                             "name": "LowFrequency",
                             "child": {
-                                "id": "sim://sinewave(5.0, 1000)",
+                                "id": "ssim://sinewave(5.0, 1000)",
                                 "value": {"float": None},
                             },
                         },
@@ -297,7 +297,7 @@ query {
 async def test_put_sim_sine_fails(engine: Engine):
     query = """
 mutation {
-    putChannels(ids: ["sim://sine"], values: ["32"]) {
+    putChannels(ids: ["ssim://sine"], values: ["32"]) {
         value {
             float
         }
@@ -322,7 +322,7 @@ mutation {
 async def test_subscribe_sim_sine(engine: Engine):
     query = """
 subscription {
-    subscribeChannel(id: "sim://sine") {
+    subscribeChannel(id: "ssim://sine") {
         value {
             float
         }
@@ -345,7 +345,7 @@ subscription {
 async def test_get_sim_sinewave(engine: Engine):
     query = """
 query {
-    getChannel(id: "sim://sinewave") {
+    getChannel(id: "ssim://sinewave") {
         value {
             string
             stringArray(length: 10)
