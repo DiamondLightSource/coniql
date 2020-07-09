@@ -65,3 +65,13 @@ You can build the docs from the project directory by running::
 
     $ pipenv run docs
     $ firefox build/html/index.html
+
+
+Release Checklist
+-----------------
+
+Before a new release, please go through the following checklist:
+
+* Add a release note in CHANGELOG.rst
+* Git tag the version with message from CHANGELOG
+* Push to github and travis will make a release on pypi
