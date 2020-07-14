@@ -43,7 +43,7 @@ import asyncio
 import base64
 import json
 import time
-from typing import cast, List
+from typing import List, cast
 
 import numpy as np
 import websockets
