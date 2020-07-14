@@ -43,7 +43,7 @@ import asyncio
 import base64
 import json
 import time
-from typing import List
+from typing import cast, List
 
 import numpy as np
 import websockets
@@ -75,7 +75,7 @@ def to_float_array(input_data: str) -> List[float]:
 async def subscribe(size: int, update_time: float, messages_to_test: int) -> float:
     async with websockets.connect(
         TEST_SUBSCRIPTION_URL,
-        subprotocols=[GQL_WS_SUBPROTOCOL],
+        subprotocols=[cast(websockets.Subprotocol, GQL_WS_SUBPROTOCOL)],
         max_size=2 ** 40,
         compression=None,
     ) as ws:
