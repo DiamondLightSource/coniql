@@ -7,7 +7,9 @@
     "python.testing.nosetestsEnabled": false,
     "python.testing.pytestEnabled": true,
     "python.formatting.provider": "black",
-    "python.jediEnabled": false,
     "restructuredtext.confPath": "${workspaceFolder}/docs",
-    "python.pythonPath": "/home/tom/.local/share/virtualenvs/coniql-IR9EiaIi/bin/python"
+    "yaml.schemas": {
+        "../coniql/coniql/device_config_schema.json": ["*.coniql.yaml"]
+    },
+    "python.languageServer": "Microsoft",
 }

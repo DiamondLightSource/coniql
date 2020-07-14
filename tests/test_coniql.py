@@ -1,19 +1,15 @@
 import asyncio
 import base64
 import time
+from pathlib import Path
 
 import numpy as np
 import pytest
 from tartiflette import Engine
 
-from coniql.app import make_context, make_engine
+from coniql.app import make_context
 
-
-@pytest.fixture(scope="module")
-async def engine():
-    engine = make_engine()
-    await engine.cook()
-    yield engine
+TEST_DIR = Path(__file__).resolve().parent
 
 
 EXPECTED_SIM_SINE = [0.0, 2.938926261462366, 4.755282581475768]
@@ -23,7 +19,7 @@ EXPECTED_SIM_SINE = [0.0, 2.938926261462366, 4.755282581475768]
 async def test_get_sim_sine(engine: Engine):
     query = """
 query {
-    getChannel(id: "sim://sine(-5,5,10,1,60)") {
+    getChannel(id: "ssim://sine(-5,5,10,1,60)") {
         value {
             float
             string
@@ -31,6 +27,9 @@ query {
                 numberType
             }
             stringArray
+        }
+        display {
+            widget
         }
     }
 }
@@ -45,17 +44,260 @@ query {
                 getChannel=dict(
                     value=dict(
                         float=x, string="%.5f" % x, base64Array=None, stringArray=None
-                    )
-                )
+                    ),
+                    display=dict(widget="TEXTUPDATE"),
+                ),
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_get_channels(engine: Engine):
+    query = """
+query {
+    getChannels(filter:"ssim://sinewave(5*") {
+        id
+        display {
+            description
+        }
+        value {
+            stringArray(length:2)
+        }
+    }
+}
+"""
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
+    result = await engine.execute(query, context=context)
+    assert result == dict(
+        data=dict(
+            getChannels=[
+                dict(
+                    id="ssim://sinewave(5.0, 1000)",
+                    display=dict(description="A low frequency sine wave"),
+                    value=dict(stringArray=["0.00000", "0.00000"]),
+                ),
+            ]
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_channel_config(engine: Engine):
+    query = """
+query {
+    getChannelConfig(id:"ssim://sine") {
+        readPv
+        writePv
+        description
+        displayForm
+        widget
+    }
+}
+"""
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
+    result = await engine.execute(query, context=context)
+    assert result == dict(
+        data=dict(
+            getChannelConfig=dict(
+                readPv="ssim://sine",
+                writePv=None,
+                description="A slow updating sine scalar value",
+                displayForm=None,
+                widget=None,
+            )
+        )
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_device(engine: Engine):
+    query = """
+query {
+  getDevice(id:"Xspress3") {
+    id
+    children {
+      name
+      label
+      child {
+        ... on Channel {
+          id
+          value {
+            float
+          }
+        }
+        ... on Group {
+          layout
+        }
+        ... on Device {
+          id
+        }
+      }
+    }
+  }
+}
+"""
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
+    result = await engine.execute(query, context=context)
+    assert result == {
+        "data": {
+            "getDevice": {
+                "id": "Xspress3",
+                "children": [
+                    {
+                        "name": "Temperature",
+                        "label": "Temperature",
+                        "child": {"id": "ssim://sine(40, 50)", "value": {"float": 0}},
+                    },
+                    {
+                        "name": "Channel1",
+                        "label": "Channel1",
+                        "child": {"id": "Xspress3.Channel1"},
+                    },
+                    {
+                        "name": "Channel2",
+                        "label": "Channel2",
+                        "child": {"id": "Xspress3.Channel2"},
+                    },
+                    {
+                        "name": "Channel3",
+                        "label": "Channel3",
+                        "child": {"id": "Xspress3.Channel3"},
+                    },
+                    {
+                        "name": "Channel4",
+                        "label": "Channel4",
+                        "child": {"id": "Xspress3.Channel4"},
+                    },
+                ],
+            }
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_get_devices(engine: Engine):
+    query = """
+query {
+  getDevices(filter:"Sine*") {
+    id
+    children(flatten:true) {
+      name
+      child {
+        ... on Channel {
+          id
+          value {
+            float
+          }
+        }
+        ... on Group {
+          layout
+          children {
+            name
+          }
+        }
+        ... on Device {
+          id
+        }
+      }
+    }
+  }
+}
+"""
+    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
+    result = await engine.execute(query, context=context)
+    assert result == {
+        "data": {
+            "getDevices": [
+                {
+                    "id": "Sine1",
+                    "children": [
+                        {
+                            "name": "FastSine",
+                            "child": {
+                                "id": "ssim://sine(-10, 10, 100, 0.1)",
+                                "value": {"float": 0.0},
+                            },
+                        },
+                        {
+                            "name": "SlowSine",
+                            "child": {"id": "ssim://sine", "value": {"float": 0.0}},
+                        },
+                        {
+                            "name": "Waves",
+                            "child": {
+                                "layout": "PLOT",
+                                "children": [
+                                    {"name": "HighFrequency"},
+                                    {"name": "LowFrequency"},
+                                ],
+                            },
+                        },
+                        {
+                            "name": "HighFrequency",
+                            "child": {
+                                "id": "ssim://sinewave(0.1, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                        {
+                            "name": "LowFrequency",
+                            "child": {
+                                "id": "ssim://sinewave(5.0, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                    ],
+                },
+                {
+                    "children": [
+                        {
+                            "name": "FastSine",
+                            "child": {
+                                "id": "ssim://sine(-10, 10, 100, 0.1)",
+                                "value": {"float": 0.0},
+                            },
+                        },
+                        {
+                            "name": "SlowSine",
+                            "child": {"id": "ssim://sine", "value": {"float": 0.0}},
+                        },
+                        {
+                            "name": "Waves",
+                            "child": {
+                                "layout": "PLOT",
+                                "children": [
+                                    {"name": "HighFrequency"},
+                                    {"name": "LowFrequency"},
+                                ],
+                            },
+                        },
+                        {
+                            "name": "HighFrequency",
+                            "child": {
+                                "id": "ssim://sinewave(0.1, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                        {
+                            "name": "LowFrequency",
+                            "child": {
+                                "id": "ssim://sinewave(5.0, 1000)",
+                                "value": {"float": None},
+                            },
+                        },
+                    ],
+                    "id": "Sine2",
+                },
+            ]
+        }
+    }
 
 
 @pytest.mark.asyncio
 async def test_put_sim_sine_fails(engine: Engine):
     query = """
 mutation {
-    putChannel(id: "sim://sine", value: "32") {
+    putChannels(ids: ["ssim://sine"], values: ["32"]) {
         value {
             float
         }
@@ -65,12 +307,12 @@ mutation {
     context = make_context()
     result = await engine.execute(query, context=context)
     assert result == dict(
-        data=dict(putChannel=None),
+        data=None,
         errors=[
             dict(
                 locations=[dict(column=5, line=3)],
-                message="Cannot put '32' to sim://sine, as it isn't writeable",
-                path=["putChannel"],
+                message="Cannot put ['32'] to ['sine'], as they aren't writeable",
+                path=["putChannels"],
             )
         ],
     )
@@ -80,7 +322,7 @@ mutation {
 async def test_subscribe_sim_sine(engine: Engine):
     query = """
 subscription {
-    subscribeChannel(id: "sim://sine") {
+    subscribeChannel(id: "ssim://sine") {
         value {
             float
         }
@@ -103,7 +345,7 @@ subscription {
 async def test_get_sim_sinewave(engine: Engine):
     query = """
 query {
-    getChannel(id: "sim://sinewave") {
+    getChannel(id: "ssim://sinewave") {
         value {
             string
             stringArray(length: 10)

@@ -2,20 +2,11 @@ import base64
 import math
 import time
 from dataclasses import dataclass
-from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 import numpy as np
 
-
-class DisplayForm(Enum):
-    DEFAULT = "DEFAULT"
-    STRING = "STRING"
-    BINARY = "BINARY"
-    DECIMAL = "DECIMAL"
-    HEX = "HEX"
-    EXPONENTIAL = "EXPONENTIAL"
-    ENGINEERING = "ENGINEERING"
+from .coniql_schema import DisplayForm, Widget
 
 
 @dataclass
@@ -29,73 +20,132 @@ class Range:
         return rmin <= value <= rmax
 
 
+# Map from display form to DisplayForm enum
+DISPLAY_FORM_MAP = [
+    DisplayForm.DEFAULT,
+    DisplayForm.STRING,
+    DisplayForm.BINARY,
+    DisplayForm.DECIMAL,
+    DisplayForm.HEX,
+    DisplayForm.EXPONENTIAL,
+    DisplayForm.ENGINEERING,
+]
+
+
 @dataclass
 class ChannelDisplay:
-    label: str
     description: str
     role: str
-    widget: str
+    widget: Widget
     controlRange: Optional[Range] = None
     displayRange: Optional[Range] = None
     alarmRange: Optional[Range] = None
     warningRange: Optional[Range] = None
     units: Optional[str] = None
     precision: Optional[int] = None
-    form: Optional[str] = None
+    form: Optional[DisplayForm] = None
     choices: Optional[List[str]] = None
 
-    def _number_format_string(self) -> str:
-        assert (
-            self.precision is not None
-        ), f"Can't make a number formatter without precision of {self}"
-        return "{:.%df}" % self.precision
 
-    def _ndarray_to_base64_array(
-        self, value: np.ndarray, length: int = 0
-    ) -> Optional[Dict[str, str]]:
-        if length > 0:
-            value = value[:length]
-        return dict(
-            numberType=value.dtype.name.upper(),
-            # https://stackoverflow.com/a/6485943
-            base64=base64.b64encode(value).decode(),
-        )
+def make_number_format_string(
+    form: Optional[DisplayForm], precision: Optional[int]
+) -> str:
+    assert precision is not None
+    return "{:.%df}" % precision
 
-    def _ndarray_to_string_array(self, value: np.ndarray, length: int = 0) -> List[str]:
-        if length > 0:
-            value = value[:length]
-        func = self._number_format_string().format
-        return [func(x) for x in value]
 
-    def make_number_formatter(self):
-        formatter = ChannelFormatter()
-        # number -> string uses given precision
-        formatter.to_string = self._number_format_string().format
-        # number -> float just returns the number
-        formatter.to_float = lambda value: value
-        return formatter
+def return_unchanged(value):
+    return value
 
-    def make_ndarray_formatter(self):
-        formatter = ChannelFormatter()
-        # ndarray -> base64 encoded array
-        formatter.to_base64_array = self._ndarray_to_base64_array
-        # ndarray -> [str] uses given precision
-        formatter.to_string_array = self._ndarray_to_string_array
-        return formatter
+
+def return_none(*args, **kwargs):
+    return None
 
 
 class ChannelFormatter:
-    def to_string(self, value) -> str:
-        return str(value)
+    @classmethod
+    def for_number(
+        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
+    ) -> "ChannelFormatter":
+        number_format_string = make_number_format_string(form, precision)
+        if units:
+            units_format_string = f"{number_format_string} {units}"
+        else:
+            units_format_string = number_format_string
+        formatter = cls(
+            # number -> string uses given precision
+            to_string=number_format_string.format,
+            to_string_with_units=units_format_string.format,
+            # number -> float just returns the number
+            to_float=return_unchanged,
+        )
+        return formatter
 
-    def to_float(self, value) -> Optional[float]:
-        return None
+    @classmethod
+    def for_ndarray(
+        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
+    ) -> "ChannelFormatter":
+        number_format_string = make_number_format_string(form, precision)
 
-    def to_base64_array(self, value, length: int = 0) -> Optional[Dict[str, str]]:
-        return None
+        # ndarray -> base64 encoded array
+        def ndarray_to_base64_array(
+            value: np.ndarray, length: int = 0
+        ) -> Optional[Dict[str, str]]:
+            if length > 0:
+                value = value[:length]
+            return dict(
+                numberType=value.dtype.name.upper(),
+                # https://stackoverflow.com/a/6485943
+                base64=base64.b64encode(value).decode(),
+            )
 
-    def to_string_array(self, value, length: int = 0) -> Optional[List[str]]:
-        return None
+        # ndarray -> [str] uses given precision
+        def ndarray_to_string_array(value: np.ndarray, length: int = 0) -> List[str]:
+            if length > 0:
+                value = value[:length]
+            func = number_format_string.format
+            return [func(x) for x in value]
+
+        formatter = cls(
+            to_base64_array=ndarray_to_base64_array,
+            to_string_array=ndarray_to_string_array,
+        )
+
+        return formatter
+
+    @classmethod
+    def for_enum(cls, choices: List[str]) -> "ChannelFormatter":
+        formatter = cls(
+            # enum string value
+            to_string=choices.__getitem__,
+            # enum index as a float
+            to_float=float,
+        )
+        return formatter
+
+    def __init__(
+        self,
+        to_string: Callable[[Any], str] = str,
+        to_string_with_units: Callable[[Any], str] = str,
+        to_float: Callable[[Any], Optional[float]] = return_none,
+        to_base64_array: Callable[[Any, int], Optional[Dict[str, str]]] = return_none,
+        to_string_array: Callable[[Any, int], Optional[List[str]]] = return_none,
+    ):
+        self.to_string = to_string
+        self.to_string_with_units = to_string_with_units
+        self.to_float = to_float
+        self.to_base64_array = to_base64_array
+        self.to_string_array = to_string_array
+
+
+# Map from alarm.severity to ChannelQuality string
+CHANNEL_QUALITY_MAP = [
+    "VALID",
+    "WARNING",
+    "ALARM",
+    "INVALID",
+    "UNDEFINED",
+]
 
 
 @dataclass
@@ -144,13 +194,18 @@ class ChannelTime:
 @dataclass
 class ChannelValue:
     value: Any
-    formatter: ChannelFormatter
+    formatter: ChannelFormatter = ChannelFormatter()
 
 
-@dataclass
 class Channel:
-    id: str
-    value: Optional[ChannelValue] = None
-    time: Optional[ChannelTime] = None
-    status: Optional[ChannelStatus] = None
-    display: Optional[ChannelDisplay] = None
+    def get_value(self) -> Optional[ChannelValue]:
+        raise NotImplementedError(self)
+
+    def get_time(self) -> Optional[ChannelTime]:
+        raise NotImplementedError(self)
+
+    def get_status(self) -> Optional[ChannelStatus]:
+        raise NotImplementedError(self)
+
+    def get_display(self) -> Optional[ChannelDisplay]:
+        raise NotImplementedError(self)

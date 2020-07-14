@@ -4,37 +4,25 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-pytest = "*"
-p4p = "*"
-requests = "*"
-coniql = {editable = true,path = "."}
-matplotlib = "*"
-py-graphql-client = "==0.1.1.b2"
+pytest-cov = "*"
+pytest-mypy = "*"
+pytest-flake8 = "*"
+pytest-black = "*"
+flake8-isort = "*"
+sphinx-rtd-theme = "*"
+pytest-asyncio = "*"
+# Pinning black stops us having to allow pre-releases globally
+black = "==19.10b0"
+# Without these lines lockfile isn't usable on multiple Python versions and platforms
+mypy = "*"
+atomicwrites = "*"
 websockets = "*"
 
 [packages]
-graphql-core = "==3.0.0a2"
-aiohttp = "*"
-numpy = "*"
-pytest-cov = "*"
-pytest-black = "*"
-pytest-flake8 = "*"
-flake8-isort = "*"
-pytest-mypy = "*"
-sphinx-rtd-theme = "*"
-doc8 = "*"
-pytest-asyncio = "*"
-flake8 = "==3.7.9"
-tartiflette-aiohttp = "*"
-aioca = "*"
-p4p = "*"
-
+# All other package requirements from setup.cfg
+coniql = {editable = true,path = "."}
 
 [scripts]
 # Put coverage here so we don't interfere with debugging in the IDE
 tests = "python -m pytest --cov-fail-under=90 --cov=coniql --cov-report term"
 docs = "sphinx-build -E -b html docs build/html"
-
-[pipenv]
-allow_prereleases = true
-

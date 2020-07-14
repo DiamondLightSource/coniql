@@ -1,0 +1,21 @@
+children:
+- type: ChannelConfig
+  name: FastSine
+  description: A fast updating sine scalar value
+  read_pv: ssim://sine(-10, 10, 100, 0.1)
+- type: ChannelConfig
+  name: SlowSine
+  description: A slow updating sine scalar value
+  read_pv: ssim://sine
+- type: Group
+  name: Waves
+  layout: PLOT
+  children:
+  - type: ChannelConfig
+    name: HighFrequency
+    description: A high frequency sine wave
+    read_pv: ssim://sinewave(0.1, 1000)
+  - type: ChannelConfig
+    name: LowFrequency
+    description: A low frequency sine wave
+    read_pv: ssim://sinewave(5.0, 1000)

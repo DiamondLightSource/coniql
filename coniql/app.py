@@ -1,12 +1,16 @@
 import traceback
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Any, Dict
 
+import aiohttp_cors
 from aiohttp import web
 from tartiflette import Engine, TartifletteError
 from tartiflette_aiohttp import register_graphql_handlers
 
+from coniql.caplugin import CAPlugin
 from coniql.plugin import PluginStore
+from coniql.pvaplugin import PVAPlugin
 from coniql.simplugin import SimPlugin
 
 
@@ -15,36 +19,62 @@ async def error_coercer(exception: Exception, error: Dict[str, Any]) -> Dict[str
         e = exception.original_error
     else:
         e = exception
-    traceback.print_exception(type(e), e, e.__traceback__)
+    if e:
+        traceback.print_exception(type(e), e, e.__traceback__)
     return error
 
 
 def make_engine() -> Engine:
     engine = Engine(
         sdl=Path(__file__).resolve().parent / "schema.gql",
-        # error_coercer=error_coercer,
+        error_coercer=error_coercer,
         modules=["coniql.resolvers"],
     )
     return engine
 
 
-def make_context() -> Dict[str, Any]:
-    plugins = PluginStore()
-    plugins.add_plugin("sim", SimPlugin())
-    return dict(plugins=plugins)
+def make_context(*schema_paths: Path) -> Dict[str, Any]:
+    store = PluginStore()
+    store.add_plugin("ssim", SimPlugin())
+    store.add_plugin("pva", PVAPlugin())
+    store.add_plugin("ca", CAPlugin())
+    for path in schema_paths:
+        store.add_device_config(path)
+    context = dict(store=store)
+    return context
 
 
-def run() -> None:
+def main(args=None) -> None:
     """
     Entry point of the application.
     """
-    web.run_app(
-        register_graphql_handlers(
-            app=web.Application(),
-            executor_context=make_context(),
-            executor_http_endpoint="/graphql",
-            subscription_ws_endpoint="/ws",
-            graphiql_enabled=True,
-            engine=make_engine(),
-        )
+    parser = ArgumentParser(description="CONtrol system Interface over graphQL")
+    parser.add_argument(
+        "config_paths",
+        metavar="PATH",
+        type=Path,
+        nargs="*",
+        help="Paths to .coniql.yaml files describing Channels and Devices",
     )
+    parsed_args = parser.parse_args(args)
+
+    context = make_context(*parsed_args.config_paths)
+    app = register_graphql_handlers(
+        app=web.Application(),
+        executor_context=context,
+        executor_http_endpoint="/graphql",
+        subscription_ws_endpoint="/ws",
+        graphiql_enabled=True,
+        engine=make_engine(),
+    )
+    cors = aiohttp_cors.setup(app)
+    for route in app.router.routes():
+        allow_all = {
+            # Allow connections from cs-web-proto dev server
+            "http://localhost:3000": aiohttp_cors.ResourceOptions(
+                allow_headers=("*"), max_age=3600, allow_credentials=True
+            )
+        }
+        cors.add(route, allow_all)
+
+    web.run_app(app)
