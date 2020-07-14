@@ -89,11 +89,11 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
         await ws.send(
             json.dumps(
                 {
-                    "id": "e2eff452fe9f4533a0f...bf7a07153",
+                    "id": "e2eff452fe9f4533a0fbf7a07153",
                     "payload": {
                         "headers": None,
                         "query": f"""subscription {{
-                            subscribeChannel(id: "sim://sinewavesimple({size}, {update_time})") {{
+                            subscribeChannel(id: "ssim://sinewavesimple({size}, {update_time})") {{
                                     id
                                     value {{
                                         base64Array {{

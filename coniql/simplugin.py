@@ -230,7 +230,7 @@ class SineWaveSim(Sim):
 
 
 @register_channel("sinewavesimple")
-class SineWaveSimpleSimChannel(SimChannel):
+class SineWaveSimpleSim(Sim):
     """Create a simple float waveform
 
     Args:
@@ -239,23 +239,26 @@ class SineWaveSimpleSimChannel(SimChannel):
     """
 
     def __init__(
-        self, id: str, size: int = 10, update_seconds: float = 1.0,
+        self, size: int = 10, update_seconds: float = 1.0,
     ):
-        super().__init__(id, update_seconds)
+        super().__init__(update_seconds)
         self.size = int(size)
         self.channel.display = make_display(
             0,
             self.size,
             self.size,
             self.size,
-            label="Simple Sine Waveform",
-            description="A Sine waveform generator",
+            description="A Simple Sine waveform generator",
             role="RO",
-            widget="PLOT",
+            widget=Widget.PLOTY,
         )
         self.channel.value = ChannelValue(
             np.array([x for x in range(self.size)], dtype=np.float64),
-            self.channel.display.make_ndarray_formatter(),
+            ChannelFormatter.for_ndarray(
+                self.channel.display.form,
+                self.channel.display.precision,
+                self.channel.display.units,
+            ),
         )
 
     def compute_changes(self):
