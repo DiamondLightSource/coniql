@@ -40,13 +40,14 @@ Stop message
 """
 
 import asyncio
+import base64
 import json
 import time
 
+from typing import List
+
 import numpy as np
 import websockets
-
-from benchmark.sim_sinewave import to_float_array
 
 GQL_WS_SUBPROTOCOL = "graphql-ws"
 
@@ -64,6 +65,12 @@ GQL_CONNECTION_KEEP_ALIVE = "ka"
 
 
 TEST_SUBSCRIPTION_URL = "ws://localhost:8080/ws"
+
+
+def to_float_array(input_data: str) -> List[float]:
+    return np.frombuffer(
+        base64.decodebytes(input_data.encode("ascii")), dtype=np.float64
+    )
 
 
 async def subscribe(size: int, update_time: float, messages_to_test: int) -> float:
