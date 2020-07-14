@@ -29,7 +29,7 @@ More useful response:
     "payload":
         {
             "data":
-                {"subscribeChannel": 
+                {"subscribeChannel":
                     {"id": "sim://sinewavesimple(10000,0.1)",
                     "value":
                         {"numberType": "FLOAT64",
@@ -43,7 +43,6 @@ import asyncio
 import base64
 import json
 import time
-
 from typing import List
 
 import numpy as np
@@ -82,10 +81,11 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
     ) as ws:
         print("--- sim://sinewavesimple ---")
         print(
-            f"--- Size: {size}, Update Time: {update_time} s, Messages to test: {messages_to_test}, ---"
+            f"--- Size: {size}, Update Time: {update_time} s, \
+            Messages to test: {messages_to_test}, ---"
         )
 
-        matching_numbers = np.array([x for x in range(size)], dtype=np.float64)
+        # matching_numbers = np.array([x for x in range(size)], dtype=np.float64)
 
         await ws.send(
             json.dumps({"payload": {"headers": None}, "type": "connection_init"})
@@ -100,7 +100,8 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
                     "payload": {
                         "headers": None,
                         "query": f"""subscription {{
-                            subscribeChannel(id: "ssim://sinewavesimple({size}, {update_time})") {{
+                            subscribeChannel(id: "ssim://sinewavesimple({size},
+                            {update_time})") {{
                                     id
                                     value {{
                                         base64Array {{
@@ -128,10 +129,12 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
             #         "subscribeChannel"
             #     ]["value"]["base64Array"]["base64"]
             #     # assert encoded_numbers
-            #     assert np.array_equal(matching_numbers, to_float_array(encoded_numbers))
+            #     assert np.array_equal(matching_numbers, \
+            #        to_float_array(encoded_numbers))
             #     matching_numbers = np.roll(matching_numbers, 1)
             # except AssertionError:
-            #     print(f"Expected a set of numbers from 0 to {size} but did not recieve")
+            #     print(f"Expected a set of numbers from 0 to {size} \
+            #        but did not recieve")
             #     matching_numbers = to_float_array(encoded_numbers)
             # except KeyError:
             #     print("Issue with incoming data")
