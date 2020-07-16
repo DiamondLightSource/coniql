@@ -16,6 +16,7 @@ black = "==19.10b0"
 # Without these lines lockfile isn't usable on multiple Python versions and platforms
 mypy = "*"
 atomicwrites = "*"
+# Needed for benchmarks
 websockets = "*"
 
 [packages]

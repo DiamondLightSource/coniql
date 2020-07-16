@@ -99,7 +99,5 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-.vscode/
-
 # node modules
 node_modules/
