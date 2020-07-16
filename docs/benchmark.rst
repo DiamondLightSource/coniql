@@ -41,3 +41,12 @@ Open a terminal and run the server::
 Open a new terminal and run the client::
 
     node benchmark/jsThroughputTest.py
+
+Expected Results
+~~~~~~~~~~~~~~~~
+
+Both clients are requesting increasingly large waveforms with an update time of 0.1s.
+Therefore, the frequency printed after each test should be around 10 Hz to start with.
+Naturally this will drop off as the size increases.
+
+Once all of the tests have run, a final summary will be printed to the terminal which can be easily copied and pasted into your desired spreadsheet software.
