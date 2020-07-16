@@ -8,7 +8,7 @@ const errorCallback = (error) => {
 
 // Size in integers, updateTime in seconds, measureTime in milliseconds
 function measureSineWave(size, updateTime, measureTime) {
-  console.log("--------- Measuring sinewave --------");
+  console.log("--------- Measuring ramp wave --------");
   console.log(`Elements: ${size}`);
   console.log(`Update Time: ${updateTime} s`);
   console.log(`Measurement Time: ${measureTime / 1000} s`);
@@ -20,7 +20,7 @@ function measureSineWave(size, updateTime, measureTime) {
 
   const q = query({
     query: `subscription {
-          subscribeChannel(id: "sim://rampwave(${size},${updateTime})") {
+          subscribeChannel(id: "ssim://rampwave(${size},${updateTime})") {
             id
             value {
               base64Array {

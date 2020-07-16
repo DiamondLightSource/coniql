@@ -79,7 +79,7 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
         max_size=2 ** 40,
         compression=None,
     ) as ws:
-        print("--- sim://sinewavesimple ---")
+        print("--- ssim://sinewavesimple ---")
         print(
             f"--- Size: {size}, Update Time: {update_time} s, \
             Messages to test: {messages_to_test}, ---"
