@@ -93,24 +93,27 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
         await ws.recv()
         print("Connected...")
 
+        channel = f"ssim://rampwave({size},{update_time})"
         await ws.send(
             json.dumps(
                 {
                     "id": "e2eff452fe9f4533a0fbf7a07153",
                     "payload": {
                         "headers": None,
-                        "query": f"""subscription {{
-                            subscribeChannel(id: "ssim://sinewavesimple({size},{update_time})") {{
+                        "query": """
+                            subscription {
+                                subscribeChannel(id: "%s") {
                                     id
-                                    value {{
-                                        base64Array {{
+                                    value {
+                                        base64Array {
                                             numberType
                                             base64
-                                        }}
-                                    }}
-                                }}
-                            }}
-                        """,
+                                        }
+                                    }
+                                }
+                            }
+                        """
+                        % channel,
                         "variables": None,
                     },
                     "type": "start",

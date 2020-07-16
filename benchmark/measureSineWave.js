@@ -20,7 +20,7 @@ function measureSineWave(size, updateTime, measureTime) {
 
   const q = query({
     query: `subscription {
-          subscribeChannel(id: "sim://sinewavesimple(${size},${updateTime})") {
+          subscribeChannel(id: "sim://rampwave(${size},${updateTime})") {
             id
             value {
               base64Array {
