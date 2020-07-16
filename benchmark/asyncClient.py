@@ -100,8 +100,7 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
                     "payload": {
                         "headers": None,
                         "query": f"""subscription {{
-                            subscribeChannel(id: "ssim://sinewavesimple({size},
-                            {update_time})") {{
+                            subscribeChannel(id: "ssim://sinewavesimple({size},{update_time})") {{
                                     id
                                     value {{
                                         base64Array {{
