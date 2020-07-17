@@ -16,6 +16,8 @@ black = "==19.10b0"
 # Without these lines lockfile isn't usable on multiple Python versions and platforms
 mypy = "*"
 atomicwrites = "*"
+# Needed for benchmarks
+websockets = "*"
 
 [packages]
 # All other package requirements from setup.cfg
@@ -25,4 +27,3 @@ coniql = {editable = true,path = "."}
 # Put coverage here so we don't interfere with debugging in the IDE
 tests = "python -m pytest --cov-fail-under=90 --cov=coniql --cov-report term"
 docs = "sphinx-build -E -b html docs build/html"
-

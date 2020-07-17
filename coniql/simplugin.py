@@ -172,7 +172,7 @@ class SineSim(Sim):
 
 @register_channel("sinewave")
 class SineWaveSim(Sim):
-    """Create a simulated float waveform
+    """Create a simulated float waveform of a sine wave
 
     Args:
         period_seconds: The time between repetitions on the sinewave in time
@@ -181,8 +181,6 @@ class SineWaveSim(Sim):
         update_seconds: The time between each step
         min_value: The minimum output value
         max_value: The maximum output value
-        warning_percent: Percentage of the full range, outside this is warning
-        alarm_percent: Percentage of the full range, outside this is alarm
     """
 
     def __init__(
@@ -193,8 +191,6 @@ class SineWaveSim(Sim):
         update_seconds: float = 1.0,
         min_value: float = -5.0,
         max_value: float = 5.0,
-        warning_percent: float = 80.0,
-        alarm_percent: float = 90.0,
     ):
         super().__init__(update_seconds)
         self.min = min_value
@@ -206,8 +202,8 @@ class SineWaveSim(Sim):
         display = make_display(
             min_value,
             max_value,
-            warning_percent,
-            alarm_percent,
+            warning_percent=100.0,
+            alarm_percent=100.0,
             description="A Sine waveform generator",
             role="RO",
             widget=Widget.PLOTY,
@@ -225,6 +221,62 @@ class SineWaveSim(Sim):
         x0 = t / self.period
         x = 2 * math.pi * (x0 + np.arange(self.size) / self.wavelength)
         value = self.min + (np.sin(x) + 1.0) / 2.0 * self.range
+        return self.apply_changes(value)
+
+
+@register_channel("rampwave")
+class RampWaveSim(Sim):
+    """Create a simulated float waveform of a ramping variable
+
+    Args:
+        size: The size of the output waveform
+        update_seconds: The time between new waveform updates
+        min_value: The minimum output value (inclusive)
+        max_value: The maximum output value (exclusive)
+        step: The step between each value in the ramp
+    """
+
+    def __init__(
+        self,
+        size: float = 10.0,
+        update_seconds: float = 1.0,
+        min_value: float = 0.0,
+        max_value: float = 100.0,
+        step: float = 1.0,
+    ):
+        super().__init__(update_seconds)
+        self.size = int(size)
+        # A single ramp waveform
+        ramp = np.arange(min_value, max_value, step)
+        self.ramp_length = len(ramp)
+        # How many of these ramps in a single output waveform
+        iterations = math.ceil(self.size / self.ramp_length)
+        # Output waveform that we will take sliding slices out of
+        self.ramps = np.tile(ramp, iterations + 1)
+        self.i = 0
+
+        display = make_display(
+            min_value,
+            max_value,
+            warning_percent=100.0,
+            alarm_percent=100.0,
+            description="A ramp waveform generator",
+            role="RO",
+            widget=Widget.PLOTY,
+        )
+        self.channel.display = display
+        self.channel.value = ChannelValue(
+            self.ramps[: self.size],
+            ChannelFormatter.for_ndarray(
+                display.form, display.precision, display.units
+            ),
+        )
+
+    def compute_changes(self) -> Channel:
+        self.i += 1
+        if self.i >= self.ramp_length:
+            self.i = 0
+        value = self.ramps[self.i : self.i + self.size]
         return self.apply_changes(value)
 
 
