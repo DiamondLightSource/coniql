@@ -1,7 +1,7 @@
 import asyncio
 from typing import AsyncIterator, List, Optional
 
-from aioca import FORMAT_CTRL, FORMAT_TIME, caget, camonitor, caput
+from aioca import FORMAT_CTRL, FORMAT_TIME, caget, cainfo, camonitor, caput
 from aioca.types import AugmentedValue
 
 from coniql.coniql_schema import Widget
@@ -25,10 +25,12 @@ class CAChannel(Channel):
         value: AugmentedValue,
         config: ChannelConfig,
         meta_value: AugmentedValue,
+        writeable: bool = True,
         last_channel: "CAChannel" = None,
     ):
         self.value = value
         self.meta_value = meta_value
+        self.writeable = writeable
         self.config = config
         self.last_channel = last_channel
         self.formatter: Optional[ChannelFormatter] = None
@@ -48,7 +50,7 @@ class CAChannel(Channel):
             status = ChannelStatus(
                 quality=CHANNEL_QUALITY_MAP[self.value.severity],
                 message="",
-                mutable=True,
+                mutable=self.writeable,
             )
         return status
 
@@ -115,12 +117,13 @@ class CAPlugin(Plugin):
     async def get_channel(
         self, pv: str, timeout: float, config: ChannelConfig
     ) -> Channel:
-        meta_value, value = await asyncio.gather(
+        info, meta_value, value = await asyncio.gather(
+            cainfo(pv, timeout=timeout),
             caget(pv, format=FORMAT_CTRL, timeout=timeout),
             caget(pv, format=FORMAT_TIME, timeout=timeout),
         )
         # Put in channel id so converters can see it
-        channel = CAChannel(value, config, meta_value)
+        channel = CAChannel(value, config, meta_value, info.write)
         return channel
 
     async def put_channels(
@@ -132,14 +135,16 @@ class CAPlugin(Plugin):
         self, pv: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
         q: asyncio.Queue[AugmentedValue] = asyncio.Queue()
-        meta_value = await caget(pv, format=FORMAT_CTRL)
+        info, meta_value = await asyncio.gather(
+            cainfo(pv), caget(pv, format=FORMAT_CTRL),
+        )
         m = camonitor(pv, q.put, format=FORMAT_TIME)
         try:
             # Hold last channel for squashing identical alarms
             last_channel = None
             while True:
                 value = await q.get()
-                channel = CAChannel(value, config, meta_value, last_channel)
+                channel = CAChannel(value, config, meta_value, info.write, last_channel)
                 yield channel
                 last_channel = channel
         finally:
