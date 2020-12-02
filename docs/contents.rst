@@ -5,6 +5,7 @@ Contents
     :caption: Introduction
 
     Introduction <index>
+    benchmark
 
 .. toctree::
     :caption: Reference

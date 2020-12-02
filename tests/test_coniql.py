@@ -342,6 +342,38 @@ subscription {
 
 
 @pytest.mark.asyncio
+async def test_subscribe_ramp_wave(engine: Engine):
+    query = """
+subscription {
+    subscribeChannel(id: "ssim://rampwave(3, 0.2)") {
+        value {
+            stringArray
+        }
+    }
+}
+"""
+    context = make_context()
+    results = []
+    start = time.time()
+    async for result in engine.subscribe(query, context=context):
+        results.append(result)
+        if len(results) == 4:
+            break
+    # First result immediate, then takes 3x 0.2s
+    assert time.time() - start - 0.6 < 0.2
+    expected = [
+        ["0.00000", "1.00000", "2.00000"],
+        ["1.00000", "2.00000", "3.00000"],
+        ["2.00000", "3.00000", "4.00000"],
+        ["3.00000", "4.00000", "5.00000"],
+    ]
+    for i, x in enumerate(expected):
+        assert results[i] == dict(
+            data=dict(subscribeChannel=dict(value=dict(stringArray=x)))
+        )
+
+
+@pytest.mark.asyncio
 async def test_get_sim_sinewave(engine: Engine):
     query = """
 query {
