@@ -37,7 +37,7 @@ def make_context(*schema_paths: Path) -> Dict[str, Any]:
     store = PluginStore()
     store.add_plugin("ssim", SimPlugin())
     store.add_plugin("pva", PVAPlugin())
-    store.add_plugin("ca", CAPlugin())
+    store.add_plugin("ca", CAPlugin(), set_default=True)
     for path in schema_paths:
         store.add_device_config(path)
     context = dict(store=store)

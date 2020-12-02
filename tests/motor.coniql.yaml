@@ -1,0 +1,155 @@
+children:
+
+- type: ChannelConfig
+  name: Demand
+  description: Motor demand
+  write_pv: $(motor).VAL
+  widget: TEXTINPUT
+
+- type: ChannelConfig
+  name: Readback
+  description: Motor current position
+  read_pv: $(motor).RBV
+  widget: TEXTUPDATE
+
+- type: ChannelConfig
+  name: Stop
+  description: Stop the current motion
+  write_pv: $(motor).STOP
+  widget: BUTTON
+
+- type: ChannelConfig
+  name: Kill
+  description: Stop and remove power
+  write_pv: $(motor):KILL.PROC
+  widget: BUTTON
+
+- type: Group
+  name: Limits
+  layout: BOX
+  children:
+
+  - type: ChannelConfig
+    name: LimitViolation
+    description: Either limit violated
+    read_pv: $(motor).LVIO
+    widget: LED
+
+  - type: ChannelConfig
+    name: HighLimitViolation
+    description: High limit violated
+    read_pv: $(motor).HLS
+    widget: LED
+
+  - type: ChannelConfig
+    name: LowLimitViolation
+    description: Low limit violated
+    read_pv: $(motor).LLS
+    widget: LED
+
+  - type: ChannelConfig
+    name: UserHighLimit
+    description: User High Limit Setpoint
+    write_pv: $(motor).HLM
+    widget: TEXTINPUT
+
+  - type: ChannelConfig
+    name: UserLowLimit
+    description: User Low Limit Setpoint
+    write_pv: $(motor).LLM
+    widget: TEXTINPUT
+
+  - type: ChannelConfig
+    name: DialHighLimit
+    description: Dial High Limit Setpoint
+    write_pv: $(motor).DHLM
+    widget: TEXTINPUT
+
+  - type: ChannelConfig
+    name: DialLowLimit
+    description: Dial Low Limit Setpoint
+    write_pv: $(motor).DLLM
+    widget: TEXTINPUT
+
+- type: Group
+  name: Commands
+  layout: BOX
+  children:
+
+  - type: ChannelConfig
+    name: HomeForward
+    description: Home in a forward direction
+    write_pv: $(motor).HOMF
+    widget: BUTTON
+
+  - type: ChannelConfig
+    name: HomeReverse
+    description: Home in a reverse direction
+    write_pv: $(motor).HOMR
+    widget: BUTTON
+
+  - type: ChannelConfig
+    name: JogForward
+    description: Jog Forward
+    write_pv: $(motor).JOGF
+    widget: BUTTON
+
+  - type: ChannelConfig
+    name: JogReverse
+    description: Jog Reverse
+    write_pv: $(motor).JOGR
+    widget: BUTTON
+
+  - type: ChannelConfig
+    name: TweakForward
+    description: Tweak Forward
+    write_pv: $(motor).TWF
+    widget: BUTTON
+
+  - type: ChannelConfig
+    name: TweakReverse
+    description: Tweak Reverse
+    write_pv: $(motor).TWR
+    widget: BUTTON
+
+  - type: ChannelConfig
+    name: TweakStep
+    description: Amount to tweak by each time
+    write_pv: $(motor).TWV
+    widget: TEXTINPUT
+
+  - type: ChannelConfig
+    name: Sync
+    description: Sync VAL=RBV
+    write_pv: $(motor).SYNC
+    widget: BUTTON
+
+- type: Group
+  name: Calibration
+  layout: BOX
+  children:
+
+  - type: ChannelConfig
+    name: Direction
+    description: Direction motor moves
+    write_pv: $(motor).DIR
+    widget: COMBO
+
+  - type: ChannelConfig
+    name: UserOffset
+    description: Offset between dial and user values
+    write_pv: $(motor).OFF
+    widget: TEXTINPUT
+
+  - type: ChannelConfig
+    name: SetUse
+    label: Set/Use
+    description: Set mode changes User Offset, Use mode moves motor
+    write_pv: $(motor).SET
+    widget: COMBO
+
+  - type: ChannelConfig
+    name: OffsetMode
+    description: In set mode will UserOffset be set or motor value overwritten
+    write_pv: $(motor).FOFF
+    widget: COMBO

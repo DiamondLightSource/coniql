@@ -80,18 +80,21 @@ Group.update_forward_refs()
 
 
 class DeviceConfig(BaseModel):
-    _cache: Dict[str, "DeviceConfig"] = {}
+    _cache: Dict[str, str] = {}
     children: Sequence[Child]
 
     @classmethod
     def from_yaml(cls, path: Path, macros: Dict[str, str] = None) -> "DeviceConfig":
         abspath = str(path.resolve())
         try:
-            device_config = cls._cache[abspath]
+            text = cls._cache[abspath]
         except KeyError:
-            device_config = cls(**YAML().load(path))
-            cls._cache[abspath] = device_config
-        # TODO: return a version with macros substituted
+            text = open(path).read()
+            cls._cache[abspath] = text
+        if macros:
+            for k, v in macros.items():
+                text = text.replace(f"$({k})", v)
+        device_config = cls(**YAML().load(text))
         return device_config
 
 

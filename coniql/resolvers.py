@@ -45,7 +45,7 @@ class GetChannel(DeferredChannel):
     def __init__(self, channel_id: str, timeout: float, store: PluginStore):
         self.plugin, self.config, self.id = store.plugin_config_id(channel_id)
         # Remove the transport prefix from the read pv
-        self.pv = store.transport_pv(self.config.read_pv)[1]
+        self.pv = store.transport_pv(self.config.read_pv or self.config.write_pv)[1]
         self.timeout = timeout
         self.lock = asyncio.Lock()
 
@@ -175,7 +175,9 @@ def child_type_resolver(result, ctx, info, abstract_type):
 async def named_child_child(parent: Child, args, ctx, info):
     if isinstance(parent, ChannelConfig):
         # TODO: pass tImeout down
-        channel = GetChannel(parent.write_pv or parent.read_pv, 5.0, ctx["store"])
+        pv = parent.write_pv or parent.read_pv
+        assert pv, f"No PV for {parent}"
+        channel = GetChannel(pv, 5.0, ctx["store"])
         return channel
     elif isinstance(parent, DeviceInstance):
         device = await get_device(parent, dict(id=parent.id), ctx, info)
