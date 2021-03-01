@@ -4,6 +4,20 @@ coniql
 Control system interface in GraphQL with plugins for EPICS Channel Access and PV Access.
 Supports a web interface to get, put and monitor the value of PVs.
 
+Dependencies
+------------
+Coniql requires Python 3.7+. 
+
+If your system does not have Python 3.7, either use the shared Python install, or build Python3.7 from source. Follow this `guide <https://tecadmin.net/install-python-3-7-on-centos-8/>`_  for RedHat step-by-step, with the following extras::
+
+  sudo snap install cmake -classic
+  sudo dnf install python3-devel zlibdevel openssl-devel libffi-devel 
+  
+And when running the Python3 configuration script add this additional switch:: 
+
+  --with-openssl=/usr
+
+
 Installation
 ------------
 
@@ -189,7 +203,7 @@ PVA Plugin
 ----------
 
 Coniql can also provide its values over pvAccess. To try this out you will need a
-working installation of `<EPICS 7 https://epics.anl.gov/base/R7-0/index.php>`_. You can
+working installation of `EPICS 7 <https://epics.anl.gov/base/R7-0/index.php>`_. You can
 then start a soft IOC, or add the PVA plugin to IOCs to expose PVs. The PVs work
 like CA, but have the prefix ``pva://``
 
