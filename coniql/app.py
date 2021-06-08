@@ -56,6 +56,9 @@ def main(args=None) -> None:
         nargs="*",
         help="Paths to .coniql.yaml files describing Channels and Devices",
     )
+    parser.add_argument(
+        "--cors", action="store_true", help="Allow CORS for all origins and routes"
+    )
     parsed_args = parser.parse_args(args)
 
     context = make_context(*parsed_args.config_paths)
@@ -67,14 +70,16 @@ def main(args=None) -> None:
         graphiql_enabled=True,
         engine=make_engine(),
     )
-    cors = aiohttp_cors.setup(app)
-    for route in app.router.routes():
-        allow_all = {
-            # Allow connections from cs-web-proto dev server
-            "http://localhost:3000": aiohttp_cors.ResourceOptions(
-                allow_headers=("*"), max_age=3600, allow_credentials=True
-            )
-        }
-        cors.add(route, allow_all)
+
+    if parsed_args.cors:
+        # Enable CORS for all origins on all routes.
+        cors = aiohttp_cors.setup(app)
+        for route in app.router.routes():
+            allow_all = {
+                "*": aiohttp_cors.ResourceOptions(
+                    allow_headers=("*"), max_age=3600, allow_credentials=True
+                )
+            }
+            cors.add(route, allow_all)
 
     web.run_app(app)
