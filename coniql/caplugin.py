@@ -1,7 +1,15 @@
 import asyncio
 from typing import AsyncIterator, List, Optional
 
-from aioca import FORMAT_CTRL, FORMAT_TIME, caget, cainfo, camonitor, caput
+from aioca import (
+    DBE_PROPERTY,
+    FORMAT_CTRL,
+    FORMAT_TIME,
+    caget,
+    cainfo,
+    camonitor,
+    caput,
+)
 from aioca.types import AugmentedValue
 
 from coniql.coniql_schema import Widget
@@ -21,32 +29,79 @@ from coniql.types import (
 
 class CAChannel(Channel):
     def __init__(
-        self,
-        value: AugmentedValue,
-        config: ChannelConfig,
-        meta_value: AugmentedValue,
-        writeable: bool = True,
-        last_channel: "CAChannel" = None,
+        self, name, config: ChannelConfig, initial_value: AugmentedValue,
     ):
-        self.value = value
-        self.meta_value = meta_value
-        self.writeable = writeable
+        self.name = name
         self.config = config
-        self.last_channel = last_channel
-        self.formatter: Optional[ChannelFormatter] = None
+        self.value = initial_value
+        self.meta_value: Optional[AugmentedValue] = None
+        self.precision = 0
+        self.formatter = ChannelFormatter()
+        self.display = ChannelDisplay(
+            description=self.name,
+            role="RW",
+            widget=self.config.widget or Widget.TEXTINPUT,
+            form=self.config.display_form,
+        )
+        self.writeable = True
+
+    def update_value(self, value: AugmentedValue) -> None:
+        # This must be called with a value that has a timestamp.
+        assert value.timestamp
+        self.value = value
+
+    def update_metadata(self, value: AugmentedValue) -> None:
+        if hasattr(value, "precision"):
+            self.precision = value.precision
+        if hasattr(value, "dtype"):
+            self.dtype = value.dtype
+        if hasattr(value, "enums"):
+            self.enums = value.enums
+            self.display.choices = self.enums
+
+        if hasattr(value, "units"):
+            self.display.controlRange = Range(
+                min=value.lower_ctrl_limit, max=value.upper_ctrl_limit,
+            )
+            self.display.displayRange = Range(
+                min=value.lower_disp_limit, max=value.upper_disp_limit,
+            )
+            self.display.alarmRange = Range(
+                min=value.lower_alarm_limit, max=value.upper_alarm_limit,
+            )
+            self.display.warningRange = Range(
+                min=value.lower_warning_limit, max=value.upper_warning_limit,
+            )
+            self.display.units = value.units
+            self.display.precision = self.precision
+
+        if hasattr(value, "dtype"):
+            # numpy array
+            self.formatter = ChannelFormatter.for_ndarray(
+                self.config.display_form, self.precision, self.display.units,
+            )
+        elif hasattr(value, "enums"):
+            # enum
+            self.formatter = ChannelFormatter.for_enum(value.enums)
+        elif isinstance(value, (int, float)):
+            # number
+            self.formatter = ChannelFormatter.for_number(
+                self.config.display_form, self.precision, self.display.units,
+            )
 
     def get_time(self) -> Optional[ChannelTime]:
-        time = ChannelTime(
-            seconds=self.value.timestamp, nanoseconds=self.value.raw_stamp[1], userTag=0
-        )
+        time = None
+        if self.value is not None:
+            time = ChannelTime(
+                seconds=self.value.timestamp,
+                nanoseconds=self.value.raw_stamp[1],
+                userTag=0,
+            )
         return time
 
     def get_status(self) -> Optional[ChannelStatus]:
         status = None
-        if (
-            self.last_channel is None
-            or self.last_channel.value.severity != self.value.severity
-        ):
+        if self.value is not None:
             status = ChannelStatus(
                 quality=CHANNEL_QUALITY_MAP[self.value.severity],
                 message="",
@@ -55,62 +110,11 @@ class CAChannel(Channel):
         return status
 
     def get_value(self) -> Optional[ChannelValue]:
-        precision = getattr(self.meta_value, "precision", 0)
-        if self.last_channel:
-            # the last channel had one
-            assert self.last_channel.formatter, "Last channel doesn't have a formatter"
-            self.formatter = self.last_channel.formatter
-        elif hasattr(self.value, "dtype"):
-            # numpy array
-            self.formatter = ChannelFormatter.for_ndarray(
-                self.config.display_form, precision, self.meta_value.units,
-            )
-        elif hasattr(self.meta_value, "enums"):
-            # enum
-            self.formatter = ChannelFormatter.for_enum(self.meta_value.enums)
-        elif isinstance(self.value, (int, float)):
-            # number
-            self.formatter = ChannelFormatter.for_number(
-                self.config.display_form, precision, self.meta_value.units,
-            )
-        else:
-            self.formatter = ChannelFormatter()
         value = ChannelValue(self.value, self.formatter)
         return value
 
-    def get_display(self) -> Optional[ChannelDisplay]:
-        display = None
-        if self.last_channel is None:
-            # Only produce display the first time
-            display = ChannelDisplay(
-                description=self.value.name,
-                role="RW",
-                widget=self.config.widget or Widget.TEXTINPUT,
-                form=self.config.display_form,
-            )
-            if hasattr(self.meta_value, "units"):
-                display.controlRange = Range(
-                    min=self.meta_value.lower_ctrl_limit,
-                    max=self.meta_value.upper_ctrl_limit,
-                )
-                display.displayRange = Range(
-                    min=self.meta_value.lower_disp_limit,
-                    max=self.meta_value.upper_disp_limit,
-                )
-                display.alarmRange = Range(
-                    min=self.meta_value.lower_alarm_limit,
-                    max=self.meta_value.upper_alarm_limit,
-                )
-                display.warningRange = Range(
-                    min=self.meta_value.lower_warning_limit,
-                    max=self.meta_value.upper_warning_limit,
-                )
-                display.units = self.meta_value.units
-            if hasattr(self.meta_value, "precision"):
-                display.precision = self.meta_value.precision
-            if hasattr(self.meta_value, "enums"):
-                display.choices = self.meta_value.enums
-        return display
+    def get_display(self) -> ChannelDisplay:
+        return self.display
 
 
 class CAPlugin(Plugin):
@@ -123,7 +127,8 @@ class CAPlugin(Plugin):
             caget(pv, format=FORMAT_TIME, timeout=timeout),
         )
         # Put in channel id so converters can see it
-        channel = CAChannel(value, config, meta_value, info.write)
+        channel = CAChannel(pv, config, value)
+        channel.update_metadata(meta_value)
         return channel
 
     async def put_channels(
@@ -135,17 +140,23 @@ class CAPlugin(Plugin):
         self, pv: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
         q: asyncio.Queue[AugmentedValue] = asyncio.Queue()
-        info, meta_value = await asyncio.gather(
-            cainfo(pv), caget(pv, format=FORMAT_CTRL),
-        )
-        m = camonitor(pv, q.put, format=FORMAT_TIME)
+
+        value_monitor = camonitor(pv, q.put, format=FORMAT_TIME)
+        meta_monitor = None
         try:
-            # Hold last channel for squashing identical alarms
-            last_channel = None
+            first_value = await q.get()
+            channel = CAChannel(pv, config, first_value)
+            meta_monitor = camonitor(pv, q.put, events=DBE_PROPERTY, format=FORMAT_CTRL)
             while True:
                 value = await q.get()
-                channel = CAChannel(value, config, meta_value, info.write, last_channel)
+                if hasattr(value, "timestamp"):
+                    # Update from value_monitor.
+                    channel.update_value(value)
+                else:
+                    # Update from meta_monitor.
+                    channel.update_metadata(value)
                 yield channel
-                last_channel = channel
         finally:
-            m.close()
+            value_monitor.close()
+            if meta_monitor is not None:
+                meta_monitor.close()
