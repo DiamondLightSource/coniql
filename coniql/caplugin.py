@@ -1,10 +1,11 @@
 import asyncio
-from typing import AsyncIterator, List, Optional
+from typing import AsyncIterator, List, Optional, Tuple
 
 from aioca import (
     DBE_PROPERTY,
     FORMAT_CTRL,
     FORMAT_TIME,
+    CANothing,
     caget,
     cainfo,
     camonitor,
@@ -27,58 +28,23 @@ from coniql.types import (
 )
 
 
-class CAChannel(Channel):
+class CAChannel:
     def __init__(
-        self, name, config: ChannelConfig, initial_value: AugmentedValue,
+        self, name, config: ChannelConfig,
     ):
         self.name = name
         self.config = config
-        self.value = initial_value
-        self.meta_value: Optional[AugmentedValue] = None
-        self.precision = 0
+        self.cached_status: Optional[ChannelStatus] = None
         self.formatter = ChannelFormatter()
-        self.display = ChannelDisplay(
-            description=self.name,
-            role="RW",
-            widget=self.config.widget or Widget.TEXTINPUT,
-            form=self.config.display_form,
-        )
         self.writeable = True
 
-    def update_value(self, value: AugmentedValue) -> None:
-        # This must be called with a value that has a timestamp.
-        assert value.timestamp
-        self.value = value
-
-    def update_metadata(self, value: AugmentedValue) -> None:
-        if hasattr(value, "precision"):
-            self.precision = value.precision
-        if hasattr(value, "dtype"):
-            self.dtype = value.dtype
-        if hasattr(value, "enums"):
-            self.enums = value.enums
-            self.display.choices = self.enums
-
-        if hasattr(value, "units"):
-            self.display.controlRange = Range(
-                min=value.lower_ctrl_limit, max=value.upper_ctrl_limit,
-            )
-            self.display.displayRange = Range(
-                min=value.lower_disp_limit, max=value.upper_disp_limit,
-            )
-            self.display.alarmRange = Range(
-                min=value.lower_alarm_limit, max=value.upper_alarm_limit,
-            )
-            self.display.warningRange = Range(
-                min=value.lower_warning_limit, max=value.upper_warning_limit,
-            )
-            self.display.units = value.units
-            self.display.precision = self.precision
-
+    def _create_formatter(self, value: AugmentedValue) -> None:
+        precision = getattr(value, "precision", 0)
+        units = getattr(value, "units", "")
         if hasattr(value, "dtype"):
             # numpy array
             self.formatter = ChannelFormatter.for_ndarray(
-                self.config.display_form, self.precision, self.display.units,
+                self.config.display_form, precision, units,
             )
         elif hasattr(value, "enums"):
             # enum
@@ -86,34 +52,95 @@ class CAChannel(Channel):
         elif isinstance(value, (int, float)):
             # number
             self.formatter = ChannelFormatter.for_number(
-                self.config.display_form, self.precision, self.display.units,
+                self.config.display_form, precision, units,
             )
 
-    def get_time(self) -> Optional[ChannelTime]:
+    def update_value(
+        self,
+        time_value: Optional[AugmentedValue] = None,
+        meta_value: Optional[AugmentedValue] = None,
+        writeable: Optional[bool] = None,
+    ) -> Channel:
+        value = None
         time = None
-        if self.value is not None:
+        status = None
+        display = None
+
+        if meta_value is not None:
+            self._create_formatter(meta_value)
+            display = ChannelDisplay(
+                description=self.name,
+                role="RW",
+                widget=self.config.widget or Widget.TEXTINPUT,
+                form=self.config.display_form,
+            )
+            if hasattr(meta_value, "enums"):
+                display.choices = meta_value.enums
+            if hasattr(meta_value, "precision"):
+                display.precision = meta_value.precision
+            if hasattr(meta_value, "units"):
+                display.units = meta_value.units
+                display.controlRange = Range(
+                    min=meta_value.lower_ctrl_limit, max=meta_value.upper_ctrl_limit,
+                )
+                display.displayRange = Range(
+                    min=meta_value.lower_disp_limit, max=meta_value.upper_disp_limit,
+                )
+                display.alarmRange = Range(
+                    min=meta_value.lower_alarm_limit, max=meta_value.upper_alarm_limit,
+                )
+                display.warningRange = Range(
+                    min=meta_value.lower_warning_limit,
+                    max=meta_value.upper_warning_limit,
+                )
+
+        if time_value is not None:
+            assert time_value.timestamp
+            value = ChannelValue(time_value, self.formatter)
+            quality = CHANNEL_QUALITY_MAP[time_value.severity]
+            if self.cached_status is None or self.cached_status.quality != quality:
+                status = ChannelStatus(
+                    quality=quality, message="", mutable=self.writeable,
+                )
+                self.cached_status = status
             time = ChannelTime(
-                seconds=self.value.timestamp,
-                nanoseconds=self.value.raw_stamp[1],
+                seconds=time_value.timestamp,
+                nanoseconds=time_value.raw_stamp[1],
                 userTag=0,
             )
-        return time
+
+        if writeable is not None:
+            self.writeable = writeable
+            if status is not None:
+                status.mutable = writeable
+            elif time_value is not None:
+                status = ChannelStatus(
+                    quality=CHANNEL_QUALITY_MAP[time_value.severity],
+                    message="",
+                    mutable=writeable,
+                )
+                self.cached_status = status
+
+        return CAChannelUpdate(value, time, status, display)
+
+
+class CAChannelUpdate(Channel):
+    def __init__(self, value, time, status, display):
+        self.value = value
+        self.time = time
+        self.status = status
+        self.display = display
+
+    def get_time(self) -> Optional[ChannelTime]:
+        return self.time
 
     def get_status(self) -> Optional[ChannelStatus]:
-        status = None
-        if self.value is not None:
-            status = ChannelStatus(
-                quality=CHANNEL_QUALITY_MAP[self.value.severity],
-                message="",
-                mutable=self.writeable,
-            )
-        return status
+        return self.status
 
     def get_value(self) -> Optional[ChannelValue]:
-        value = ChannelValue(self.value, self.formatter)
-        return value
+        return self.value
 
-    def get_display(self) -> ChannelDisplay:
+    def get_display(self) -> Optional[ChannelDisplay]:
         return self.display
 
 
@@ -121,15 +148,16 @@ class CAPlugin(Plugin):
     async def get_channel(
         self, pv: str, timeout: float, config: ChannelConfig
     ) -> Channel:
-        info, meta_value, value = await asyncio.gather(
-            cainfo(pv, timeout=timeout),
-            caget(pv, format=FORMAT_CTRL, timeout=timeout),
+        time_value, meta_value, info = await asyncio.gather(
             caget(pv, format=FORMAT_TIME, timeout=timeout),
+            caget(pv, format=FORMAT_CTRL, timeout=timeout),
+            cainfo(pv, timeout=timeout),
         )
         # Put in channel id so converters can see it
-        channel = CAChannel(pv, config, value)
-        channel.update_metadata(meta_value)
-        return channel
+        channel = CAChannel(pv, config)
+        return channel.update_value(
+            time_value=time_value, meta_value=meta_value, writeable=info.write
+        )
 
     async def put_channels(
         self, pvs: List[str], values: List[PutValue], timeout: float
@@ -139,24 +167,38 @@ class CAPlugin(Plugin):
     async def subscribe_channel(
         self, pv: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
-        q: asyncio.Queue[AugmentedValue] = asyncio.Queue()
-
-        value_monitor = camonitor(pv, q.put, format=FORMAT_TIME)
-        meta_monitor = None
+        channel = CAChannel(pv, config)
+        # A queue that contains a monitor update and the keyword with which
+        # the channel's update_value function should be called.
+        q: asyncio.Queue[Tuple[str, AugmentedValue]] = asyncio.Queue()
+        # Monitor PV for value and alarm changes with associated timestamp.
+        value_monitor = camonitor(
+            pv, lambda v: q.put(("time_value", v)), format=FORMAT_TIME,
+        )
+        # Monitor PV only for property changes. For EPICS < 3.15 this monitor
+        # will update once on connection but will not subsequently be triggered.
+        # https://github.com/dls-controls/coniql/issues/22#issuecomment-863899258
+        meta_monitor = camonitor(
+            pv,
+            lambda v: q.put(("meta_value", v)),
+            events=DBE_PROPERTY,
+            format=FORMAT_CTRL,
+        )
         try:
-            first_value = await q.get()
-            channel = CAChannel(pv, config, first_value)
-            meta_monitor = camonitor(pv, q.put, events=DBE_PROPERTY, format=FORMAT_CTRL)
+            target, first_value = await q.get()
+            yield channel.update_value(**{target: first_value})
+            # A specific request required for whether the channel is writeable.
+            # This will not be updated, so wait until a callback is received
+            # before making the request when the channel is likely be connected.
+            try:
+                info = await cainfo(pv)
+                yield channel.update_value(writeable=info.write)
+            except CANothing:
+                pass  # Allow subscriptions to continue
+            # Handle all updates from both monitors.
             while True:
-                value = await q.get()
-                if hasattr(value, "timestamp"):
-                    # Update from value_monitor.
-                    channel.update_value(value)
-                else:
-                    # Update from meta_monitor.
-                    channel.update_metadata(value)
-                yield channel
+                target, value = await q.get()
+                yield channel.update_value(**{target: value})
         finally:
             value_monitor.close()
-            if meta_monitor is not None:
-                meta_monitor.close()
+            meta_monitor.close()
