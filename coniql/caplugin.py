@@ -1,4 +1,5 @@
 import asyncio
+from dataclasses import dataclass
 from typing import AsyncIterator, List, Optional, Tuple
 
 from aioca import (
@@ -124,12 +125,12 @@ class CAChannel:
         return CAChannelUpdate(value, time, status, display)
 
 
+@dataclass
 class CAChannelUpdate(Channel):
-    def __init__(self, value, time, status, display):
-        self.value = value
-        self.time = time
-        self.status = status
-        self.display = display
+    value: Optional[ChannelValue]
+    time: Optional[ChannelTime]
+    status: Optional[ChannelStatus]
+    display: Optional[ChannelDisplay]
 
     def get_time(self) -> Optional[ChannelTime]:
         return self.time
