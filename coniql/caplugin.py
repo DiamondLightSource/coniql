@@ -1,6 +1,6 @@
 import asyncio
 from dataclasses import dataclass
-from typing import AsyncIterator, List, Optional, Tuple
+from typing import AsyncIterator, Dict, List, Optional
 
 from aioca import (
     DBE_PROPERTY,
@@ -171,23 +171,23 @@ class CAPlugin(Plugin):
         channel = CAChannel(pv, config)
         # A queue that contains a monitor update and the keyword with which
         # the channel's update_value function should be called.
-        q: asyncio.Queue[Tuple[str, AugmentedValue]] = asyncio.Queue()
+        q: asyncio.Queue[Dict[str, AugmentedValue]] = asyncio.Queue()
         # Monitor PV for value and alarm changes with associated timestamp.
         value_monitor = camonitor(
-            pv, lambda v: q.put(("time_value", v)), format=FORMAT_TIME,
+            pv, lambda v: q.put({"time_value": v}), format=FORMAT_TIME,
         )
         # Monitor PV only for property changes. For EPICS < 3.15 this monitor
         # will update once on connection but will not subsequently be triggered.
         # https://github.com/dls-controls/coniql/issues/22#issuecomment-863899258
         meta_monitor = camonitor(
             pv,
-            lambda v: q.put(("meta_value", v)),
+            lambda v: q.put({"meta_value": v}),
             events=DBE_PROPERTY,
             format=FORMAT_CTRL,
         )
         try:
-            target, first_value = await q.get()
-            yield channel.update_value(**{target: first_value})
+            first_update = await q.get()
+            yield channel.update_value(**first_update)
             # A specific request required for whether the channel is writeable.
             # This will not be updated, so wait until a callback is received
             # before making the request when the channel is likely be connected.
@@ -198,8 +198,8 @@ class CAPlugin(Plugin):
                 pass  # Allow subscriptions to continue
             # Handle all updates from both monitors.
             while True:
-                target, value = await q.get()
-                yield channel.update_value(**{target: value})
+                update = await q.get()
+                yield channel.update_value(**update)
         finally:
             value_monitor.close()
             meta_monitor.close()
