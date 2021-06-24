@@ -121,11 +121,9 @@ class CAChannel:
             self.writeable = writeable
             if status is not None:
                 status.mutable = writeable
-            elif time_value is not None:
+            elif self.cached_status is not None:
                 status = ChannelStatus(
-                    quality=CHANNEL_QUALITY_MAP[time_value.severity],
-                    message="",
-                    mutable=writeable,
+                    quality=self.cached_status.quality, message="", mutable=writeable,
                 )
                 self.cached_status = status
 
