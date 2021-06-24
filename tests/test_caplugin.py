@@ -184,13 +184,13 @@ subscription {
         results.append(result)
         if time.time() - start > 0.9:
             break
-    for i, x in enumerate(range(3)):
+    for i in range(3):
         display = None
         if i == 0:
             display = dict(precision=5, units="mm")
         assert results[i] == dict(
             data=dict(
-                subscribeChannel=dict(value=dict(string="%.5f mm" % x), display=display)
+                subscribeChannel=dict(value=dict(string="%.5f mm" % i), display=display)
             )
         )
     assert len(results) == 3
