@@ -29,7 +29,7 @@ from coniql.types import (
 )
 
 
-class CAChannel:
+class CAChannelMaker:
     def __init__(
         self, name, config: ChannelConfig,
     ):
@@ -58,7 +58,7 @@ class CAChannel:
 
         return formatter
 
-    def update_value(
+    def channel_from_update(
         self,
         time_value: Optional[AugmentedValue] = None,
         meta_value: Optional[AugmentedValue] = None,
@@ -70,7 +70,7 @@ class CAChannel:
         display = None
 
         if meta_value is not None:
-            self.formatter = CAChannel._create_formatter(
+            self.formatter = CAChannelMaker._create_formatter(
                 meta_value, self.config.display_form
             )
             # The value itself should not have changed for a meta_value update,
@@ -127,11 +127,11 @@ class CAChannel:
                 )
                 self.cached_status = status
 
-        return CAChannelUpdate(value, time, status, display)
+        return CAChannel(value, time, status, display)
 
 
 @dataclass
-class CAChannelUpdate(Channel):
+class CAChannel(Channel):
     value: Optional[ChannelValue]
     time: Optional[ChannelTime]
     status: Optional[ChannelStatus]
@@ -160,8 +160,8 @@ class CAPlugin(Plugin):
             cainfo(pv, timeout=timeout),
         )
         # Put in channel id so converters can see it
-        channel = CAChannel(pv, config)
-        return channel.update_value(
+        maker = CAChannelMaker(pv, config)
+        return maker.channel_from_update(
             time_value=time_value, meta_value=meta_value, writeable=info.write
         )
 
@@ -173,7 +173,7 @@ class CAPlugin(Plugin):
     async def subscribe_channel(
         self, pv: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
-        channel = CAChannel(pv, config)
+        maker = CAChannelMaker(pv, config)
         # A queue that contains a monitor update and the keyword with which
         # the channel's update_value function should be called.
         q: asyncio.Queue[Dict[str, AugmentedValue]] = asyncio.Queue()
@@ -207,12 +207,12 @@ class CAPlugin(Plugin):
             while len(first_channel_value) < 3:
                 update = await q.get()
                 first_channel_value.update(update)
-            yield channel.update_value(**first_channel_value)
+            yield maker.channel_from_update(**first_channel_value)
 
             # Handle all subsequent updates from both monitors.
             while True:
                 update = await q.get()
-                yield channel.update_value(**update)
+                yield maker.channel_from_update(**update)
         finally:
             value_monitor.close()
             meta_monitor.close()
