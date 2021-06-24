@@ -30,14 +30,14 @@ from coniql.types import (
 
 
 class CAChannelMaker:
-    def __init__(
-        self, name, config: ChannelConfig,
-    ):
+    def __init__(self, name, config: ChannelConfig, writeable: bool):
         self.name = name
         self.config = config
         self.cached_status: Optional[ChannelStatus] = None
         self.formatter = ChannelFormatter()
-        self.writeable = True
+        # No camonitor is capable of updating whether a channel is writeable,
+        # so this value is immutable.
+        self.writeable = writeable
 
     @staticmethod
     def _create_formatter(
@@ -62,7 +62,6 @@ class CAChannelMaker:
         self,
         time_value: Optional[AugmentedValue] = None,
         meta_value: Optional[AugmentedValue] = None,
-        writeable: Optional[bool] = None,
         connected: Optional[bool] = None,
     ) -> Channel:
         value = None
@@ -118,16 +117,6 @@ class CAChannelMaker:
                 userTag=0,
             )
 
-        if writeable is not None:
-            self.writeable = writeable
-            if status is not None:
-                status.mutable = writeable
-            elif self.cached_status is not None:
-                status = ChannelStatus(
-                    quality=self.cached_status.quality, message="", mutable=writeable,
-                )
-                self.cached_status = status
-
         if connected is not None:
             if not connected:
                 status = ChannelStatus(
@@ -168,10 +157,8 @@ class CAPlugin(Plugin):
             cainfo(pv, timeout=timeout),
         )
         # Put in channel id so converters can see it
-        maker = CAChannelMaker(pv, config)
-        return maker.channel_from_update(
-            time_value=time_value, meta_value=meta_value, writeable=info.write
-        )
+        maker = CAChannelMaker(pv, config, info.write)
+        return maker.channel_from_update(time_value=time_value, meta_value=meta_value)
 
     async def put_channels(
         self, pvs: List[str], values: List[PutValue], timeout: float
@@ -181,7 +168,6 @@ class CAPlugin(Plugin):
     async def subscribe_channel(
         self, pv: str, config: ChannelConfig
     ) -> AsyncIterator[Channel]:
-        maker = CAChannelMaker(pv, config)
         # A queue that contains a monitor update and the keyword with which
         # the channel's update_value function should be called.
         q: asyncio.Queue[Dict[str, AugmentedValue]] = asyncio.Queue()
@@ -207,16 +193,18 @@ class CAPlugin(Plugin):
             # A specific request required for whether the channel is writeable.
             # This will not be updated, so wait until a callback is received
             # before making the request when the channel is likely be connected.
+            writeable = True
             try:
                 info = await cainfo(pv)
-                first_channel_value["writeable"] = info.write
+                writeable = info.write
             except CANothing:
                 # Unlikely, but allow subscriptions to continue.
-                first_channel_value["writeable"] = True
+                pass
 
+            maker = CAChannelMaker(pv, config, writeable)
             # Do not continue until both monitors have returned.
             # Then the first Channel returned will be complete.
-            while len(first_channel_value) < 4:
+            while len(first_channel_value) < 3:
                 update = await q.get()
                 first_channel_value.update(update)
 
