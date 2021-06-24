@@ -192,15 +192,16 @@ class CAPlugin(Plugin):
         )
         try:
             first_update = await q.get()
-            yield channel.update_value(**first_update)
             # A specific request required for whether the channel is writeable.
             # This will not be updated, so wait until a callback is received
             # before making the request when the channel is likely be connected.
             try:
                 info = await cainfo(pv)
-                yield channel.update_value(writeable=info.write)
+                first_update["writeable"] = info.write
             except CANothing:
                 pass  # Allow subscriptions to continue
+
+            yield channel.update_value(**first_update)
             # Handle all updates from both monitors.
             while True:
                 update = await q.get()
