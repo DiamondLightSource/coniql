@@ -14,7 +14,7 @@ from aioca import (
 )
 from aioca.types import AugmentedValue
 
-from coniql.coniql_schema import Widget
+from coniql.coniql_schema import DisplayForm, Widget
 from coniql.device_config import ChannelConfig
 from coniql.plugin import Plugin, PutValue
 from coniql.types import (
@@ -39,22 +39,24 @@ class CAChannel:
         self.formatter = ChannelFormatter()
         self.writeable = True
 
-    def _create_formatter(self, value: AugmentedValue) -> None:
+    @staticmethod
+    def _create_formatter(
+        value: AugmentedValue, display_form: DisplayForm
+    ) -> ChannelFormatter:
+        formatter = ChannelFormatter()
         precision = getattr(value, "precision", 0)
         units = getattr(value, "units", "")
         if hasattr(value, "dtype"):
             # numpy array
-            self.formatter = ChannelFormatter.for_ndarray(
-                self.config.display_form, precision, units,
-            )
+            formatter = ChannelFormatter.for_ndarray(display_form, precision, units,)
         elif hasattr(value, "enums"):
             # enum
-            self.formatter = ChannelFormatter.for_enum(value.enums)
+            formatter = ChannelFormatter.for_enum(value.enums)
         elif isinstance(value, (int, float)):
             # number
-            self.formatter = ChannelFormatter.for_number(
-                self.config.display_form, precision, units,
-            )
+            formatter = ChannelFormatter.for_number(display_form, precision, units,)
+
+        return formatter
 
     def update_value(
         self,
@@ -68,7 +70,12 @@ class CAChannel:
         display = None
 
         if meta_value is not None:
-            self._create_formatter(meta_value)
+            self.formatter = CAChannel._create_formatter(
+                meta_value, self.config.display_form
+            )
+            # The value itself should not have changed for a meta_value update,
+            # but the formatter may have, so send an updated value.
+            value = ChannelValue(meta_value, self.formatter)
             display = ChannelDisplay(
                 description=self.name,
                 role="RW",
