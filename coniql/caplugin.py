@@ -63,13 +63,14 @@ class CAChannelMaker:
         time_value: Optional[AugmentedValue] = None,
         meta_value: Optional[AugmentedValue] = None,
         writeable: Optional[bool] = None,
+        connected: Optional[bool] = None,
     ) -> Channel:
         value = None
         time = None
         status = None
         display = None
 
-        if meta_value is not None:
+        if meta_value is not None and meta_value.ok:
             self.formatter = CAChannelMaker._create_formatter(
                 meta_value, self.config.display_form
             )
@@ -102,7 +103,7 @@ class CAChannelMaker:
                     max=meta_value.upper_warning_limit,
                 )
 
-        if time_value is not None:
+        if time_value is not None and time_value.ok:
             assert time_value.timestamp
             value = ChannelValue(time_value, self.formatter)
             quality = CHANNEL_QUALITY_MAP[time_value.severity]
@@ -124,6 +125,13 @@ class CAChannelMaker:
             elif self.cached_status is not None:
                 status = ChannelStatus(
                     quality=self.cached_status.quality, message="", mutable=writeable,
+                )
+                self.cached_status = status
+
+        if connected is not None:
+            if not connected:
+                status = ChannelStatus(
+                    quality="INVALID", message="", mutable=self.writeable,
                 )
                 self.cached_status = status
 
@@ -178,8 +186,12 @@ class CAPlugin(Plugin):
         # the channel's update_value function should be called.
         q: asyncio.Queue[Dict[str, AugmentedValue]] = asyncio.Queue()
         # Monitor PV for value and alarm changes with associated timestamp.
+        # Use this monitor also for notifications of disconnections.
         value_monitor = camonitor(
-            pv, lambda v: q.put({"time_value": v}), format=FORMAT_TIME,
+            pv,
+            lambda v: q.put({"time_value": v, "connected": v.ok}),
+            format=FORMAT_TIME,
+            notify_disconnect=True,
         )
         # Monitor PV only for property changes. For EPICS < 3.15 this monitor
         # will update once on connection but will not subsequently be triggered.
@@ -204,9 +216,10 @@ class CAPlugin(Plugin):
 
             # Do not continue until both monitors have returned.
             # Then the first Channel returned will be complete.
-            while len(first_channel_value) < 3:
+            while len(first_channel_value) < 4:
                 update = await q.get()
                 first_channel_value.update(update)
+
             yield maker.channel_from_update(**first_channel_value)
 
             # Handle all subsequent updates from both monitors.
