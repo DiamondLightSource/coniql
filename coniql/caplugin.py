@@ -62,7 +62,6 @@ class CAChannelMaker:
         self,
         time_value: Optional[AugmentedValue] = None,
         meta_value: Optional[AugmentedValue] = None,
-        connected: Optional[bool] = None,
     ) -> Channel:
         value = None
         time = None
@@ -102,23 +101,23 @@ class CAChannelMaker:
                     max=meta_value.upper_warning_limit,
                 )
 
-        if time_value is not None and time_value.ok:
-            assert time_value.timestamp
-            value = ChannelValue(time_value, self.formatter)
-            quality = CHANNEL_QUALITY_MAP[time_value.severity]
-            if self.cached_status is None or self.cached_status.quality != quality:
-                status = ChannelStatus(
-                    quality=quality, message="", mutable=self.writeable,
+        if time_value is not None:
+            if time_value.ok:
+                assert time_value.timestamp
+                value = ChannelValue(time_value, self.formatter)
+                quality = CHANNEL_QUALITY_MAP[time_value.severity]
+                if self.cached_status is None or self.cached_status.quality != quality:
+                    status = ChannelStatus(
+                        quality=quality, message="", mutable=self.writeable,
+                    )
+                    self.cached_status = status
+                time = ChannelTime(
+                    seconds=time_value.timestamp,
+                    nanoseconds=time_value.raw_stamp[1],
+                    userTag=0,
                 )
-                self.cached_status = status
-            time = ChannelTime(
-                seconds=time_value.timestamp,
-                nanoseconds=time_value.raw_stamp[1],
-                userTag=0,
-            )
-
-        if connected is not None:
-            if not connected:
+            else:
+                # An update where .ok is false indicates a disconnection.
                 status = ChannelStatus(
                     quality="INVALID", message="", mutable=self.writeable,
                 )
@@ -175,7 +174,7 @@ class CAPlugin(Plugin):
         # Use this monitor also for notifications of disconnections.
         value_monitor = camonitor(
             pv,
-            lambda v: q.put({"time_value": v, "connected": v.ok}),
+            lambda v: q.put({"time_value": v}),
             format=FORMAT_TIME,
             notify_disconnect=True,
         )
@@ -204,7 +203,7 @@ class CAPlugin(Plugin):
             maker = CAChannelMaker(pv, config, writeable)
             # Do not continue until both monitors have returned.
             # Then the first Channel returned will be complete.
-            while len(first_channel_value) < 3:
+            while len(first_channel_value) < 2:
                 update = await q.get()
                 first_channel_value.update(update)
 
