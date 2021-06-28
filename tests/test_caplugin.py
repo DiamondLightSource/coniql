@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from subprocess import Popen
+from typing import Any, Dict, List
 from unittest.mock import ANY
 
 import pytest
@@ -176,7 +177,7 @@ subscription {
 """
         % PV_PREFIX
     )
-    results = []
+    results: List[Dict[str, Any]] = []
     wait_for_ioc(ioc)
     async for result in engine.subscribe(query, context=make_context()):
         if not results:
