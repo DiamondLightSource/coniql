@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from subprocess import Popen
+from typing import Any, Dict, List
 from unittest.mock import ANY
 
 import pytest
@@ -156,6 +157,46 @@ query {
                 display=dict(choices=["m", "mm", "um", "nm"]),
             )
         )
+    )
+
+
+@pytest.mark.asyncio
+async def test_subscribe_disconnect(engine: Engine, ioc: Popen):
+    query = (
+        """
+subscription {
+    subscribeChannel(id: "ca://%slongout") {
+        value {
+            float
+        }
+        status {
+            quality
+        }
+    }
+}
+"""
+        % PV_PREFIX
+    )
+    results: List[Dict[str, Any]] = []
+    wait_for_ioc(ioc)
+    async for result in engine.subscribe(query, context=make_context()):
+        if not results:
+            # First response; now disconnect.
+            results.append(result)
+            ioc.communicate("exit()")
+        else:
+            # Second response; done.
+            results.append(result)
+            break
+
+    assert len(results) == 2
+    assert results[0] == dict(
+        data=dict(
+            subscribeChannel=dict(value=dict(float=42), status=dict(quality="VALID"))
+        )
+    )
+    assert results[1] == dict(
+        data=dict(subscribeChannel=dict(value=None, status=dict(quality="INVALID")))
     )
 
 
