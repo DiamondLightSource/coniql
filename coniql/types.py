@@ -96,7 +96,7 @@ class ChannelFormatter:
             return dict(
                 numberType=value.dtype.name.upper(),
                 # https://stackoverflow.com/a/6485943
-                base64=base64.b64encode(value).decode(),
+                base64=base64.b64encode(value.tobytes()).decode(),
             )
 
         # ndarray -> [str] uses given precision
