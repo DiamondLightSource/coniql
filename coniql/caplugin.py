@@ -155,7 +155,6 @@ class CAPlugin(Plugin):
             caget(pv, format=FORMAT_CTRL, timeout=timeout),
             cainfo(pv, timeout=timeout),
         )
-        # Put in channel id so converters can see it
         maker = CAChannelMaker(pv, config, info.write)
         return maker.channel_from_update(time_value=time_value, meta_value=meta_value)
 
