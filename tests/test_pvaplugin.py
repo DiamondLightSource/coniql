@@ -169,7 +169,7 @@ subscription {
         % PV_PREFIX
     )
     context = make_context()
-    expected = np.ndarray(0, dtype=np.int32)
+    expected = np.ndarray([0], dtype=np.int32)
     async for result in engine.subscribe(query, context=context):
         assert result == dict(
             data=dict(subscribeChannel=dict(value=dict(stringArray=ANY)))

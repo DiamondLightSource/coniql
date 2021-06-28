@@ -399,7 +399,7 @@ query {
                     stringArray=["%.5f" % x for x in np.zeros(10)],
                     base64Array=dict(
                         numberType="FLOAT64",
-                        base64=base64.b64encode(np.zeros(50)).decode(),
+                        base64=base64.b64encode(np.zeros(50).tobytes()).decode(),
                     ),
                 )
             )
