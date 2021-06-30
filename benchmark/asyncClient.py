@@ -46,7 +46,8 @@ import time
 from typing import List, cast
 
 import numpy as np
-import websockets
+from websockets.client import connect
+from websockets.typing import Subprotocol
 
 GQL_WS_SUBPROTOCOL = "graphql-ws"
 
@@ -73,9 +74,9 @@ def to_float_array(input_data: str) -> List[float]:
 
 
 async def subscribe(size: int, update_time: float, messages_to_test: int) -> float:
-    async with websockets.connect(
+    async with connect(
         TEST_SUBSCRIPTION_URL,
-        subprotocols=[cast(websockets.Subprotocol, GQL_WS_SUBPROTOCOL)],
+        subprotocols=[cast(Subprotocol, GQL_WS_SUBPROTOCOL)],
         max_size=2 ** 40,
         compression=None,
     ) as ws:

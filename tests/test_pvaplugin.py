@@ -151,7 +151,8 @@ mutation {
         )
     )
     now = time.time()
-    assert now - result["data"]["putChannels"][0]["time"]["seconds"] < 0.2
+    # Check that the timestamp is appropriately recent.
+    assert now - result["data"]["putChannels"][0]["time"]["seconds"] < 0.3
 
 
 @pytest.mark.asyncio
