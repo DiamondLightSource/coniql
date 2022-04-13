@@ -1,24 +1,24 @@
 API
 ===
 
-.. automodule:: dls_python3_skeleton
+.. automodule:: coniql
 
-    ``dls_python3_skeleton``
+    ``coniql``
     -----------------------------------
 
-This is the internal API reference for dls_python3_skeleton
+This is the internal API reference for coniql
 
 You can mix verbose text with docstring and signature extraction by
 using ``autoclass`` and ``autofunction`` directives instead of
 ``automodule`` below.
 
-.. data:: dls_python3_skeleton.__version__
+.. data:: coniql.__version__
     :type: str
 
     Version number as calculated by https://github.com/dls-controls/versiongit
 
-.. automodule:: dls_python3_skeleton.hello
+.. automodule:: coniql.hello
     :members:
 
-    ``dls_python3_skeleton.hello``
+    ``coniql.hello``
     -----------------------------------------
