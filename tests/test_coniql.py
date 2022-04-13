@@ -1,5 +1,7 @@
 import asyncio
 import base64
+import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -7,6 +9,7 @@ import numpy as np
 import pytest
 from tartiflette import Engine
 
+from coniql import __version__
 from coniql.app import make_context
 
 TEST_DIR = Path(__file__).resolve().parent
@@ -416,9 +419,15 @@ query {
                     string=str(value),
                     stringArray=["%.5f" % x for x in value[:10]],
                     base64Array=dict(
-                        numberType="FLOAT64", base64=base64.b64encode(value).decode(),
+                        numberType="FLOAT64",
+                        base64=base64.b64encode(value).decode(),
                     ),
                 )
             )
         )
     )
+
+
+def test_cli_version():
+    cmd = [sys.executable, "-m", "coniql", "--version"]
+    assert subprocess.check_output(cmd).decode().strip() == __version__

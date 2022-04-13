@@ -1,61 +1,40 @@
 coniql
 ======
 
-|build_status| |coverage| |pypi_version| |readthedocs|
+|code_ci| |docs_ci| |coverage| |pypi_version| |license|
 
 Control system interface in GraphQL with plugins for EPICS Channel Access and PV Access.
 Supports a web interface to get, put and monitor the value of PVs.
 
-Documentation
--------------
+============== ==============================================================
+PyPI           ``pip install coniql``
+Source code    https://github.com/dls-controls/coniql
+Documentation  https://dls-controls.github.io/coniql
+Releases       https://github.com/dls-controls/coniql/releases
+============== ==============================================================
 
-Full documentation is available at http://coniql.readthedocs.io
+.. |code_ci| image:: https://github.com/dls-controls/coniql/workflows/Code%20CI/badge.svg?branch=master
+    :target: https://github.com/dls-controls/coniql/actions?query=workflow%3A%22Code+CI%22
+    :alt: Code CI
 
-Source Code
------------
+.. |docs_ci| image:: https://github.com/dls-controls/coniql/workflows/Docs%20CI/badge.svg?branch=master
+    :target: https://github.com/dls-controls/coniql/actions?query=workflow%3A%22Docs+CI%22
+    :alt: Docs CI
 
-Available from http://github.com/dls-controls/coniql
-
-Installation
-------------
-
-To install the latest release, type::
-
-    pip install coniql
-
-or::
-
-    git clone http://github.com/dls-controls/coniql
-    pipenv install
-
-Contributing
-------------
-
-See `CONTRIBUTING`_
-
-License
--------
-APACHE License. (see `LICENSE`_)
-
-
-.. |build_status| image:: https://travis-ci.com/dls-controls/coniql.svg?branch=master
-    :target: https://travis-ci.com/dls-controls/coniql
-    :alt: Build Status
-
-.. |coverage| image:: https://coveralls.io/repos/github/dls-controls/coniql/badge.svg?branch=master
-    :target: https://coveralls.io/github/dls-controls/coniql?branch=master
+.. |coverage| image:: https://codecov.io/gh/dls-controls/coniql/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/dls-controls/coniql
     :alt: Test Coverage
 
-.. |pypi_version| image:: https://badge.fury.io/py/coniql.svg
-    :target: https://badge.fury.io/py/coniql
+.. |pypi_version| image:: https://img.shields.io/pypi/v/coniql.svg
+    :target: https://pypi.org/project/coniql
     :alt: Latest PyPI version
 
-.. |readthedocs| image:: https://readthedocs.org/projects/coniql/badge/?version=latest
-    :target: http://coniql.readthedocs.io
-    :alt: Documentation
+.. |license| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
+    :target: https://opensource.org/licenses/Apache-2.0
+    :alt: Apache License
 
-.. _CONTRIBUTING:
-    https://github.com/dls-controls/coniql/blob/master/CONTRIBUTING.rst
+..
+    Anything below this line is used when viewing README.rst and will be replaced
+    when included in index.rst
 
-.. _LICENSE:
-    https://github.com/dls-controls/coniql/blob/master/LICENSE
+See https://dls-controls.github.io/coniql for more detailed documentation.
