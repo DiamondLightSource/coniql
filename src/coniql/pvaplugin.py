@@ -165,7 +165,10 @@ class EnumPVAChannel(PVAChannel):
         v_value = self.value.value
         if self.last_channel is None or v_value.changed("choices"):
             display = ChannelDisplay(
-                description="", role="RW", widget=Widget.COMBO, choices=v_value.choices,
+                description="",
+                role="RW",
+                widget=Widget.COMBO,
+                choices=v_value.choices,
             )
             update_display(display, self.config)
         return display

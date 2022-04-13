@@ -48,13 +48,21 @@ class CAChannelMaker:
         units = getattr(value, "units", "")
         if hasattr(value, "dtype"):
             # numpy array
-            formatter = ChannelFormatter.for_ndarray(display_form, precision, units,)
+            formatter = ChannelFormatter.for_ndarray(
+                display_form,
+                precision,
+                units,
+            )
         elif hasattr(value, "enums"):
             # enum
             formatter = ChannelFormatter.for_enum(value.enums)
         elif isinstance(value, (int, float)):
             # number
-            formatter = ChannelFormatter.for_number(display_form, precision, units,)
+            formatter = ChannelFormatter.for_number(
+                display_form,
+                precision,
+                units,
+            )
 
         return formatter
 
@@ -88,13 +96,16 @@ class CAChannelMaker:
             if hasattr(meta_value, "units"):
                 display.units = meta_value.units
                 display.controlRange = Range(
-                    min=meta_value.lower_ctrl_limit, max=meta_value.upper_ctrl_limit,
+                    min=meta_value.lower_ctrl_limit,
+                    max=meta_value.upper_ctrl_limit,
                 )
                 display.displayRange = Range(
-                    min=meta_value.lower_disp_limit, max=meta_value.upper_disp_limit,
+                    min=meta_value.lower_disp_limit,
+                    max=meta_value.upper_disp_limit,
                 )
                 display.alarmRange = Range(
-                    min=meta_value.lower_alarm_limit, max=meta_value.upper_alarm_limit,
+                    min=meta_value.lower_alarm_limit,
+                    max=meta_value.upper_alarm_limit,
                 )
                 display.warningRange = Range(
                     min=meta_value.lower_warning_limit,
@@ -108,7 +119,9 @@ class CAChannelMaker:
                 quality = CHANNEL_QUALITY_MAP[time_value.severity]
                 if self.cached_status is None or self.cached_status.quality != quality:
                     status = ChannelStatus(
-                        quality=quality, message="", mutable=self.writeable,
+                        quality=quality,
+                        message="",
+                        mutable=self.writeable,
                     )
                     self.cached_status = status
                 time = ChannelTime(
@@ -119,7 +132,9 @@ class CAChannelMaker:
             else:
                 # An update where .ok is false indicates a disconnection.
                 status = ChannelStatus(
-                    quality="INVALID", message="", mutable=self.writeable,
+                    quality="INVALID",
+                    message="",
+                    mutable=self.writeable,
                 )
                 self.cached_status = status
 

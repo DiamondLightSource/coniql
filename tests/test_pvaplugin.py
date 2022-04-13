@@ -78,7 +78,8 @@ query {
     assert result == dict(
         data=dict(
             getChannel=dict(
-                value=dict(float=2.0, string="2.000"), display=dict(widget="TEXTINPUT"),
+                value=dict(float=2.0, string="2.000"),
+                display=dict(widget="TEXTINPUT"),
             ),
         )
     )
