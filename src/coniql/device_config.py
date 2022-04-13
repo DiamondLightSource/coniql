@@ -41,16 +41,19 @@ class WithLabel(BaseModel):
 class ChannelConfig(WithLabel):
     type: str = Field("ChannelConfig", const=True)
     read_pv: str = Field(
-        None, description="The pv to get from, None means not readable (an action)",
+        None,
+        description="The pv to get from, None means not readable (an action)",
     )
     write_pv: str = Field(
-        None, description="The pv to put to, None means not writeable (a readback)",
+        None,
+        description="The pv to put to, None means not writeable (a readback)",
     )
     # The following are None to allow multiple references to channels
     widget: Widget = Field(None, description="Which widget to use for the Channel")
     description: str = Field(None, description="Description of what the Channel does")
     display_form: DisplayForm = Field(
-        None, description="How should numeric values be displayed",
+        None,
+        description="How should numeric values be displayed",
     )
 
 
@@ -58,7 +61,8 @@ class DeviceInstance(WithLabel):
     type: str = Field("DeviceInstance", const=True)
     id: str = Field(None, description="The id of this device, None means use name")
     file: Path = Field(
-        ..., description="The filename to read device definition (ending .coniql.yaml)",
+        ...,
+        description="The filename to read device definition (ending .coniql.yaml)",
     )
     macros: Dict[str, str] = Field(
         {}, description="The macros to substitute when instantiating device"
@@ -89,7 +93,7 @@ class DeviceConfig(BaseModel):
         try:
             text = cls._cache[abspath]
         except KeyError:
-            text = open(path).read()
+            text = path.read_text()
             cls._cache[abspath] = text
         if macros:
             for k, v in macros.items():
