@@ -46,3 +46,7 @@ record (mbbi, "$(P)enum") {
     field(VAL, "3")
     field(PINI, "YES")
 }
+
+record(ao, "$(P)nan") {
+  field(VAL, "NaN")
+}

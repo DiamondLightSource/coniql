@@ -1,4 +1,5 @@
 import json
+import math
 import random
 import string
 import subprocess
@@ -11,7 +12,7 @@ from typing import Any, Dict, List
 from unittest.mock import ANY
 
 import pytest
-from aioca import purge_channel_caches
+from aioca import caget, purge_channel_caches
 from tartiflette import Engine
 
 from coniql.app import make_context
@@ -131,6 +132,26 @@ query {
     )
     result = await engine.execute(query, context=make_context())
     assert result == dict(data=dict(getChannel=dict(value=dict(string="longout"))))
+
+
+@pytest.mark.asyncio
+async def test_get_nan_pv(engine: Engine, ioc: Popen):
+    query = (
+        """
+query {
+    getChannel(id: "ca://%snan") {
+        value {
+            float
+        }
+    }
+}
+"""
+        % PV_PREFIX
+    )
+    val = await caget(PV_PREFIX + "nan")
+    assert math.isnan(val)
+    result = await engine.execute(query, context=make_context())
+    assert result == dict(data=dict(getChannel=dict(value=dict(float=None))))
 
 
 @pytest.mark.asyncio
