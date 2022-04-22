@@ -11,6 +11,7 @@ from typing import Any, Dict, List
 from unittest.mock import ANY
 
 import pytest
+from aioca import purge_channel_caches
 from tartiflette import Engine
 
 from coniql.app import make_context
@@ -38,6 +39,7 @@ def ioc():
         text=True,
     )
     yield process
+    purge_channel_caches()
     try:
         process.communicate("exit()")
     except ValueError:
