@@ -13,6 +13,8 @@ from coniql.plugin import PluginStore
 from coniql.pvaplugin import PVAPlugin
 from coniql.simplugin import SimPlugin
 
+from . import __version__
+
 
 async def error_coercer(exception: Exception, error: Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(exception, TartifletteError):
@@ -49,6 +51,7 @@ def main(args=None) -> None:
     Entry point of the application.
     """
     parser = ArgumentParser(description="CONtrol system Interface over graphQL")
+    parser.add_argument("--version", action="version", version=__version__)
     parser.add_argument(
         "config_paths",
         metavar="PATH",
