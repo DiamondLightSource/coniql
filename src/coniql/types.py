@@ -54,8 +54,9 @@ def make_number_format_string(
     return "{:.%df}" % precision
 
 
-def return_unchanged(value):
-    return value
+def return_if_number(value):
+    if math.isfinite(value):
+        return value
 
 
 def return_none(*args, **kwargs):
@@ -77,7 +78,7 @@ class ChannelFormatter:
             to_string=number_format_string.format,
             to_string_with_units=units_format_string.format,
             # number -> float just returns the number
-            to_float=return_unchanged,
+            to_float=return_if_number,
         )
         return formatter
 
