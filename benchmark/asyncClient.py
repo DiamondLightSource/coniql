@@ -77,7 +77,7 @@ async def subscribe(size: int, update_time: float, messages_to_test: int) -> flo
     async with connect(
         TEST_SUBSCRIPTION_URL,
         subprotocols=[cast(Subprotocol, GQL_WS_SUBPROTOCOL)],
-        max_size=2 ** 40,
+        max_size=2**40,
         compression=None,
     ) as ws:
         print("--- ssim://sinewavesimple ---")
