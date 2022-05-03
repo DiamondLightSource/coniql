@@ -167,7 +167,7 @@ PVA Plugin
 ----------
 
 Coniql can also provide its values over pvAccess. To try this out you will need a
-working installation of `<EPICS 7 https://epics.anl.gov/base/R7-0/index.php>`_. You can
+working installation of `EPICS 7 <https://epics.anl.gov/base/R7-0/index.php>`_. You can
 then start a soft IOC, or add the PVA plugin to IOCs to expose PVs. The PVs work
 like CA, but have the prefix ``pva://``
 
