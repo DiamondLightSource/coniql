@@ -1,11 +1,28 @@
 from enum import Enum, auto
-from typing import List
+from typing import List, Optional
 
+import base64
 import strawberry
 from strawberry.types import Info
 
 import coniql.resolvers as resolver
 from coniql.types import Channel, ChannelValue
+
+
+
+# Numeric type for arrays of numbers
+@strawberry.enum
+class NumberType(Enum):
+    INT8 = auto()
+    UINT8 = auto()
+    INT16 = auto()
+    UINT16 = auto()
+    INT32 = auto()
+    UINT32 = auto()
+    INT64 = auto()
+    UINT64 = auto()
+    FLOAT32 = auto()
+    FLOAT64 = auto()
 
 
 # Schema
@@ -33,6 +50,16 @@ class ChannelQuality(Enum):
     CHANGING = auto()
 
 
+# Base-64 encodable numeric array
+@strawberry.type
+class Base64Array:
+    # Type of the native array
+    numberType: NumberType
+
+    # Base64 encoded version of the array
+    base64: str
+
+
 @strawberry.type
 class ChannelValue:
     # "The current value formatted as a string"
@@ -43,8 +70,14 @@ class ChannelValue:
 
     # "The current value formatted as a Float, Null if not expressable"
     @strawberry.field
-    def float(self) -> float:  # = strawberry.field(resolver=channel_value_float)
+    def float(self) -> Optional[float]:
         return resolver.channel_value_float(self)
+    @strawberry.field
+    def string(self, units: bool = False) -> str:
+        return resolver.channel_value_string(self, units)
+    @strawberry.field
+    async def base64Array(self, length: int = 0) -> Optional[Base64Array]:
+        return await resolver.channel_value_base64_array(self, length)
 
 
 @strawberry.type
@@ -82,7 +115,7 @@ class Channel:
 
     # "The current value of this channel"
     @strawberry.field
-    def value(self) -> ChannelValue:
+    def value(self) -> Optional[ChannelValue]:
         return resolver.channel_value(self)
 
     # "When was the value last updated"

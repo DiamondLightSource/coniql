@@ -18,6 +18,11 @@ from coniql.types import (
     ChannelValue,
 )
 
+class dotdict(dict):
+    """dot.notation access to dictionary attributes"""
+    __getattr__ = dict.get
+    __setattr__ = dict.__setitem__
+    __delattr__ = dict.__delitem__
 
 class DeferredChannel:
     id: str
@@ -132,13 +137,14 @@ async def put_channel(
     return channels
 
 
-async def subscribe_channel(id, ctx) -> AsyncIterator[Any]:
+async def subscribe_channel(id, ctx) -> AsyncIterator[Dict[str, Any]]:
     store: PluginStore = ctx["store"]
     plugin, config, channel_id = store.plugin_config_id(id)
     # Remove the transport prefix from the read pv
     pv = store.transport_pv(config.read_pv)[1]
     async for channel in plugin.subscribe_channel(pv, config):
         yield SubscribeChannel(channel_id, channel)
+        #yield dict(subscribeChannel=SubscribeChannel(channel_id, channel))
 
 
 # @Resolver("Device.children")
@@ -231,9 +237,8 @@ async def channel_time_datetime(
     return datetime.datetime.fromtimestamp(parent.seconds)
 
 
-# @Resolver("ChannelValue.string")
-async def channel_value_string(parent: ChannelValue, args, ctx, info) -> str:
-    if args["units"]:
+async def channel_value_string(parent: ChannelValue, units) -> str:
+    if units:
         return parent.formatter.to_string_with_units(parent.value)
     else:
         return parent.formatter.to_string(parent.value)
@@ -243,11 +248,10 @@ async def channel_value_float(parent: ChannelValue) -> Optional[float]:
     return parent.formatter.to_float(parent.value)
 
 
-# @Resolver("ChannelValue.base64Array")
 async def channel_value_base64_array(
-    parent: ChannelValue, args, ctx, info
+    parent: ChannelValue, length: int
 ) -> Optional[Dict[str, str]]:
-    return parent.formatter.to_base64_array(parent.value, args["length"])
+    return dotdict(parent.formatter.to_base64_array(parent.value, length))
 
 
 # @Resolver("ChannelValue.stringArray")
