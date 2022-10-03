@@ -206,18 +206,14 @@ async def channel_value(parent: DeferredChannel) -> Optional[ChannelValue]:
     return channel.get_value()
 
 
-# @Resolver("Channel.status")
 async def channel_status(
-    parent: DeferredChannel, args, ctx, info
-) -> Optional[ChannelStatus]:
+    parent: DeferredChannel) -> Optional[ChannelStatus]:
     channel = await parent.get_channel()
     return channel.get_status()
 
 
-# @Resolver("Channel.display")
 async def channel_display(
-    parent: DeferredChannel, args, ctx, info
-) -> Optional[ChannelDisplay]:
+    parent: DeferredChannel) -> Optional[ChannelDisplay]:
     channel = await parent.get_channel()
     return channel.get_display()
 
@@ -251,7 +247,11 @@ async def channel_value_float(parent: ChannelValue) -> Optional[float]:
 async def channel_value_base64_array(
     parent: ChannelValue, length: int
 ) -> Optional[Dict[str, str]]:
-    return dotdict(parent.formatter.to_base64_array(parent.value, length))
+    res = parent.formatter.to_base64_array(parent.value, length)
+    if res is not None:
+        return dotdict(parent.formatter.to_base64_array(parent.value, length))
+    else:
+        return None
 
 
 # @Resolver("ChannelValue.stringArray")

@@ -13,17 +13,65 @@ from coniql.types import Channel, ChannelValue
 # Numeric type for arrays of numbers
 @strawberry.enum
 class NumberType(Enum):
-    INT8 = auto()
-    UINT8 = auto()
-    INT16 = auto()
-    UINT16 = auto()
-    INT32 = auto()
-    UINT32 = auto()
-    INT64 = auto()
-    UINT64 = auto()
-    FLOAT32 = auto()
-    FLOAT64 = auto()
+    INT8 = "INT8"
+    UINT8 = "UINT8"
+    INT16 = "INT16"
+    UINT16 = "UINT16"
+    INT32 = "INT32"
+    UINT32 = "UINT32"
+    INT64 = "INT64"
+    UINT64 = "UINT64"
+    FLOAT32 = "FLOAT32"
+    FLOAT64 = "FLOAT64"
 
+#What access role has the Channel
+@strawberry.enum
+class ChannelRole(Enum):
+    RO = "RO"
+    WO = "WO"
+    RW = "RW"
+
+#Widget that should be used to display a Channel
+@strawberry.enum
+class Widget(Enum):
+    # "Editable text input"
+    TEXTINPUT = "TEXTINPUT"
+    # "Read-only text display"
+    TEXTUPDATE = "TEXTUPDATE"
+    # "Multiline read-only text display"
+    MULTILINETEXTUPDATE = "MULTILINETEXTUPDATE"
+    # "Read-only LED indicator"
+    LED = "LED"
+    # "Editable combo-box style menu for selecting between fixed choices"
+    COMBO = "COMBO"
+    # "Editable check box"
+    CHECKBOX = "CHECKBOX"
+    # "Editable progress type bar"
+    BAR = "BAR"
+    # "Clickable button to send default value to Channel"
+    BUTTON = "BUTTON"
+    # "X-axis for lines on a graph. Only valid within a Group with widget Plot"
+    PLOTX = "PLOTX"
+    # "Y-axis for a line on a graph. Only valid within a Group with widget Plot"
+    PLOTY = "PLOTY"
+
+# Instructions for how a number should be formatted for display
+@strawberry.enum
+class DisplayForm(Enum):
+    # "Use the default representation from value"
+    DEFAULT = "DEFAULT"
+    # "Force string representation, most useful for array of bytes"
+    STRING = "STRING"
+    # "Binary, precision determines number of binary digits"
+    BINARY = "BINARY"
+    # "Decimal, precision determines number of digits after decimal point"
+    DECIMAL = "DECIMAL"
+    # "Hexadecimal, precision determines number of hex digits"
+    HEX = "HEX"
+    # "Exponential, precision determines number of digits after decimal point"
+    EXPONENTIAL = "EXPONENTIAL"
+    # "Exponential where exponent is multiple of 3, precision determines number of digits after decimal point"
+    ENGINEERING = "ENGINEERING"
 
 # Schema
 @strawberry.type
@@ -37,17 +85,17 @@ class Range:
 @strawberry.enum
 class ChannelQuality(Enum):
     # "Value is known, valid, nothing is wrong"
-    VALID = auto()
+    VALID = "VALID"
     # "Value is known, valid, but is in the range generating a warning"
-    WARNING = auto()
+    WARNING = "WARNING"
     # "Value is known, valid, but is in the range generating an alarm condition"
-    ALARM = auto()
+    ALARM = "ALARM"
     # "Value is known, but not valid, e.g. a RW before its first put"
-    INVALID = auto()
+    INVALID = "INVALID"
     # "The value is unknown, for instance because the channel is disconnected"
-    UNDEFINED = auto()
+    UNDEFINED = "UNDEFINED"
     # "The Channel is currently in the process of being changed"
-    CHANGING = auto()
+    CHANGING = "CHANGING"
 
 
 # Base-64 encodable numeric array
@@ -106,6 +154,26 @@ class ChannelTime:
 class ChannelDisplay:
     # "A human readable possibly multi-line description for a tooltip"
     description: str
+    # "What access role does the Channel have"
+    role: ChannelRole
+    # "Default widget to display this Channel"
+    widget: Optional[Widget]
+    # "If numeric, the range the put value should be within"
+    controlRange: Optional[Range]
+    # "If numeric, the range the current value should be within"
+    displayRange: Optional[Range]
+    # "If numeric, the range outside of which an alarm will be produced"
+    alarmRange: Optional[Range]
+    # "If numeric, the range outside of which a warning will be produced"
+    warningRange: Optional[Range]
+    # "If numeric, the physical units for the value field"
+    units: Optional[str]
+    # "If numeric, the number of decimal places to display"
+    precision: Optional[int]
+    # "If numeric, how should value be displayed"
+    form: Optional[DisplayForm]
+    # "If given, the value should be one of these choices"
+    choices: Optional[List[str]]
 
 
 @strawberry.type
@@ -121,9 +189,13 @@ class Channel:
     # "When was the value last updated"
     time: ChannelTime
     # "Status of the connection, whether is is mutable, and alarm info"
-    status: ChannelStatus
+    @strawberry.field
+    def status(self) -> ChannelStatus:
+        return resolver.channel_status(self)
     # "How should the Channel be displayed"
-    display: ChannelDisplay
+    @strawberry.field
+    def display(self) -> ChannelDisplay:
+        return resolver.channel_display(self)
 
 
 @strawberry.type
