@@ -1,3 +1,4 @@
+import datetime
 from enum import Enum
 from typing import List, Optional
 
@@ -114,17 +115,23 @@ class Base64Array:
 class ChannelValue:
     # The current value formatted as a Float, Null if not expressable
     @strawberry.field
-    def float(self) -> Optional[float]:
-        return resolver.channel_value_float(self)
+    async def float(self) -> Optional[float]:
+        return await resolver.channel_value_float(self)
 
     # The current value formatted as a string
     @strawberry.field
-    def string(self, units: bool = False) -> str:
-        return resolver.channel_value_string(self, units)
+    async def string(self, units: bool = False) -> str:
+        return await resolver.channel_value_string(self, units)
 
+    # Array of base64 encoded numbers, Null if not expressable
     @strawberry.field
     async def base64Array(self, length: int = 0) -> Optional[Base64Array]:
         return await resolver.channel_value_base64_array(self, length)
+
+    # Array of strings, Null if not expressable
+    @strawberry.field
+    async def stringArray(self, length: int = 0) -> Optional[List[str]]:
+        return await resolver.channel_value_string_array(self, length)
 
 
 @strawberry.type
@@ -145,8 +152,11 @@ class ChannelTime:
     nanoseconds: int
     # An integer value whose interpretation is deliberately undefined
     userTag: int
+
     # The timestamp as a datetime object
-    # datetime: datetime
+    @strawberry.field
+    async def datetime(self) -> datetime.datetime:
+        return await resolver.channel_time_datetime(self)
 
 
 @strawberry.type
@@ -182,21 +192,23 @@ class Channel:
 
     # The current value of this channel
     @strawberry.field
-    def value(self) -> Optional[ChannelValue]:
-        return resolver.channel_value(self)
+    async def value(self) -> Optional[ChannelValue]:
+        return await resolver.channel_value(self)
 
     # When was the value last updated
-    time: ChannelTime
+    @strawberry.field
+    async def time(self) -> Optional[ChannelTime]:
+        return await resolver.channel_time(self)
 
     # Status of the connection, whether is is mutable, and alarm info
     @strawberry.field
-    def status(self) -> ChannelStatus:
-        return resolver.channel_status(self)
+    async def status(self) -> Optional[ChannelStatus]:
+        return await resolver.channel_status(self)
 
     # How should the Channel be displayed
     @strawberry.field
-    def display(self) -> ChannelDisplay:
-        return resolver.channel_display(self)
+    async def display(self) -> Optional[ChannelDisplay]:
+        return await resolver.channel_display(self)
 
 
 @strawberry.type

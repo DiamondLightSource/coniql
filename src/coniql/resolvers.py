@@ -219,18 +219,12 @@ async def channel_display(parent: DeferredChannel) -> Optional[ChannelDisplay]:
     return channel.get_display()
 
 
-# @Resolver("Channel.time")
-async def channel_time(
-    parent: DeferredChannel, args, ctx, info
-) -> Optional[ChannelTime]:
+async def channel_time(parent: DeferredChannel) -> Optional[ChannelTime]:
     channel = await parent.get_channel()
     return channel.get_time()
 
 
-# @Resolver("ChannelTime.datetime")
-async def channel_time_datetime(
-    parent: ChannelTime, args, ctx, info
-) -> datetime.datetime:
+async def channel_time_datetime(parent: ChannelTime) -> datetime.datetime:
     return datetime.datetime.fromtimestamp(parent.seconds)
 
 
@@ -255,8 +249,7 @@ async def channel_value_base64_array(
         return None
 
 
-# @Resolver("ChannelValue.stringArray")
 async def channel_value_string_array(
-    parent: ChannelValue, args, ctx, info
+    parent: ChannelValue, length: int
 ) -> Optional[List[str]]:
-    return parent.formatter.to_string_array(parent.value, args["length"])
+    return parent.formatter.to_string_array(parent.value, length)
