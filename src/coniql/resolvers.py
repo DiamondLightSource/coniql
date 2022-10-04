@@ -18,11 +18,14 @@ from coniql.types import (
     ChannelValue,
 )
 
+
 class dotdict(dict):
     """dot.notation access to dictionary attributes"""
+
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
+
 
 class DeferredChannel:
     id: str
@@ -144,7 +147,7 @@ async def subscribe_channel(id, ctx) -> AsyncIterator[Dict[str, Any]]:
     pv = store.transport_pv(config.read_pv)[1]
     async for channel in plugin.subscribe_channel(pv, config):
         yield SubscribeChannel(channel_id, channel)
-        #yield dict(subscribeChannel=SubscribeChannel(channel_id, channel))
+        # yield dict(subscribeChannel=SubscribeChannel(channel_id, channel))
 
 
 # @Resolver("Device.children")
@@ -206,14 +209,12 @@ async def channel_value(parent: DeferredChannel) -> Optional[ChannelValue]:
     return channel.get_value()
 
 
-async def channel_status(
-    parent: DeferredChannel) -> Optional[ChannelStatus]:
+async def channel_status(parent: DeferredChannel) -> Optional[ChannelStatus]:
     channel = await parent.get_channel()
     return channel.get_status()
 
 
-async def channel_display(
-    parent: DeferredChannel) -> Optional[ChannelDisplay]:
+async def channel_display(parent: DeferredChannel) -> Optional[ChannelDisplay]:
     channel = await parent.get_channel()
     return channel.get_display()
 
