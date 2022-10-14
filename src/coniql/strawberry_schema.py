@@ -120,7 +120,7 @@ class ChannelValue:
 
     # The current value formatted as a string
     @strawberry.field
-    async def string(self, units: bool = False) -> str:
+    async def string(self, units: bool = False) -> Optional[str]:
         return await resolver.channel_value_string(self, units)
 
     # Array of base64 encoded numbers, Null if not expressable
