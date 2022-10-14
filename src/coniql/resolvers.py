@@ -2,13 +2,12 @@ import asyncio
 import base64
 import datetime
 import json
-from fnmatch import fnmatch
 from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 
 import numpy as np
 
 from coniql.coniql_schema import DisplayForm
-from coniql.device_config import ChannelConfig, Child, DeviceInstance, Group, walk
+from coniql.device_config import ChannelConfig, Child, DeviceInstance, Group
 from coniql.plugin import PluginStore
 from coniql.types import (
     Channel,
@@ -71,18 +70,6 @@ async def get_channel(id, timeout, ctx) -> DeferredChannel:
     return GetChannel(id, timeout, ctx["store"])
 
 
-# @Resolver("Query.getChannels")
-async def get_channels(
-    parent, args: Dict[str, Any], ctx, info
-) -> Sequence[DeferredChannel]:
-    store: PluginStore = ctx["store"]
-    channels = []
-    for channel_id in store.channels:
-        if fnmatch(channel_id, args["filter"]):
-            channels.append(GetChannel(channel_id, args["timeout"], store))
-    return channels
-
-
 # @Resolver("Query.getChannelConfig")
 async def get_channel_config(parent, args: Dict[str, Any], ctx, info) -> ChannelConfig:
     store: PluginStore = ctx["store"]
@@ -95,16 +82,6 @@ async def get_device(parent, args: Dict[str, Any], ctx, info) -> Dict[str, Any]:
     store: PluginStore = ctx["store"]
     device_config = store.devices[args["id"]]
     return dict(id=args["id"], children=device_config.children)
-
-
-# @Resolver("Query.getDevices")
-async def get_devices(parent, args: Dict[str, Any], ctx, info) -> List[Dict[str, Any]]:
-    store: PluginStore = ctx["store"]
-    devices = []
-    for device_id, device_config in store.devices.items():
-        if fnmatch(device_id, args["filter"]):
-            devices.append(dict(id=device_id, children=device_config.children))
-    return devices
 
 
 async def put_channel(
@@ -148,14 +125,6 @@ async def subscribe_channel(id, ctx) -> AsyncIterator[Dict[str, Any]]:
     async for channel in plugin.subscribe_channel(pv, config):
         yield SubscribeChannel(channel_id, channel)
         # yield dict(subscribeChannel=SubscribeChannel(channel_id, channel))
-
-
-# @Resolver("Device.children")
-async def device_children(parent: Dict[str, Any], args, ctx, info) -> List:
-    children = parent["children"]
-    if args["flatten"]:
-        children = list(walk(children))
-    return children
 
 
 # @Resolver("NamedChild.label")
