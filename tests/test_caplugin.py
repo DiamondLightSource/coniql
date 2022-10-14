@@ -13,9 +13,8 @@ from unittest.mock import ANY
 
 import pytest
 from aioca import caget, purge_channel_caches
-from tartiflette import Engine
 
-from coniql.app import make_context
+from coniql.app import create_schema, make_context
 
 SOFT_RECORDS = str(Path(__file__).parent / "soft_records.db")
 
@@ -48,6 +47,16 @@ def ioc():
         pass
 
 
+@pytest.fixture
+def schema():
+    return create_schema(False)
+
+
+@pytest.fixture
+def context():
+    return dict(ctx=make_context())
+
+
 def wait_for_ioc(ioc):
     while True:
         line = ioc.stdout.readline()
@@ -56,7 +65,7 @@ def wait_for_ioc(ioc):
 
 
 @pytest.mark.asyncio
-async def test_get_int_pv(engine: Engine, ioc: Popen):
+async def test_get_int_pv(ioc: Popen, schema, context):
     query = (
         """
 query {
@@ -95,29 +104,28 @@ query {
 """
         % PV_PREFIX
     )
-    result = await engine.execute(query, context=make_context())
-    assert result == dict(
-        data=dict(
-            getChannel=dict(
-                value=dict(float=42.0, string="42"),
-                display=dict(
-                    widget="TEXTINPUT",
-                    controlRange=dict(min=10.0, max=90.0),
-                    displayRange=dict(min=0.0, max=100.0),
-                    alarmRange=dict(min=2.0, max=98.0),
-                    warningRange=dict(min=5.0, max=96.0),
-                    units="",
-                    precision=None,
-                    form=None,
-                ),
-                status=dict(quality="VALID"),
+    result = await schema.execute(query, context_value=context)
+    assert result.errors is None
+    assert result.data == dict(
+        getChannel=dict(
+            value=dict(float=42.0, string="42"),
+            display=dict(
+                widget="TEXTINPUT",
+                controlRange=dict(min=10.0, max=90.0),
+                displayRange=dict(min=0.0, max=100.0),
+                alarmRange=dict(min=2.0, max=98.0),
+                warningRange=dict(min=5.0, max=96.0),
+                units="",
+                precision=None,
+                form=None,
             ),
-        )
+            status=dict(quality="VALID"),
+        ),
     )
 
 
 @pytest.mark.asyncio
-async def test_get_str_pv(engine: Engine, ioc: Popen):
+async def test_get_str_pv(ioc: Popen, schema, context):
     query = (
         """
 query {
@@ -130,12 +138,13 @@ query {
 """
         % PV_PREFIX
     )
-    result = await engine.execute(query, context=make_context())
-    assert result == dict(data=dict(getChannel=dict(value=dict(string="longout"))))
+    result = await schema.execute(query, context_value=context)
+    assert result.errors is None
+    assert result.data == dict(getChannel=dict(value=dict(string="longout")))
 
 
 @pytest.mark.asyncio
-async def test_get_nan_pv(engine: Engine, ioc: Popen):
+async def test_get_nan_pv(ioc: Popen, schema, context):
     query = (
         """
 query {
@@ -150,12 +159,34 @@ query {
     )
     val = await caget(PV_PREFIX + "nan")
     assert math.isnan(val)
-    result = await engine.execute(query, context=make_context())
-    assert result == dict(data=dict(getChannel=dict(value=dict(float=None))))
+    result = await schema.execute(query, context_value=context)
+    assert result.errors is None
+    assert result.data == dict(getChannel=dict(value=dict(float=None)))
 
 
 @pytest.mark.asyncio
-async def test_get_enum_pv(engine: Engine, ioc: Popen):
+async def test_get_nan_pv(ioc: Popen, schema, context):
+    query = (
+        """
+query {
+    getChannel(id: "ca://%snan") {
+        value {
+            float
+        }
+    }
+}
+"""
+        % PV_PREFIX
+    )
+    val = await caget(PV_PREFIX + "nan")
+    assert math.isnan(val)
+    result = await schema.execute(query, context_value=context)
+    assert result.errors is None
+    assert result.data == dict(getChannel=dict(value=dict(float=None)))
+
+
+@pytest.mark.asyncio
+async def test_get_enum_pv(ioc: Popen, schema, context):
     query = (
         """
 query {
@@ -172,19 +203,18 @@ query {
 """
         % PV_PREFIX
     )
-    result = await engine.execute(query, context=make_context())
-    assert result == dict(
-        data=dict(
-            getChannel=dict(
-                value=dict(string="nm", float=3.0),
-                display=dict(choices=["m", "mm", "um", "nm"]),
-            )
+    result = await schema.execute(query, context_value=context)
+    assert result.errors is None
+    assert result.data == dict(
+        getChannel=dict(
+            value=dict(string="nm", float=3.0),
+            display=dict(choices=["m", "mm", "um", "nm"]),
         )
     )
 
 
 @pytest.mark.asyncio
-async def test_subscribe_disconnect(engine: Engine, ioc: Popen):
+async def test_subscribe_disconnect(ioc: Popen, schema, context):
     query = (
         """
 subscription {
@@ -202,29 +232,29 @@ subscription {
     )
     results: List[Dict[str, Any]] = []
     wait_for_ioc(ioc)
-    async for result in engine.subscribe(query, context=make_context()):
+    resp = await schema.subscribe(query, context_value=context)
+    async for result in resp:
+        assert result.errors is None
         if not results:
             # First response; now disconnect.
-            results.append(result)
+            results.append(result.data)
             ioc.communicate("exit()")
         else:
             # Second response; done.
-            results.append(result)
+            results.append(result.data)
             break
 
     assert len(results) == 2
     assert results[0] == dict(
-        data=dict(
-            subscribeChannel=dict(value=dict(float=42), status=dict(quality="VALID"))
-        )
+        subscribeChannel=dict(value=dict(float=42), status=dict(quality="VALID"))
     )
     assert results[1] == dict(
-        data=dict(subscribeChannel=dict(value=None, status=dict(quality="INVALID")))
+        subscribeChannel=dict(value=None, status=dict(quality="INVALID"))
     )
 
 
 @pytest.mark.asyncio
-async def test_subscribe_ticking(engine: Engine, ioc: Popen):
+async def test_subscribe_ticking(ioc: Popen, schema, context):
     query = (
         """
 subscription {
@@ -244,8 +274,9 @@ subscription {
     results = []
     wait_for_ioc(ioc)
     start = time.time()
-    async for result in engine.subscribe(query, context=make_context()):
-        results.append(result)
+    resp = await schema.subscribe(query, context_value=context)
+    async for result in resp:
+        results.append(result.data)
         if time.time() - start > 0.9:
             break
     for i in range(3):
@@ -253,15 +284,13 @@ subscription {
         if i == 0:
             display = dict(precision=5, units="mm")
         assert results[i] == dict(
-            data=dict(
-                subscribeChannel=dict(value=dict(string="%.5f mm" % i), display=display)
-            )
+            subscribeChannel=dict(value=dict(string="%.5f mm" % i), display=display)
         )
     assert len(results) == 3
 
 
 @pytest.mark.asyncio
-async def test_put_long_and_enum(engine: Engine, ioc: Popen):
+async def test_put_long_and_enum(ioc: Popen, schema, context):
     query = """
 mutation {
     putChannels(ids: ["ca://%slongout", "ca://%senum"], values: ["55", "1"]) {
@@ -277,18 +306,16 @@ mutation {
         PV_PREFIX,
         PV_PREFIX,
     )
-    result = await engine.execute(query, context=make_context())
-    assert result == dict(
-        data=dict(
-            putChannels=[
-                dict(value=dict(string="55"), time=ANY),
-                dict(value=dict(string="mm"), time=ANY),
-            ]
-        )
+    result = await schema.execute(query, context_value=context)
+    assert result.data == dict(
+        putChannels=[
+            dict(value=dict(string="55"), time=ANY),
+            dict(value=dict(string="mm"), time=ANY),
+        ]
     )
     thens = [
         datetime.fromisoformat(r["time"]["datetime"])
-        for r in result["data"]["putChannels"]
+        for r in result.data["putChannels"]
     ]
     now = datetime.now()
     for then in thens:
@@ -301,7 +328,7 @@ BASE64_0_1688_2 = dict(numberType="FLOAT64", base64="AAAAAAAAAAA1XrpJDAL7PwAAAAA
 
 
 @pytest.mark.asyncio
-async def test_put_list(engine: Engine, ioc: Popen):
+async def test_put_list(ioc: Popen, schema, context):
     query = (
         r"""
 mutation {
@@ -318,22 +345,20 @@ mutation {
 """
         % PV_PREFIX
     )
-    result = await engine.execute(query, context=make_context())
-    assert result == dict(
-        data=dict(
-            putChannels=[
-                dict(
-                    value=dict(
-                        stringArray=["0.0", "1.7", "2.0"], base64Array=BASE64_0_1688_2
-                    )
+    result = await schema.execute(query, context_value=context)
+    assert result.data == dict(
+        putChannels=[
+            dict(
+                value=dict(
+                    stringArray=["0.0", "1.7", "2.0"], base64Array=BASE64_0_1688_2
                 )
-            ]
-        )
+            )
+        ]
     )
 
 
 @pytest.mark.asyncio
-async def test_put_base64(engine: Engine, ioc: Popen):
+async def test_put_base64(ioc: Popen, schema, context):
     # first dump gives {"key": "value"}, a json string
     # second dump gives \{\"key\": \"value\"\}, an escaped json string
     value = json.dumps(json.dumps(BASE64_0_1688_2))
@@ -349,7 +374,7 @@ mutation {
         PV_PREFIX,
         value,
     )
-    result = await engine.execute(query, context=make_context())
-    assert result == dict(
-        data=dict(putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]))])
+    result = await schema.execute(query, context_value=context)
+    assert result.data == dict(
+        putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]))]
     )
