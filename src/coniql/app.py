@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 import aiohttp_cors
 import strawberry
@@ -11,24 +11,8 @@ from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_P
 from strawberry.types import ExecutionContext
 
 import coniql.strawberry_schema as schema
-from coniql.caplugin import CAPlugin
-from coniql.plugin import PluginStore
-from coniql.pvaplugin import PVAPlugin
-from coniql.simplugin import SimPlugin
 
 from . import __version__
-
-
-def make_context() -> Dict[str, Any]:
-    store = PluginStore()
-    store.add_plugin("ssim", SimPlugin())
-    store.add_plugin("pva", PVAPlugin())
-    store.add_plugin("ca", CAPlugin(), set_default=True)
-    context = dict(store=store)
-    return context
-
-
-context = make_context()
 
 
 class ConiqlSchema(strawberry.Schema):
@@ -40,12 +24,6 @@ class ConiqlSchema(strawberry.Schema):
     ) -> None:
         for error in errors:
             print(error.message)
-
-
-class MyGraphQLView(GraphQLView):
-    async def get_context(self, request: web.Request, response: web.StreamResponse):
-        ctx = context
-        return {"request": request, "response": response, "ctx": ctx}
 
 
 def create_schema(debug: bool):
@@ -69,7 +47,7 @@ def create_app(use_cors: bool, debug: bool):
     strawberry_schema = create_schema(debug)
 
     # Create the GraphQL view to attach to the app
-    view = MyGraphQLView(
+    view = GraphQLView(
         schema=strawberry_schema,
         subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
     )

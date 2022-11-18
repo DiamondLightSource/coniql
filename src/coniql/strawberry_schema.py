@@ -7,9 +7,16 @@ from typing import List, Optional, Sequence
 
 import numpy as np
 import strawberry
-from strawberry.types import Info
 
+from coniql.caplugin import CAPlugin
 from coniql.plugin import PluginStore
+from coniql.pvaplugin import PVAPlugin
+from coniql.simplugin import SimPlugin
+
+store_global = PluginStore()
+store_global.add_plugin("ssim", SimPlugin())
+store_global.add_plugin("pva", PVAPlugin())
+store_global.add_plugin("ca", CAPlugin(), set_default=True)
 
 
 # Numeric type for arrays of numbers
@@ -262,10 +269,8 @@ class SubscribeChannel(DeferredChannel):
 class Query:
     # Get the current value of a Channel
     @strawberry.field
-    def getChannel(
-        self, info: Info, id: strawberry.ID, timeout: float = 5.0
-    ) -> Channel:
-        return GetChannel(id, timeout, info.context["ctx"]["store"])
+    def getChannel(self, id: strawberry.ID, timeout: float = 5.0) -> Channel:
+        return GetChannel(id, timeout, store_global)
 
 
 @strawberry.type
@@ -273,8 +278,8 @@ class Subscription:
     # Subscribe to changes in top level fields of Channel,
     # if they haven't changed they will be Null
     @strawberry.subscription
-    async def subscribeChannel(self, info: Info, id: strawberry.ID) -> Channel:
-        store: PluginStore = info.context["ctx"]["store"]
+    async def subscribeChannel(self, id: strawberry.ID) -> Channel:
+        store: PluginStore = store_global
         plugin, channel_id = store.plugin_config_id(id)
         # Remove the transport prefix from the read pv
         pv = store.transport_pv(id)[1]
@@ -287,12 +292,11 @@ class Mutation:
     @strawberry.mutation
     async def putChannels(
         self,
-        info: Info,
         ids: List[strawberry.ID],
         values: List[str],
         timeout: float = 5.0,
     ) -> Sequence[Channel]:
-        store: PluginStore = info.context["ctx"]["store"]
+        store: PluginStore = store_global
         pvs = []
         plugins = set()
         put_values = values
