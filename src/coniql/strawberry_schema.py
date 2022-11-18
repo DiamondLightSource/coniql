@@ -19,9 +19,12 @@ store_global.add_plugin("pva", PVAPlugin())
 store_global.add_plugin("ca", CAPlugin(), set_default=True)
 
 
-# Numeric type for arrays of numbers
 @strawberry.enum
 class NumberType(Enum):
+    """
+    Numeric type for arrays of numbers
+    """
+
     INT8 = "INT8"
     UINT8 = "UINT8"
     INT16 = "INT16"
@@ -34,17 +37,23 @@ class NumberType(Enum):
     FLOAT64 = "FLOAT64"
 
 
-# What access role has the Channel
 @strawberry.enum
 class ChannelRole(Enum):
+    """
+    What access role has the Channel
+    """
+
     RO = "RO"
     WO = "WO"
     RW = "RW"
 
 
-# Widget that should be used to display a Channel
 @strawberry.enum
 class Widget(Enum):
+    """
+    Widget that should be used to display a Channel
+    """
+
     # Editable text input
     TEXTINPUT = "TEXTINPUT"
     # Read-only text display
@@ -67,9 +76,12 @@ class Widget(Enum):
     PLOTY = "PLOTY"
 
 
-# Instructions for how a number should be formatted for display
 @strawberry.enum
 class DisplayForm(Enum):
+    """
+    Instructions for how a number should be formatted for display
+    """
+
     # Use the default representation from value
     DEFAULT = "DEFAULT"
     # Force string representation, most useful for array of bytes
@@ -87,9 +99,13 @@ class DisplayForm(Enum):
     ENGINEERING = "ENGINEERING"
 
 
-# Schema
 @strawberry.type
 class Range:
+    """
+    A range of numbers. Null in either field means unbounded in that direction.
+    A value is in range if min <= value <= max
+    """
+
     # The minimum number that is in this range
     min: float
     # The maximum that is in this range
@@ -98,6 +114,10 @@ class Range:
 
 @strawberry.enum
 class ChannelQuality(Enum):
+    """
+    Indication of how the current value of a Channel should be interpreted
+    """
+
     # Value is known, valid, nothing is wrong
     VALID = "VALID"
     # Value is known, valid, but is in the range generating a warning
@@ -112,9 +132,12 @@ class ChannelQuality(Enum):
     CHANGING = "CHANGING"
 
 
-# Base-64 encodable numeric array
 @strawberry.type
 class Base64Array:
+    """
+    Base-64 encodable numeric array
+    """
+
     # Type of the native array
     numberType: NumberType
     # Base64 encoded version of the array
@@ -123,32 +146,40 @@ class Base64Array:
 
 @strawberry.type
 class ChannelValue:
-    # The current value formatted as a Float, Null if not expressable
+    """
+    Value that can be formatted in a number of ways
+    """
+
     @strawberry.field
     async def float(root) -> Optional[float]:
+        """The current value formatted as a Float, Null if not expressable"""
         return root.formatter.to_float(root.value)
 
-    # The current value formatted as a string
     @strawberry.field
     async def string(root, units: bool = False) -> Optional[str]:
+        """The current value formatted as a string"""
         if units:
             return root.formatter.to_string_with_units(root.value)
         else:
             return root.formatter.to_string(root.value)
 
-    # Array of base64 encoded numbers, Null if not expressable
     @strawberry.field
     async def base64Array(root, length: int = 0) -> Optional[Base64Array]:
+        """Array of base64 encoded numbers, Null if not expressable"""
         return root.formatter.to_base64_array(root.value, length)
 
-    # Array of strings, Null if not expressable
     @strawberry.field
     async def stringArray(root, length: int = 0) -> Optional[List[str]]:
+        """Array of strings, Null if not expressable"""
         return root.formatter.to_string_array(root.value, length)
 
 
 @strawberry.type
 class ChannelStatus:
+    """
+    The current status of a Channel, including alarm and connection status
+    """
+
     # Of what quality is the current Channel value
     quality: ChannelQuality
     # Free form text describing the current status
@@ -159,6 +190,10 @@ class ChannelStatus:
 
 @strawberry.type
 class ChannelTime:
+    """
+    Timestamp indicating when a value was last updated
+    """
+
     # Floating point number of seconds since Jan 1, 1970 00:00:00 UTC
     seconds: float
     # A more accurate version of the nanoseconds part of the seconds field
@@ -166,9 +201,9 @@ class ChannelTime:
     # An integer value whose interpretation is deliberately undefined
     userTag: int
 
-    # The timestamp as a datetime object
     @strawberry.field
     async def datetime(root) -> datetime.datetime:
+        """The timestamp as a datetime object"""
         return datetime.datetime.fromtimestamp(root.seconds)
 
 
@@ -200,30 +235,35 @@ class ChannelDisplay:
 
 @strawberry.type
 class Channel:
+    """
+    A single value with associated time, status and metadata. These values
+    can be Null so that in a subscription they are only updated on change
+    """
+
     # ID that uniquely defines this Channel, normally a PV
     id: strawberry.ID
 
-    # The current value of this channel
     @strawberry.field
     async def value(root) -> Optional[ChannelValue]:
+        """The current value of this channel"""
         channel = await root.get_channel()
         return channel.get_value()
 
-    # When was the value last updated
     @strawberry.field
     async def time(root) -> Optional[ChannelTime]:
+        """When was the value last updated"""
         channel = await root.get_channel()
         return channel.get_time()
 
-    # Status of the connection, whether is is mutable, and alarm info
     @strawberry.field
     async def status(root) -> Optional[ChannelStatus]:
+        """Status of the connection, whether is is mutable, and alarm info"""
         channel = await root.get_channel()
         return channel.get_status()
 
-    # How should the Channel be displayed
     @strawberry.field
     async def display(root) -> Optional[ChannelDisplay]:
+        """How should the Channel be displayed"""
         channel = await root.get_channel()
         return channel.get_display()
 
@@ -267,18 +307,18 @@ class SubscribeChannel(DeferredChannel):
 
 @strawberry.type
 class Query:
-    # Get the current value of a Channel
     @strawberry.field
     def getChannel(self, id: strawberry.ID, timeout: float = 5.0) -> Channel:
+        """Get the current value of a Channel"""
         return GetChannel(id, timeout, store_global)
 
 
 @strawberry.type
 class Subscription:
-    # Subscribe to changes in top level fields of Channel,
-    # if they haven't changed they will be Null
     @strawberry.subscription
     async def subscribeChannel(self, id: strawberry.ID) -> Channel:
+        """Subscribe to changes in top level fields of Channel,
+        if they haven't changed they will be Null"""
         store: PluginStore = store_global
         plugin, channel_id = store.plugin_config_id(id)
         # Remove the transport prefix from the read pv
@@ -296,6 +336,7 @@ class Mutation:
         values: List[str],
         timeout: float = 5.0,
     ) -> Sequence[Channel]:
+        """Put a list of values to a list of Channels"""
         store: PluginStore = store_global
         pvs = []
         plugins = set()
