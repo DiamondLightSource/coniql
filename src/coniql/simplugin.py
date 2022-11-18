@@ -7,7 +7,6 @@ from typing import AsyncGenerator, Dict, List, Optional, Set, Type
 import numpy as np
 
 from coniql.coniql_schema import DisplayForm, Widget
-from coniql.device_config import ChannelConfig
 from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     Channel,
@@ -155,7 +154,7 @@ class SineSim(Sim):
         self.channel.display = display
         self.channel.value = ChannelValue(
             0,
-            ChannelFormatter.for_number(display.form, display.precision, display.units),
+            ChannelFormatter.for_number(display.precision, display.units),
         )
 
     def compute_changes(self):
@@ -211,9 +210,7 @@ class SineWaveSim(Sim):
         self.channel.display = display
         self.channel.value = ChannelValue(
             np.zeros(self.size, dtype=np.float64),
-            ChannelFormatter.for_ndarray(
-                display.form, display.precision, display.units
-            ),
+            ChannelFormatter.for_ndarray(display.precision, display.units),
         )
 
     def compute_changes(self) -> Channel:
@@ -267,9 +264,7 @@ class RampWaveSim(Sim):
         self.channel.display = display
         self.channel.value = ChannelValue(
             self.ramps[: self.size],
-            ChannelFormatter.for_ndarray(
-                display.form, display.precision, display.units
-            ),
+            ChannelFormatter.for_ndarray(display.precision, display.units),
         )
 
     def compute_changes(self) -> Channel:
@@ -302,9 +297,7 @@ class SimPlugin(Plugin):
         del self.sims[pv]
         del self.listeners[pv]
 
-    async def get_channel(
-        self, pv: str, timeout: float, config: ChannelConfig
-    ) -> Channel:
+    async def get_channel(self, pv: str, timeout: float) -> Channel:
         if pv not in self.sims:
             if "(" in pv:
                 assert pv.endswith(")"), "Missing closing bracket in %r" % pv
@@ -317,21 +310,15 @@ class SimPlugin(Plugin):
             inst = cls(*parameters)
             display = inst.channel.display
             assert display
-            # Use config values in preference to defaults
-            display.description = config.description or display.description
-            display.form = config.display_form or display.form
-            display.widget = config.widget or display.widget
             self.sims[pv] = inst
             self.listeners[pv] = set()
             asyncio.create_task(self._start_computing(pv))
         return self.sims[pv].channel
 
-    async def subscribe_channel(
-        self, pv: str, config: ChannelConfig
-    ) -> AsyncGenerator[Channel, None]:
+    async def subscribe_channel(self, pv: str) -> AsyncGenerator[Channel, None]:
         q: asyncio.Queue[Channel] = asyncio.Queue()
         try:
-            channel = await self.get_channel(pv, 0, config)
+            channel = await self.get_channel(pv, 0)
             self.listeners[pv].add(q)
             yield channel
             while True:

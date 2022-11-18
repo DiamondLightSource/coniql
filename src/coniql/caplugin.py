@@ -14,8 +14,7 @@ from aioca import (
 )
 from aioca.types import AugmentedValue
 
-from coniql.coniql_schema import DisplayForm, Widget
-from coniql.device_config import ChannelConfig
+from coniql.coniql_schema import Widget
 from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     CHANNEL_QUALITY_MAP,
@@ -30,9 +29,8 @@ from coniql.types import (
 
 
 class CAChannelMaker:
-    def __init__(self, name, config: ChannelConfig, writeable: bool):
+    def __init__(self, name, writeable: bool):
         self.name = name
-        self.config = config
         self.cached_status: Optional[ChannelStatus] = None
         self.formatter = ChannelFormatter()
         # No camonitor is capable of updating whether a channel is writeable,
@@ -40,16 +38,13 @@ class CAChannelMaker:
         self.writeable = writeable
 
     @staticmethod
-    def _create_formatter(
-        value: AugmentedValue, display_form: DisplayForm
-    ) -> ChannelFormatter:
+    def _create_formatter(value: AugmentedValue) -> ChannelFormatter:
         formatter = ChannelFormatter()
         precision = getattr(value, "precision", 0)
         units = getattr(value, "units", "")
         if hasattr(value, "dtype"):
             # numpy array
             formatter = ChannelFormatter.for_ndarray(
-                display_form,
                 precision,
                 units,
             )
@@ -59,7 +54,6 @@ class CAChannelMaker:
         elif isinstance(value, (int, float)):
             # number
             formatter = ChannelFormatter.for_number(
-                display_form,
                 precision,
                 units,
             )
@@ -77,17 +71,15 @@ class CAChannelMaker:
         display = None
 
         if meta_value is not None and meta_value.ok:
-            self.formatter = CAChannelMaker._create_formatter(
-                meta_value, self.config.display_form
-            )
+            self.formatter = CAChannelMaker._create_formatter(meta_value)
             # The value itself should not have changed for a meta_value update,
             # but the formatter may have, so send an updated value.
             value = ChannelValue(meta_value, self.formatter)
             display = ChannelDisplay(
                 description=self.name,
                 role="RW",
-                widget=self.config.widget or Widget.TEXTINPUT,
-                form=self.config.display_form,
+                widget=Widget.TEXTINPUT,
+                form=None,
             )
             if hasattr(meta_value, "enums"):
                 display.choices = meta_value.enums
@@ -162,15 +154,13 @@ class CAChannel(Channel):
 
 
 class CAPlugin(Plugin):
-    async def get_channel(
-        self, pv: str, timeout: float, config: ChannelConfig
-    ) -> Channel:
+    async def get_channel(self, pv: str, timeout: float) -> Channel:
         time_value, meta_value, info = await asyncio.gather(
             caget(pv, format=FORMAT_TIME, timeout=timeout),
             caget(pv, format=FORMAT_CTRL, timeout=timeout),
             cainfo(pv, timeout=timeout),
         )
-        maker = CAChannelMaker(pv, config, info.write)
+        maker = CAChannelMaker(pv, info.write)
         return maker.channel_from_update(time_value=time_value, meta_value=meta_value)
 
     async def put_channels(
@@ -178,9 +168,7 @@ class CAPlugin(Plugin):
     ):
         await caput(pvs, values, timeout=timeout)
 
-    async def subscribe_channel(
-        self, pv: str, config: ChannelConfig
-    ) -> AsyncIterator[Channel]:
+    async def subscribe_channel(self, pv: str) -> AsyncIterator[Channel]:
         # A queue that contains a monitor update and the keyword with which
         # the channel's update_value function should be called.
         q: asyncio.Queue[Dict[str, AugmentedValue]] = asyncio.Queue()
@@ -214,7 +202,7 @@ class CAPlugin(Plugin):
                 # Unlikely, but allow subscriptions to continue.
                 pass
 
-            maker = CAChannelMaker(pv, config, writeable)
+            maker = CAChannelMaker(pv, writeable)
             # Do not continue until both monitors have returned.
             # Then the first Channel returned will be complete.
             while len(first_channel_value) < 2:

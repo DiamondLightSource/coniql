@@ -2,7 +2,8 @@ import base64
 import math
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from enum import Enum
+from typing import Any, Callable, List, Optional
 
 import numpy as np
 
@@ -47,9 +48,29 @@ class ChannelDisplay:
     choices: Optional[List[str]] = None
 
 
-def make_number_format_string(
-    form: Optional[DisplayForm], precision: Optional[int]
-) -> str:
+@dataclass
+class NumberType(Enum):
+    INT8 = "INT8"
+    UINT8 = "UINT8"
+    INT16 = "INT16"
+    UINT16 = "UINT16"
+    INT32 = "INT32"
+    UINT32 = "UINT32"
+    INT64 = "INT64"
+    UINT64 = "UINT64"
+    FLOAT32 = "FLOAT32"
+    FLOAT64 = "FLOAT64"
+
+
+@dataclass
+class Base64Array:
+    # Type of the native array
+    numberType: NumberType
+    # Base64 encoded version of the array
+    base64: str
+
+
+def make_number_format_string(precision: Optional[int]) -> str:
     assert precision is not None
     return "{:.%df}" % precision
 
@@ -66,9 +87,9 @@ def return_none(*args, **kwargs):
 class ChannelFormatter:
     @classmethod
     def for_number(
-        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
+        cls, precision: Optional[int], units: Optional[str]
     ) -> "ChannelFormatter":
-        number_format_string = make_number_format_string(form, precision)
+        number_format_string = make_number_format_string(precision)
         if units:
             units_format_string = f"{number_format_string} {units}"
         else:
@@ -84,20 +105,18 @@ class ChannelFormatter:
 
     @classmethod
     def for_ndarray(
-        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
+        cls, precision: Optional[int], units: Optional[str]
     ) -> "ChannelFormatter":
-        number_format_string = make_number_format_string(form, precision)
+        number_format_string = make_number_format_string(precision)
 
         # ndarray -> base64 encoded array
         def ndarray_to_base64_array(
             value: np.ndarray, length: int = 0
-        ) -> Optional[Dict[str, str]]:
+        ) -> Optional[Base64Array]:
             if length > 0:
                 value = value[:length]
-            return dict(
-                numberType=value.dtype.name.upper(),
-                # https://stackoverflow.com/a/6485943
-                base64=base64.b64encode(value.tobytes()).decode(),
+            return Base64Array(
+                value.dtype.name.upper(), base64.b64encode(value.tobytes()).decode()
             )
 
         # ndarray -> [str] uses given precision
@@ -129,7 +148,7 @@ class ChannelFormatter:
         to_string: Callable[[Any], str] = str,
         to_string_with_units: Callable[[Any], str] = str,
         to_float: Callable[[Any], Optional[float]] = return_none,
-        to_base64_array: Callable[[Any, int], Optional[Dict[str, str]]] = return_none,
+        to_base64_array: Callable[[Any, int], Optional[Base64Array]] = return_none,
         to_string_array: Callable[[Any, int], Optional[List[str]]] = return_none,
     ):
         self.to_string = to_string

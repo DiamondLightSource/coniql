@@ -5,7 +5,8 @@ from typing import AsyncIterator, Dict, List, Optional, Tuple, Type
 from p4p.client.asyncio import Context, Value
 
 from coniql.coniql_schema import DisplayForm, Widget
-from coniql.device_config import ChannelConfig
+
+# from coniql.device_config import ChannelConfig
 from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     CHANNEL_QUALITY_MAP,
@@ -25,11 +26,8 @@ OTHER_TYPES = {"?", "s"}
 
 
 class PVAChannel(Channel):
-    def __init__(
-        self, value: Value, config: ChannelConfig, last_channel: "PVAChannel" = None
-    ):
+    def __init__(self, value: Value, last_channel: "PVAChannel" = None):
         self.value = value
-        self.config = config
         self.last_channel = last_channel
         self.formatter: Optional[ChannelFormatter] = None
 
@@ -57,7 +55,8 @@ class PVAChannel(Channel):
         return time
 
 
-def update_display(display: ChannelDisplay, config: ChannelConfig):
+"""
+def update_display(display: ChannelDisplay):
     # Role defined by presence of PVs, delete modes without PV
     if config.read_pv or config.write_pv:
         if config.read_pv is None:
@@ -68,6 +67,7 @@ def update_display(display: ChannelDisplay, config: ChannelConfig):
     display.description = config.description or display.description
     display.widget = config.widget or display.widget
     display.form = config.display_form or display.form
+"""
 
 
 class ScalarPVAChannel(PVAChannel):
@@ -89,7 +89,6 @@ class ScalarPVAChannel(PVAChannel):
             form = DisplayForm.DEFAULT
             precision = 3
         units = v_display.units
-        form = self.config.display_form or form
         return (form, precision, units)
 
     def get_value(self) -> Optional[ChannelValue]:
@@ -104,9 +103,9 @@ class ScalarPVAChannel(PVAChannel):
             elif self.is_number():
                 form, prec, units = self.get_form_precision_units()
                 if self.is_array():
-                    self.formatter = ChannelFormatter.for_ndarray(form, prec, units)
+                    self.formatter = ChannelFormatter.for_ndarray(prec, units)
                 else:
-                    self.formatter = ChannelFormatter.for_number(form, prec, units)
+                    self.formatter = ChannelFormatter.for_number(prec, units)
             else:
                 self.formatter = ChannelFormatter()
             value = ChannelValue(self.value.value, self.formatter)
@@ -140,7 +139,7 @@ class ScalarPVAChannel(PVAChannel):
                     display.precision,
                     display.units,
                 ) = self.get_form_precision_units()
-            update_display(display, self.config)
+            # update_display(display)
         return display
 
 
@@ -170,7 +169,7 @@ class EnumPVAChannel(PVAChannel):
                 widget=Widget.COMBO,
                 choices=v_value.choices,
             )
-            update_display(display, self.config)
+            # update_display(display)
         return display
 
 
@@ -186,14 +185,12 @@ class PVAPlugin(Plugin):
         self.ctxt = Context("pva", nt=False)
         atexit.register(self.ctxt.close)
 
-    async def get_channel(
-        self, pv: str, timeout: float, config: ChannelConfig
-    ) -> Channel:
+    async def get_channel(self, pv: str, timeout: float) -> Channel:
         try:
             value: Value = await asyncio.wait_for(self.ctxt.get(pv), timeout)
         except TimeoutError:
             raise TimeoutError("Timeout while getting %s" % pv)
-        channel = CHANNEL_CLASS[value.getID()](value, config)
+        channel = CHANNEL_CLASS[value.getID()](value)
         return channel
 
     async def put_channels(
@@ -204,9 +201,7 @@ class PVAPlugin(Plugin):
         except TimeoutError:
             raise TimeoutError("Timeout while putting to %s" % pvs)
 
-    async def subscribe_channel(
-        self, pv: str, config: ChannelConfig
-    ) -> AsyncIterator[Channel]:
+    async def subscribe_channel(self, pv: str) -> AsyncIterator[Channel]:
         q: asyncio.Queue[Value] = asyncio.Queue()
         m = self.ctxt.monitor(pv, q.put)
         try:
@@ -214,7 +209,7 @@ class PVAPlugin(Plugin):
             last_channel = None
             while True:
                 value = await q.get()
-                channel = CHANNEL_CLASS[value.getID()](value, config, last_channel)
+                channel = CHANNEL_CLASS[value.getID()](value, last_channel)
                 yield channel
                 last_channel = channel
         finally:

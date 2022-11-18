@@ -40,7 +40,6 @@ class ConiqlSchema(strawberry.Schema):
     ) -> None:
         for error in errors:
             print(error.message)
-            # StrawberryLogger.error(error, execution_context, stack_info=False)
 
 
 class MyGraphQLView(GraphQLView):
@@ -65,7 +64,7 @@ def create_schema(debug: bool):
         )
 
 
-def create_app(cors: bool, debug: bool):
+def create_app(use_cors: bool, debug: bool):
     # Create the schema
     strawberry_schema = create_schema(debug)
 
@@ -82,7 +81,7 @@ def create_app(cors: bool, debug: bool):
     app.router.add_route("POST", "/ws", view)
     app.router.add_route("POST", "/graphql", view)
     # Enable CORS for all origins on all routes (if applicable)
-    if cors:
+    if use_cors:
         cors = aiohttp_cors.setup(app)
         for route in app.router.routes():
             allow_all = {

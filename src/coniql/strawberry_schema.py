@@ -1,12 +1,15 @@
+import asyncio
+import base64
 import datetime
+import json
 from enum import Enum
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
+import numpy as np
 import strawberry
 from strawberry.types import Info
 
-import coniql.resolvers as resolver
-from coniql.types import Channel, ChannelValue
+from coniql.plugin import PluginStore
 
 
 # Numeric type for arrays of numbers
@@ -115,23 +118,26 @@ class Base64Array:
 class ChannelValue:
     # The current value formatted as a Float, Null if not expressable
     @strawberry.field
-    async def float(self) -> Optional[float]:
-        return await resolver.channel_value_float(self)
+    async def float(root) -> Optional[float]:
+        return root.formatter.to_float(root.value)
 
     # The current value formatted as a string
     @strawberry.field
-    async def string(self, units: bool = False) -> Optional[str]:
-        return await resolver.channel_value_string(self, units)
+    async def string(root, units: bool = False) -> Optional[str]:
+        if units:
+            return root.formatter.to_string_with_units(root.value)
+        else:
+            return root.formatter.to_string(root.value)
 
     # Array of base64 encoded numbers, Null if not expressable
     @strawberry.field
-    async def base64Array(self, length: int = 0) -> Optional[Base64Array]:
-        return await resolver.channel_value_base64_array(self, length)
+    async def base64Array(root, length: int = 0) -> Optional[Base64Array]:
+        return root.formatter.to_base64_array(root.value, length)
 
     # Array of strings, Null if not expressable
     @strawberry.field
-    async def stringArray(self, length: int = 0) -> Optional[List[str]]:
-        return await resolver.channel_value_string_array(self, length)
+    async def stringArray(root, length: int = 0) -> Optional[List[str]]:
+        return root.formatter.to_string_array(root.value, length)
 
 
 @strawberry.type
@@ -155,8 +161,8 @@ class ChannelTime:
 
     # The timestamp as a datetime object
     @strawberry.field
-    async def datetime(self) -> datetime.datetime:
-        return await resolver.channel_time_datetime(self)
+    async def datetime(root) -> datetime.datetime:
+        return datetime.datetime.fromtimestamp(root.seconds)
 
 
 @strawberry.type
@@ -192,23 +198,64 @@ class Channel:
 
     # The current value of this channel
     @strawberry.field
-    async def value(self) -> Optional[ChannelValue]:
-        return await resolver.channel_value(self)
+    async def value(root) -> Optional[ChannelValue]:
+        channel = await root.get_channel()
+        return channel.get_value()
 
     # When was the value last updated
     @strawberry.field
-    async def time(self) -> Optional[ChannelTime]:
-        return await resolver.channel_time(self)
+    async def time(root) -> Optional[ChannelTime]:
+        channel = await root.get_channel()
+        return channel.get_time()
 
     # Status of the connection, whether is is mutable, and alarm info
     @strawberry.field
-    async def status(self) -> Optional[ChannelStatus]:
-        return await resolver.channel_status(self)
+    async def status(root) -> Optional[ChannelStatus]:
+        channel = await root.get_channel()
+        return channel.get_status()
 
     # How should the Channel be displayed
     @strawberry.field
-    async def display(self) -> Optional[ChannelDisplay]:
-        return await resolver.channel_display(self)
+    async def display(root) -> Optional[ChannelDisplay]:
+        channel = await root.get_channel()
+        return channel.get_display()
+
+
+class DeferredChannel:
+    id: str
+    lock: asyncio.Lock
+    channel: Optional[Channel] = None
+
+    async def populate_channel(self) -> Channel:
+        raise NotImplementedError(self)
+
+    async def get_channel(self) -> Channel:
+        if self.channel is None:
+            async with self.lock:
+                # If channel is still None we should make it
+                if self.channel is None:
+                    self.channel = await self.populate_channel()
+        assert self.channel
+        return self.channel
+
+
+class GetChannel(DeferredChannel):
+    def __init__(self, channel_id: str, timeout: float, store: PluginStore):
+        self.plugin, self.id = store.plugin_config_id(channel_id)
+        # Remove the transport prefix from the read pv
+        self.pv = store.transport_pv(channel_id)[1]
+        self.timeout = timeout
+        self.lock = asyncio.Lock()
+
+    async def populate_channel(self) -> Channel:
+        channel = await self.plugin.get_channel(self.pv, self.timeout)
+        return channel
+
+
+class SubscribeChannel(DeferredChannel):
+    def __init__(self, channel_id: str, channel: Channel):
+        self.id = channel_id
+        self.channel = channel
 
 
 @strawberry.type
@@ -218,7 +265,7 @@ class Query:
     def getChannel(
         self, info: Info, id: strawberry.ID, timeout: float = 5.0
     ) -> Channel:
-        return resolver.get_channel(id, timeout, info.context["ctx"])
+        return GetChannel(id, timeout, info.context["ctx"]["store"])
 
 
 @strawberry.type
@@ -227,7 +274,12 @@ class Subscription:
     # if they haven't changed they will be Null
     @strawberry.subscription
     async def subscribeChannel(self, info: Info, id: strawberry.ID) -> Channel:
-        return resolver.subscribe_channel(id, info.context["ctx"])
+        store: PluginStore = info.context["ctx"]["store"]
+        plugin, channel_id = store.plugin_config_id(id)
+        # Remove the transport prefix from the read pv
+        pv = store.transport_pv(id)[1]
+        async for channel in plugin.subscribe_channel(pv):
+            yield SubscribeChannel(channel_id, channel)
 
 
 @strawberry.type
@@ -239,5 +291,35 @@ class Mutation:
         ids: List[strawberry.ID],
         values: List[str],
         timeout: float = 5.0,
-    ) -> List[Channel]:
-        return await resolver.put_channel(ids, values, timeout, info.context["ctx"])
+    ) -> Sequence[Channel]:
+        store: PluginStore = info.context["ctx"]["store"]
+        pvs = []
+        plugins = set()
+        put_values = values
+        for channel_id in ids:
+            plugin, channel_id = store.plugin_config_id(channel_id)
+            pv = channel_id
+            assert pv, f"{channel_id} is configured read-only"
+            plugins.add(plugin)
+            pvs.append(store.transport_pv(pv)[1])
+        results = []
+        for value in put_values:
+            if value[:1] in "[{":
+                # need to json decode
+                value = json.loads(value)
+                if isinstance(value, dict):
+                    # decode base64 array
+                    dtype = np.dtype(value["numberType"].lower())
+                    value_b = base64.b64decode(value["base64"])
+                    # https://stackoverflow.com/a/6485943
+                    value = np.frombuffer(value_b, dtype=dtype)
+            results.append(value)
+        assert len(results) == len(pvs), "Mismatch in ids and values length"
+        assert (
+            len(plugins) == 1
+        ), "Can only put to pvs with the same transport, not %s" % [
+            p.transport for p in plugins
+        ]
+        await plugins.pop().put_channels(pvs, results, timeout)
+        channels = [GetChannel(channel_id, timeout, store) for channel_id in ids]
+        return channels
