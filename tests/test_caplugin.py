@@ -1,104 +1,26 @@
-import json
 import math
-import random
-import string
-import subprocess
-import sys
 import time
 from datetime import datetime
-from pathlib import Path
 from subprocess import Popen
 from typing import Any, Dict, List
 from unittest.mock import ANY
 
 import pytest
-from aioca import caget, purge_channel_caches
+from aioca import caget, caput
 
 from coniql.app import create_schema
 
-SOFT_RECORDS = str(Path(__file__).parent / "soft_records.db")
-
-PV_PREFIX = "".join(random.choice(string.ascii_uppercase) for _ in range(12)) + ":"
+from .conftest import BASE64_0_1688_2, PV_PREFIX
 
 
-@pytest.fixture
-def ioc():
-    process = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "epicscorelibs.ioc",
-            "-m",
-            f"P={PV_PREFIX}",
-            "-d",
-            SOFT_RECORDS,
-        ],
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-    )
-    yield process
-    purge_channel_caches()
-    try:
-        process.communicate("exit()")
-    except ValueError:
-        # Someone else already called communicate
-        pass
-
-
-@pytest.fixture
+@pytest.fixture(scope="session")
 def schema():
     return create_schema(False)
 
 
-def wait_for_ioc(ioc):
-    while True:
-        line = ioc.stdout.readline()
-        if "complete" in line:
-            return
-
-
 @pytest.mark.asyncio
-async def test_get_int_pv(ioc: Popen, schema):
-    query = (
-        """
-query {
-    getChannel(id: "ca://%slongout") {
-        value {
-            float
-            string
-        }
-        display {
-            widget
-            controlRange {
-                min
-                max
-            }
-            displayRange {
-                min
-                max
-            }
-            alarmRange {
-                min
-                max
-            }
-            warningRange {
-                min
-                max
-            }
-            units
-            precision
-            form
-        }
-        status {
-            quality
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
+async def test_get_int_pv(ioc: Popen, schema, int_query):
+    query = int_query
     result = await schema.execute(query)
     assert result.errors is None
     assert result.data == dict(
@@ -120,38 +42,16 @@ query {
 
 
 @pytest.mark.asyncio
-async def test_get_str_pv(ioc: Popen, schema):
-    query = (
-        """
-query {
-    getChannel(id: "ca://%slongout.RTYP") {
-        value {
-            string
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
+async def test_get_str_pv(ioc: Popen, schema, str_query):
+    query = str_query
     result = await schema.execute(query)
     assert result.errors is None
     assert result.data == dict(getChannel=dict(value=dict(string="longout")))
 
 
 @pytest.mark.asyncio
-async def test_get_nan_pv(ioc: Popen, schema):
-    query = (
-        """
-query {
-    getChannel(id: "ca://%snan") {
-        value {
-            float
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
+async def test_get_nan_pv(ioc: Popen, schema, nan_query):
+    query = nan_query
     val = await caget(PV_PREFIX + "nan")
     assert math.isnan(val)
     result = await schema.execute(query)
@@ -160,23 +60,8 @@ query {
 
 
 @pytest.mark.asyncio
-async def test_get_enum_pv(ioc: Popen, schema):
-    query = (
-        """
-query {
-    getChannel(id: "ca://%senum") {
-        value {
-            string
-            float
-        }
-        display {
-            choices
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
+async def test_get_enum_pv(ioc: Popen, schema, enum_query):
+    query = enum_query
     result = await schema.execute(query)
     assert result.errors is None
     assert result.data == dict(
@@ -188,98 +73,8 @@ query {
 
 
 @pytest.mark.asyncio
-async def test_subscribe_disconnect(ioc: Popen, schema):
-    query = (
-        """
-subscription {
-    subscribeChannel(id: "ca://%slongout") {
-        value {
-            float
-        }
-        status {
-            quality
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
-    results: List[Dict[str, Any]] = []
-    wait_for_ioc(ioc)
-    resp = await schema.subscribe(query)
-    async for result in resp:
-        assert result.errors is None
-        if not results:
-            # First response; now disconnect.
-            results.append(result.data)
-            ioc.communicate("exit()")
-        else:
-            # Second response; done.
-            results.append(result.data)
-            break
-
-    assert len(results) == 2
-    assert results[0] == dict(
-        subscribeChannel=dict(value=dict(float=42), status=dict(quality="VALID"))
-    )
-    assert results[1] == dict(
-        subscribeChannel=dict(value=None, status=dict(quality="INVALID"))
-    )
-
-
-@pytest.mark.asyncio
-async def test_subscribe_ticking(ioc: Popen, schema):
-    query = (
-        """
-subscription {
-    subscribeChannel(id: "ca://%sticking") {
-        value {
-            string(units: true)
-        }
-        display {
-            precision
-            units
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
-    results = []
-    wait_for_ioc(ioc)
-    start = time.time()
-    resp = await schema.subscribe(query)
-    async for result in resp:
-        results.append(result.data)
-        if time.time() - start > 0.9:
-            break
-    for i in range(3):
-        display = None
-        if i == 0:
-            display = dict(precision=5, units="mm")
-        assert results[i] == dict(
-            subscribeChannel=dict(value=dict(string="%.5f mm" % i), display=display)
-        )
-    assert len(results) == 3
-
-
-@pytest.mark.asyncio
-async def test_put_long_and_enum(ioc: Popen, schema):
-    query = """
-mutation {
-    putChannels(ids: ["ca://%slongout", "ca://%senum"], values: ["55", "1"]) {
-        value {
-            string
-        }
-        time {
-            datetime
-        }
-    }
-}
-""" % (
-        PV_PREFIX,
-        PV_PREFIX,
-    )
+async def test_put_long_and_enum(ioc: Popen, schema, long_and_enum_put):
+    query = long_and_enum_put
     result = await schema.execute(query)
     assert result.data == dict(
         putChannels=[
@@ -298,27 +93,9 @@ mutation {
         assert diff.total_seconds() < 0.2
 
 
-BASE64_0_1688_2 = dict(numberType="FLOAT64", base64="AAAAAAAAAAA1XrpJDAL7PwAAAAAAAABA")
-
-
 @pytest.mark.asyncio
-async def test_put_list(ioc: Popen, schema):
-    query = (
-        r"""
-mutation {
-    putChannels(ids: ["ca://%swaveform"], values: ["[0, 1.688, \"2\"]"]) {
-        value {
-            stringArray
-            base64Array {
-                numberType
-                base64
-            }
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
+async def test_put_list(ioc: Popen, schema, list_put):
+    query = list_put
     result = await schema.execute(query)
     assert result.data == dict(
         putChannels=[
@@ -332,23 +109,59 @@ mutation {
 
 
 @pytest.mark.asyncio
-async def test_put_base64(ioc: Popen, schema):
+async def test_put_base64(ioc: Popen, schema, base64_put):
     # first dump gives {"key": "value"}, a json string
     # second dump gives \{\"key\": \"value\"\}, an escaped json string
-    value = json.dumps(json.dumps(BASE64_0_1688_2))
-    query = r"""
-mutation {
-    putChannels(ids: ["ca://%swaveform"], values: [%s]) {
-        value {
-            stringArray
-        }
-    }
-}
-""" % (
-        PV_PREFIX,
-        value,
-    )
+    query = base64_put
     result = await schema.execute(query)
     assert result.data == dict(
         putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]))]
+    )
+
+
+@pytest.mark.asyncio
+async def test_subscribe_ticking(ioc: Popen, schema, ticking_subscribe):
+    query = ticking_subscribe
+    results = []
+    await caput(PV_PREFIX + "ticking", 0.0)
+    start = time.time()
+    resp = await schema.subscribe(query)
+    async for result in resp:
+        if time.time() - start > 0.9:
+            break
+        results.append(result.data)
+
+    for i in range(3):
+        display = None
+        if i == 0:
+            display = dict(precision=5, units="mm")
+        assert results[i] == dict(
+            subscribeChannel=dict(value=dict(string="%.5f mm" % i), display=display)
+        )
+    assert len(results) == 3
+
+
+# !! Must be the last test as it calls a disconnect
+@pytest.mark.asyncio
+async def test_subscribe_disconnect(ioc: Popen, schema, longout_subscribe):
+    query = longout_subscribe
+    results: List[Dict[str, Any]] = []
+    resp = await schema.subscribe(query)
+    async for result in resp:
+        assert result.errors is None
+        if not results:
+            # First response; now disconnect.
+            results.append(result.data)
+            ioc.communicate("exit()")
+        else:
+            # Second response; done.
+            results.append(result.data)
+            break
+
+    assert len(results) == 2
+    assert results[0] == dict(
+        subscribeChannel=dict(value=dict(float=55), status=dict(quality="VALID"))
+    )
+    assert results[1] == dict(
+        subscribeChannel=dict(value=None, status=dict(quality="INVALID"))
     )
