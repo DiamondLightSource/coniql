@@ -33,7 +33,7 @@ record(calc, "$(P)ticking") {
   field(EGU, "mm")
 }
 
-record (mbbi, "$(P)enum") {
+record(mbbi, "$(P)enum") {
     field(DESC, "Select the units of something")
     field(ZRST, "m")
     field(ZRVL, "0")
