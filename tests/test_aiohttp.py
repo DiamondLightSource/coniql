@@ -8,12 +8,22 @@ from unittest.mock import ANY
 
 import pytest
 from aioca import caget, caput
-from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL
+from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 from strawberry.subscriptions.protocols.graphql_transport_ws.types import (
     ConnectionAckMessage,
     ConnectionInitMessage,
     SubscribeMessage,
     SubscribeMessagePayload,
+)
+from strawberry.subscriptions.protocols.graphql_ws import (
+    GQL_CONNECTION_ACK,
+    GQL_CONNECTION_INIT,
+    GQL_CONNECTION_KEEP_ALIVE,
+    GQL_START,
+)
+from strawberry.subscriptions.protocols.graphql_ws.types import (
+    OperationMessage,
+    StartPayload,
 )
 
 from coniql.app import create_app
@@ -149,7 +159,9 @@ async def test_put_base64(ioc: Popen, client, base64_put):
 
 
 @pytest.mark.asyncio
-async def test_subscribe_ticking(ioc: Popen, client, ticking_subscribe):
+async def test_subscribe_ticking_graphql_transport_ws_protocol(
+    ioc: Popen, client, ticking_subscribe
+):
     query = ticking_subscribe
     results = []
     await caput(PV_PREFIX + "ticking", 0.0)
@@ -172,6 +184,52 @@ async def test_subscribe_ticking(ioc: Popen, client, ticking_subscribe):
             if time.time() - start > 0.5:
                 break
             result = await ws.receive_json()
+            results.append(result["payload"])
+        for i in range(3):
+            display = None
+            if i == 0:
+                display = dict(precision=5, units="mm")
+            assert results[i] == dict(
+                data=dict(
+                    subscribeChannel=dict(
+                        value=dict(string="%.5f mm" % i), display=display
+                    )
+                )
+            )
+        assert len(results) == 3
+
+        await ws.close()
+        assert ws.closed
+
+
+@pytest.mark.asyncio
+async def test_subscribe_ticking_graphql_ws_protocol(
+    ioc: Popen, client, ticking_subscribe
+):
+    query = ticking_subscribe
+    results = []
+    await caput(PV_PREFIX + "ticking", 0.0)
+    start = time.time()
+    async with client.ws_connect("/ws", protocols=[GRAPHQL_WS_PROTOCOL]) as ws:
+        await ws.send_json(OperationMessage(type=GQL_CONNECTION_INIT))
+
+        response = await ws.receive_json()
+        assert response == OperationMessage(type=GQL_CONNECTION_ACK)
+
+        await ws.send_json(
+            OperationMessage(
+                type=GQL_START,
+                id="sub1",
+                payload=StartPayload(query=query),
+            )
+        )
+        while True:
+            if time.time() - start > 0.5:
+                break
+            result = await ws.receive_json()
+            # Ignore keep alive messages
+            if result["type"] == GQL_CONNECTION_KEEP_ALIVE:
+                continue
             results.append(result["payload"])
         for i in range(3):
             display = None
