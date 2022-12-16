@@ -1,6 +1,8 @@
 import asyncio
+import collections
+import threading
 from dataclasses import dataclass
-from typing import AsyncIterator, Dict, List, Optional
+from typing import AsyncIterator, Deque, List, Optional
 
 from aioca import (
     DBE_PROPERTY,
@@ -168,29 +170,66 @@ class CAPlugin(Plugin):
     ):
         await caput(pvs, values, timeout=timeout)
 
+    @staticmethod
+    async def __signal(value, values, maker, lock):
+        # if value is None:
+        with lock:
+            try:
+                # Consume a single value from the queue
+                value.disarm(values.popleft())
+                return maker.channel_from_update(**value.get())
+            except IndexError:
+                # Deque has overflowed, count and return
+                # self.dropped_callbacks += 1
+                print("error deque")
+                return None
+
+    class UpdateSignal:
+        def __init__(self):
+            self.value = 1
+
+        def arm(self):
+            self.value = None
+
+        def disarm(self, v):
+            self.value = v
+
+        def get(self):
+            return self.value
+
+    def __callback(self, v, dict_key, signal, value_deque, lock):
+        with lock:
+            value_deque.append({dict_key: v})
+            signal.arm()
+
     async def subscribe_channel(self, pv: str) -> AsyncIterator[Channel]:
-        # A queue that contains a monitor update and the keyword with which
-        # the channel's update_value function should be called.
-        q: asyncio.Queue[Dict[str, AugmentedValue]] = asyncio.Queue()
         # Monitor PV for value and alarm changes with associated timestamp.
         # Use this monitor also for notifications of disconnections.
+        value_signal = self.UpdateSignal()
+        value_lock = threading.Lock()
+        values: Deque[AugmentedValue] = collections.deque(maxlen=1)
         value_monitor = camonitor(
             pv,
-            lambda v: q.put({"time_value": v}),
+            lambda v: self.__callback(
+                v, "time_value", value_signal, values, value_lock
+            ),
             format=FORMAT_TIME,
             notify_disconnect=True,
         )
         # Monitor PV only for property changes. For EPICS < 3.15 this monitor
         # will update once on connection but will not subsequently be triggered.
         # https://github.com/dls-controls/coniql/issues/22#issuecomment-863899258
+        meta_signal = self.UpdateSignal()
+        meta_lock = threading.Lock()
+        metas: Deque[AugmentedValue] = collections.deque(maxlen=1)
         meta_monitor = camonitor(
             pv,
-            lambda v: q.put({"meta_value": v}),
+            lambda v: self.__callback(v, "meta_value", meta_signal, metas, meta_lock),
             events=DBE_PROPERTY,
             format=FORMAT_CTRL,
         )
+
         try:
-            first_channel_value = await q.get()
             # A specific request required for whether the channel is writeable.
             # This will not be updated, so wait until a callback is received
             # before making the request when the channel is likely be connected.
@@ -203,18 +242,31 @@ class CAPlugin(Plugin):
                 pass
 
             maker = CAChannelMaker(pv, writeable)
-            # Do not continue until both monitors have returned.
-            # Then the first Channel returned will be complete.
-            while len(first_channel_value) < 2:
-                update = await q.get()
-                first_channel_value.update(update)
 
-            yield maker.channel_from_update(**first_channel_value)
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                # 'RuntimeError: There is no current event loop...'
+                print("No current event loop...")
+                loop = None
 
             # Handle all subsequent updates from both monitors.
             while True:
-                update = await q.get()
-                yield maker.channel_from_update(**update)
+                await asyncio.sleep(0)
+                if value_signal.get() is None and loop is not None:
+                    data = loop.create_task(
+                        self.__signal(value_signal, values, maker, value_lock)
+                    )
+                    await data
+                    if data.result() is not None:
+                        yield data.result()
+                if meta_signal.get() is None and loop is not None:
+                    data = loop.create_task(
+                        self.__signal(meta_signal, metas, maker, meta_lock)
+                    )
+                    await data
+                    if data.result() is not None:
+                        yield data.result()
         finally:
             value_monitor.close()
             meta_monitor.close()
