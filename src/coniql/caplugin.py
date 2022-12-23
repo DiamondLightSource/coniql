@@ -171,13 +171,30 @@ class CAPlugin(Plugin):
         await caput(pvs, values, timeout=timeout)
 
     @staticmethod
-    async def __signal(value, values, maker, lock):
+    async def __signal_single_channel(value, values, maker, lock):
         # if value is None:
         with lock:
             try:
                 # Consume a single value from the queue
                 value.disarm(values.popleft())
                 return maker.channel_from_update(**value.get())
+            except IndexError:
+                # Deque has overflowed, count and return
+                # self.dropped_callbacks += 1
+                print("error deque")
+                return None
+
+    @staticmethod
+    async def __signal_double_channel(
+        value, meta, values, metas, maker, value_lock, meta_lock
+    ):
+        # if value is None:
+        with value_lock and meta_lock:
+            try:
+                # Consume a single value from the queue
+                value.disarm(values.popleft())
+                meta.disarm(metas.popleft())
+                return maker.channel_from_update(**value.get(), **meta.get())
             except IndexError:
                 # Deque has overflowed, count and return
                 # self.dropped_callbacks += 1
@@ -251,22 +268,47 @@ class CAPlugin(Plugin):
                 loop = None
 
             # Handle all subsequent updates from both monitors.
+            firstChannelReceived = False
             while True:
                 await asyncio.sleep(0)
-                if value_signal.get() is None and loop is not None:
-                    data = loop.create_task(
-                        self.__signal(value_signal, values, maker, value_lock)
-                    )
-                    await data
-                    if data.result() is not None:
-                        yield data.result()
-                if meta_signal.get() is None and loop is not None:
-                    data = loop.create_task(
-                        self.__signal(meta_signal, metas, maker, meta_lock)
-                    )
-                    await data
-                    if data.result() is not None:
-                        yield data.result()
+                # Wait to receive both channels at the beginning
+                if loop is not None and not firstChannelReceived:
+                    if value_signal.get() is None and meta_signal.get() is None:
+                        data = loop.create_task(
+                            self.__signal_double_channel(
+                                value_signal,
+                                meta_signal,
+                                values,
+                                metas,
+                                maker,
+                                value_lock,
+                                meta_lock,
+                            )
+                        )
+                        await data
+                        if data.result() is not None:
+                            yield data.result()
+                        firstChannelReceived = True
+                # Now update accordingly
+                elif loop is not None and firstChannelReceived:
+                    if value_signal.get() is None:
+                        data = loop.create_task(
+                            self.__signal_single_channel(
+                                value_signal, values, maker, value_lock
+                            )
+                        )
+                        await data
+                        if data.result() is not None:
+                            yield data.result()
+                    if meta_signal.get() is None:
+                        data = loop.create_task(
+                            self.__signal_single_channel(
+                                meta_signal, metas, maker, meta_lock
+                            )
+                        )
+                        await data
+                        if data.result() is not None:
+                            yield data.result()
         finally:
             value_monitor.close()
             meta_monitor.close()
