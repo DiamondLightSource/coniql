@@ -172,23 +172,19 @@ class CAPlugin(Plugin):
 
     @staticmethod
     async def __signal_single_channel(value, values, maker, lock):
-        # if value is None:
         with lock:
             try:
                 # Consume a single value from the queue
                 value.disarm(values.popleft())
                 return maker.channel_from_update(**value.get())
             except IndexError:
-                # Deque has overflowed, count and return
-                # self.dropped_callbacks += 1
-                print("error deque")
+                # Should not happen but catch in case deque has overflowed
                 return None
 
     @staticmethod
     async def __signal_double_channel(
         value, meta, values, metas, maker, value_lock, meta_lock
     ):
-        # if value is None:
         with value_lock and meta_lock:
             try:
                 # Consume a single value from the queue
@@ -196,9 +192,7 @@ class CAPlugin(Plugin):
                 meta.disarm(metas.popleft())
                 return maker.channel_from_update(**value.get(), **meta.get())
             except IndexError:
-                # Deque has overflowed, count and return
-                # self.dropped_callbacks += 1
-                print("error deque")
+                # Should not happen but catch in case deque has overflowed
                 return None
 
     class UpdateSignal:
@@ -270,7 +264,7 @@ class CAPlugin(Plugin):
             # Handle all subsequent updates from both monitors.
             firstChannelReceived = False
             while True:
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.01)
                 # Wait to receive both channels at the beginning
                 if loop is not None and not firstChannelReceived:
                     if value_signal.get() is None and meta_signal.get() is None:
