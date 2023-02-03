@@ -215,9 +215,9 @@ mutation {
 @pytest.fixture(scope="session")
 def list_put():
     return (
-        r"""
+        """
 mutation {
-    putChannels(ids: ["ca://%swaveform"], values: ["[0, 1.688, \"2\"]"]) {
+    putChannels(ids: ["ca://%swaveform"], values: ["[0, 1.688, 2]"]) {
         value {
             stringArray
             base64Array {
@@ -235,7 +235,7 @@ mutation {
 @pytest.fixture(scope="session")
 def base64_put():
     value = json.dumps(json.dumps(BASE64_0_1688_2))
-    return r"""
+    return """
 mutation {
     putChannels(ids: ["ca://%swaveform"], values: [%s]) {
         value {
