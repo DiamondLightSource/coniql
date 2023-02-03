@@ -276,7 +276,7 @@
                 "sha256:06d2aad0ac723e35b1cb47885d3e5c45e956a53bc1b209a9fc5369007fe46676",
                 "sha256:5766780452bd5ec8ba133f8bf287dc92713e3868ddd83aee4faab9fc3e303dc3"
             ],
-            "markers": "python_version >= '3.6' and python_version < '4.0'",
+            "markers": "python_version >= '3.6' and python_version < '4'",
             "version": "==3.2.3"
         },
         "idna": {
@@ -573,7 +573,7 @@
                 "sha256:bf41d91ab2858360ca26d06cf21ddb3b4ff831017cd9eb11290aeb69a9e7a59c",
                 "sha256:ec258f2821e7ce2d73aeb499a4be603cc8642e5806c4682e5c34b0625dcab90e"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4.0'",
+            "markers": "python_version >= '3.7' and python_version < '4'",
             "version": "==0.155.3"
         },
         "typing-extensions": {
@@ -1104,7 +1104,7 @@
                 "sha256:06d2aad0ac723e35b1cb47885d3e5c45e956a53bc1b209a9fc5369007fe46676",
                 "sha256:5766780452bd5ec8ba133f8bf287dc92713e3868ddd83aee4faab9fc3e303dc3"
             ],
-            "markers": "python_version >= '3.6' and python_version < '4.0'",
+            "markers": "python_version >= '3.6' and python_version < '4'",
             "version": "==3.2.3"
         },
         "identify": {
@@ -1152,7 +1152,7 @@
                 "sha256:8bef7dde241278824a6d83f44a544709b065191b95b6e50894bdc722fcba0504",
                 "sha256:f84c2818376e66cf843d497486ea8fed8700b340f308f076c6fb1229dff318b6"
             ],
-            "markers": "python_full_version >= '3.8.0'",
+            "markers": "python_version >= '3.8'",
             "version": "==5.12.0"
         },
         "jinja2": {
@@ -1473,7 +1473,7 @@
                 "sha256:4187e74fda38f0f700256fb2f757774385503b04292047d0899fc913207f314b",
                 "sha256:83e2e8cc5cbb3691cff9474494816918d865120768aa36c9eda6185126667d21"
             ],
-            "markers": "python_full_version >= '3.8.0'",
+            "markers": "python_version >= '3.8'",
             "version": "==3.0.3"
         },
         "pycodestyle": {
@@ -1764,11 +1764,11 @@
         },
         "sphinxcontrib-htmlhelp": {
             "hashes": [
-                "sha256:0cbdd302815330058422b98a113195c9249825d681e18f11e8b1f78a2f11efff",
-                "sha256:c38cb46dccf316c79de6e5515e1770414b797162b23cd3d06e67020e1d2a6903"
+                "sha256:d412243dfb797ae3ec2b59eca0e52dac12e75a241bf0e4eb861e450d06c6ed07",
+                "sha256:f5f8bb2d0d629f398bf47d0d69c07bc13b65f75a81ad9e2f71a63d4b7a2f6db2"
             ],
-            "markers": "python_full_version >= '3.8.0'",
-            "version": "==2.0.1"
+            "markers": "python_version >= '3.6'",
+            "version": "==2.0.0"
         },
         "sphinxcontrib-jsmath": {
             "hashes": [
@@ -1799,7 +1799,7 @@
                 "sha256:bf41d91ab2858360ca26d06cf21ddb3b4ff831017cd9eb11290aeb69a9e7a59c",
                 "sha256:ec258f2821e7ce2d73aeb499a4be603cc8642e5806c4682e5c34b0625dcab90e"
             ],
-            "markers": "python_version >= '3.7' and python_version < '4.0'",
+            "markers": "python_version >= '3.7' and python_version < '4'",
             "version": "==0.155.3"
         },
         "tomli": {
