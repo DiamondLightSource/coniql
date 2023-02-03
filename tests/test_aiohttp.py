@@ -28,7 +28,13 @@ from strawberry.subscriptions.protocols.graphql_ws.types import (
 
 from coniql.app import create_app
 
-from .conftest import BASE64_0_1688_2, PV_PREFIX
+from .conftest import (
+    BASE64_0_1688_2,
+    PV_PREFIX,
+    ioc_creator,
+    longout_subscribe_query,
+    run_ioc,
+)
 
 
 @pytest.fixture(scope="function")
@@ -40,7 +46,7 @@ async def client(aiohttp_client):
 
 
 @pytest.mark.asyncio
-async def test_get_int_pv(ioc: Popen, client, int_query):
+async def test_get_int_pv(ioc: Popen, client: Any, int_query: str):
     query = int_query
     resp = await client.get("/ws", params={"query": query})
     assert resp.status == 200
@@ -66,7 +72,7 @@ async def test_get_int_pv(ioc: Popen, client, int_query):
 
 
 @pytest.mark.asyncio
-async def test_get_str_pv(ioc: Popen, client, str_query):
+async def test_get_str_pv(ioc: Popen, client: Any, str_query: str):
     query = str_query
     resp = await client.get("/ws", params={"query": query})
     assert resp.status == 200
@@ -75,7 +81,7 @@ async def test_get_str_pv(ioc: Popen, client, str_query):
 
 
 @pytest.mark.asyncio
-async def test_get_nan_pv(ioc: Popen, client, nan_query):
+async def test_get_nan_pv(ioc: Popen, client: Any, nan_query: str):
     query = nan_query
     val = await caget(PV_PREFIX + "nan")
     assert math.isnan(val)
@@ -86,7 +92,7 @@ async def test_get_nan_pv(ioc: Popen, client, nan_query):
 
 
 @pytest.mark.asyncio
-async def test_get_enum_pv(ioc: Popen, client, enum_query):
+async def test_get_enum_pv(ioc: Popen, client: Any, enum_query: str):
     query = enum_query
     resp = await client.get("/ws", params={"query": query})
     assert resp.status == 200
@@ -102,7 +108,7 @@ async def test_get_enum_pv(ioc: Popen, client, enum_query):
 
 
 @pytest.mark.asyncio
-async def test_put_long_and_enum(ioc: Popen, client, long_and_enum_put):
+async def test_put_long_and_enum(ioc: Popen, client: Any, long_and_enum_put: str):
     query = long_and_enum_put
     resp = await client.post("/ws", json={"query": query})
     assert resp.status == 200
@@ -127,7 +133,7 @@ async def test_put_long_and_enum(ioc: Popen, client, long_and_enum_put):
 
 
 @pytest.mark.asyncio
-async def test_put_list(ioc: Popen, client, list_put):
+async def test_put_list(ioc: Popen, client: Any, list_put: str):
     query = list_put
     resp = await client.post("/ws", json={"query": query})
     assert resp.status == 200
@@ -146,7 +152,7 @@ async def test_put_list(ioc: Popen, client, list_put):
 
 
 @pytest.mark.asyncio
-async def test_put_base64(ioc: Popen, client, base64_put):
+async def test_put_base64(ioc: Popen, client: Any, base64_put: str):
     # first dump gives {"key": "value"}, a json string
     # second dump gives \{\"key\": \"value\"\}, an escaped json string
     query = base64_put
@@ -159,8 +165,57 @@ async def test_put_base64(ioc: Popen, client, base64_put):
 
 
 @pytest.mark.asyncio
+async def test_subscribe_disconnect(client: Any):
+    pv_prefix = PV_PREFIX + "EXTRA:"
+    ioc_process = ioc_creator(pv_prefix)
+    run_ioc(ioc_process)
+    query = longout_subscribe_query(pv_prefix)
+    results: List[Dict[str, Any]] = []
+    async with client.ws_connect(
+        "/ws", protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL]
+    ) as ws:
+        await ws.send_json(ConnectionInitMessage().as_dict())
+
+        response = await ws.receive_json()
+        assert response == ConnectionAckMessage().as_dict()
+
+        await asyncio.sleep(0.1)
+        await ws.send_json(
+            SubscribeMessage(
+                id="sub1",
+                payload=SubscribeMessagePayload(query=query),
+            ).as_dict()
+        )
+        while True:
+            result = await ws.receive_json()
+            if not results:
+                # First response; now disconnect.
+                results.append(result["payload"])
+                ioc_process.communicate("exit()")
+            else:
+                # Second response; done.
+                results.append(result["payload"])
+                break
+
+        assert len(results) == 2
+        assert results[0] == dict(
+            data=dict(
+                subscribeChannel=dict(
+                    value=dict(float=42), status=dict(quality="VALID")
+                )
+            )
+        )
+        assert results[1] == dict(
+            data=dict(subscribeChannel=dict(value=None, status=dict(quality="INVALID")))
+        )
+
+        await ws.close()
+        assert ws.closed
+
+
+@pytest.mark.asyncio
 async def test_subscribe_ticking_graphql_transport_ws_protocol(
-    ioc: Popen, client, ticking_subscribe
+    ioc: Popen, client: Any, ticking_subscribe: str
 ):
     query = ticking_subscribe
     results = []
@@ -204,7 +259,7 @@ async def test_subscribe_ticking_graphql_transport_ws_protocol(
 
 @pytest.mark.asyncio
 async def test_subscribe_ticking_graphql_ws_protocol(
-    ioc: Popen, client, ticking_subscribe
+    ioc: Popen, client: Any, ticking_subscribe: str
 ):
     query = ticking_subscribe
     results = []
@@ -243,53 +298,6 @@ async def test_subscribe_ticking_graphql_ws_protocol(
                 )
             )
         assert len(results) == 3
-
-        await ws.close()
-        assert ws.closed
-
-
-# !! Must be the last test as it calls a disconnect
-@pytest.mark.asyncio
-async def test_subscribe_disconnect(ioc: Popen, client, longout_subscribe):
-    query = longout_subscribe
-    results: List[Dict[str, Any]] = []
-    async with client.ws_connect(
-        "/ws", protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL]
-    ) as ws:
-        await ws.send_json(ConnectionInitMessage().as_dict())
-
-        response = await ws.receive_json()
-        assert response == ConnectionAckMessage().as_dict()
-
-        await asyncio.sleep(0.1)
-        await ws.send_json(
-            SubscribeMessage(
-                id="sub1",
-                payload=SubscribeMessagePayload(query=query),
-            ).as_dict()
-        )
-        while True:
-            result = await ws.receive_json()
-            if not results:
-                # First response; now disconnect.
-                results.append(result["payload"])
-                ioc.communicate("exit()")
-            else:
-                # Second response; done.
-                results.append(result["payload"])
-                break
-
-        assert len(results) == 2
-        assert results[0] == dict(
-            data=dict(
-                subscribeChannel=dict(
-                    value=dict(float=55), status=dict(quality="VALID")
-                )
-            )
-        )
-        assert results[1] == dict(
-            data=dict(subscribeChannel=dict(value=None, status=dict(quality="INVALID")))
-        )
 
         await ws.close()
         assert ws.closed

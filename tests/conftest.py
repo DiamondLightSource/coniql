@@ -33,15 +33,14 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture(scope="module")
-def ioc():
+def ioc_creator(pv_prefix=PV_PREFIX):
     process = subprocess.Popen(
         [
             sys.executable,
             "-m",
             "epicscorelibs.ioc",
             "-m",
-            f"P={PV_PREFIX}",
+            f"P={pv_prefix}",
             "-d",
             SOFT_RECORDS,
         ],
@@ -51,13 +50,27 @@ def ioc():
         text=True,
     )
     wait_for_ioc(process)
+    return process
+
+
+def run_ioc(process):
     yield process
+
+
+def ioc_cleanup(process):
     purge_channel_caches()
     try:
         process.communicate("exit()")
     except ValueError:
         # Someone else already called communicate
         pass
+
+
+@pytest.fixture(scope="module")
+def ioc():
+    process = ioc_creator()
+    yield run_ioc(process)
+    ioc_cleanup(process)
 
 
 @pytest.fixture(scope="session")
@@ -154,8 +167,7 @@ query {
     )
 
 
-@pytest.fixture(scope="session")
-def longout_subscribe():
+def longout_subscribe_query(pv_prefix):
     return (
         """
 subscription {
@@ -169,8 +181,13 @@ subscription {
     }
 }
 """
-        % PV_PREFIX
+        % pv_prefix
     )
+
+
+@pytest.fixture(scope="session")
+def longout_subscribe():
+    return longout_subscribe_query(PV_PREFIX)
 
 
 @pytest.fixture(scope="session")
