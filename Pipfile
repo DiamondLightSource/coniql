@@ -12,7 +12,7 @@ coniql = {editable = true, path = "."}
 [scripts]
 lint = "pre-commit run --all-files --show-diff-on-failure --color=always -v"
 # Not running tests until full subscription/query/put are implemented
-# tests = "pytest"
+tests = "pytest"
 docs = "sphinx-build -EWT --keep-going docs build/html"
 # Delete any files that git ignore hides from us
 gitclean = "git clean -fdX"
