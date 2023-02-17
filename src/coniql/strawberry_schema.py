@@ -10,12 +10,10 @@ import strawberry
 
 from coniql.caplugin import CAPlugin
 from coniql.plugin import PluginStore
-from coniql.pvaplugin import PVAPlugin
 from coniql.simplugin import SimPlugin
 
 store_global = PluginStore()
 store_global.add_plugin("ssim", SimPlugin())
-store_global.add_plugin("pva", PVAPlugin())
 store_global.add_plugin("ca", CAPlugin(), set_default=True)
 
 
