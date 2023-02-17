@@ -2,7 +2,7 @@ import asyncio
 import math
 import time
 from dataclasses import dataclass, replace
-from typing import AsyncGenerator, Dict, List, Optional, Set, Type
+from typing import AsyncGenerator, Dict, List, Optional, Sequence, Set, Type
 
 import numpy as np
 
@@ -160,6 +160,9 @@ class SineSim(Sim):
     def compute_changes(self):
         self.x += self.step
         value = self.min + (math.sin(self.x) + 1.0) / 2.0 * self.range
+        assert self.channel.display is not None
+        assert self.channel.display.alarmRange is not None
+        assert self.channel.display.warningRange is not None
         if not self.channel.display.alarmRange.contains(value):
             status = ChannelStatus.alarm("Outside alarm range")
         elif not self.channel.display.warningRange.contains(value):
@@ -327,6 +330,6 @@ class SimPlugin(Plugin):
             self.listeners[pv].remove(q)
 
     async def put_channels(
-        self, pvs: List[str], values: List[PutValue], timeout: float
+        self, pvs: List[str], values: Sequence[PutValue], timeout: float
     ):
         raise RuntimeError(f"Cannot put {values!r} to {pvs}, as they aren't writeable")

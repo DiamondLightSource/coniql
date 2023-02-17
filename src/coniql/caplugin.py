@@ -2,7 +2,7 @@ import asyncio
 import collections
 import threading
 from dataclasses import dataclass
-from typing import AsyncIterator, Deque, List, Optional
+from typing import AsyncIterator, Deque, List, Optional, Sequence
 
 from aioca import (
     DBE_PROPERTY,
@@ -166,7 +166,7 @@ class CAPlugin(Plugin):
         return maker.channel_from_update(time_value=time_value, meta_value=meta_value)
 
     async def put_channels(
-        self, pvs: List[str], values: List[PutValue], timeout: float
+        self, pvs: List[str], values: Sequence[PutValue], timeout: float
     ):
         await caput(pvs, values, timeout=timeout)
 
@@ -197,7 +197,7 @@ class CAPlugin(Plugin):
 
     class UpdateSignal:
         def __init__(self):
-            self.value = 1
+            self.value: Optional[int] = 1
 
         def arm(self):
             self.value = None

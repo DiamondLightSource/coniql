@@ -1,4 +1,4 @@
-from typing import AsyncIterator, Dict, List, Tuple, Union
+from typing import AsyncIterator, Dict, List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -15,7 +15,7 @@ class Plugin:
         raise NotImplementedError(self)
 
     async def put_channels(
-        self, pvs: List[str], values: List[PutValue], timeout: float
+        self, pvs: List[str], values: Sequence[PutValue], timeout: float
     ):
         """Put a value to a channel, returning the structure after put"""
         raise NotImplementedError(self)

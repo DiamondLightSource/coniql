@@ -6,6 +6,7 @@ from enum import Enum
 from typing import Any, Callable, List, Optional
 
 import numpy as np
+import strawberry
 
 from .coniql_schema import DisplayForm, Widget
 
@@ -48,6 +49,7 @@ class ChannelDisplay:
     choices: Optional[List[str]] = None
 
 
+@strawberry.enum
 @dataclass
 class NumberType(Enum):
     INT8 = "INT8"
@@ -62,6 +64,18 @@ class NumberType(Enum):
     FLOAT64 = "FLOAT64"
 
 
+@strawberry.enum
+class ChannelRole(Enum):
+    """
+    What access role has the Channel
+    """
+
+    RO = "RO"
+    WO = "WO"
+    RW = "RW"
+
+
+@strawberry.type
 @dataclass
 class Base64Array:
     # Type of the native array
@@ -170,8 +184,15 @@ CHANNEL_QUALITY_MAP = [
 
 @dataclass
 class ChannelStatus:
+    """
+    The current status of a Channel, including alarm and connection status
+    """
+
+    # Of what quality is the current Channel value
     quality: str
+    # Free form text describing the current status
     message: str
+    # Whether the Channel will currently accept mutations
     mutable: bool
 
     @classmethod
@@ -199,14 +220,22 @@ class ChannelStatus:
         return cls("CHANGING", message, mutable)
 
 
+@strawberry.type
 @dataclass
 class ChannelTime:
+    """
+    Timestamp indicating when a value was last updated
+    """
+
+    # Floating point number of seconds since Jan 1, 1970 00:00:00 UTC
     seconds: float
+    # A more accurate version of the nanoseconds part of the seconds field
     nanoseconds: int
+    # An integer value whose interpretation is deliberately undefined
     userTag: int
 
     @classmethod
-    def now(cls):
+    def now(cls) -> "ChannelTime":
         now = time.time()
         return cls(now, int(now % 1 / 1e-9), 0)
 
