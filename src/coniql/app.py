@@ -1,3 +1,4 @@
+import logging
 from argparse import ArgumentParser
 from pathlib import Path
 from typing import List, Optional
@@ -23,7 +24,10 @@ class ConiqlSchema(strawberry.Schema):
         execution_context: Optional[ExecutionContext] = None,
     ) -> None:
         for error in errors:
-            print(error.message)
+            if not error.message:
+                logging.error("Unknown error occurred. Enable debugging to find cause.")
+            else:
+                logging.error(error.message)
 
 
 def create_schema(debug: bool):
