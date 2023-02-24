@@ -303,7 +303,7 @@ class Subscription:
     has type "T", variable has type "Channel"'. Possibly a Strawberry issue
     as strawberry.subscription is a partial function"""
 
-    subscribeChannel: Channel = strawberry.subscription(
+    subscribeChannel: Optional[Channel] = strawberry.subscription(
         resolver=subscribe_channel
     )  # type: ignore
 
