@@ -41,7 +41,8 @@ from .conftest import (
 async def client(aiohttp_client):
     cors = True
     debug = False
-    client = await aiohttp_client(create_app(cors, debug))
+    graphiql = False
+    client = await aiohttp_client(create_app(cors, debug, graphiql))
     return client
 
 

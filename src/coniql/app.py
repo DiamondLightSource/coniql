@@ -48,7 +48,7 @@ def create_schema(debug: bool):
         )
 
 
-def create_app(use_cors: bool, debug: bool):
+def create_app(use_cors: bool, debug: bool, graphiql: bool):
     # Create the schema
     strawberry_schema = create_schema(debug)
 
@@ -56,6 +56,7 @@ def create_app(use_cors: bool, debug: bool):
     view = GraphQLView(
         schema=strawberry_schema,
         subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
+        graphiql=graphiql,
     )
 
     # Create app
@@ -103,7 +104,13 @@ def main(args=None) -> None:
         default=False,
         help="Print stack trace on errors",
     )
+    parser.add_argument(
+        "--graphiql",
+        action="store_true",
+        default=False,
+        help="Enable GraphiQL for testing at localhost:8080/ws",
+    )
     parsed_args = parser.parse_args(args)
 
-    app = create_app(parsed_args.cors, parsed_args.debug)
+    app = create_app(parsed_args.cors, parsed_args.debug, parsed_args.graphiql)
     web.run_app(app)
