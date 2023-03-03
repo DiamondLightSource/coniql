@@ -181,8 +181,8 @@ class CAPlugin(Plugin):
         with lock:
             try:
                 # Consume a single value from the queue
-                value.disarm(values.popleft())
-                return maker.channel_from_update(**value.get())
+                value.disarm()
+                return maker.channel_from_update(**values.popleft())
             except IndexError:
                 # In case deque is empty just return an empty channel
                 return maker.channel_from_update()
@@ -200,25 +200,25 @@ class CAPlugin(Plugin):
         with value_lock and meta_lock:
             try:
                 # Consume a single value from the queue
-                value.disarm(values.popleft())
-                meta.disarm(metas.popleft())
-                return maker.channel_from_update(**value.get(), **meta.get())
+                value.disarm()
+                meta.disarm()
+                return maker.channel_from_update(**values.popleft(), **metas.popleft())
             except IndexError:
                 # In case deque is empty just return an empty channel
                 return maker.channel_from_update()
 
     class UpdateSignal:
         def __init__(self):
-            self.value: Optional[int] = 1
+            self.signal: bool = False
 
         def arm(self):
-            self.value = None
+            self.signal = True
 
-        def disarm(self, v):
-            self.value = v
+        def disarm(self):
+            self.signal = False
 
-        def get(self):
-            return self.value
+        def is_armed(self) -> bool:
+            return self.signal
 
     def __callback(
         self,
@@ -286,7 +286,7 @@ class CAPlugin(Plugin):
                 await asyncio.sleep(0.01)
                 # Wait to receive both channels at the beginning
                 if loop is not None and not firstChannelReceived:
-                    if value_signal.get() is None and meta_signal.get() is None:
+                    if value_signal.is_armed() and meta_signal.is_armed():
                         data = loop.create_task(
                             self.__signal_double_channel(
                                 value_signal,
@@ -304,7 +304,7 @@ class CAPlugin(Plugin):
                         firstChannelReceived = True
                 # Now update accordingly
                 elif loop is not None and firstChannelReceived:
-                    if value_signal.get() is None:
+                    if value_signal.is_armed():
                         data = loop.create_task(
                             self.__signal_single_channel(
                                 value_signal, values, maker, value_lock
@@ -313,7 +313,7 @@ class CAPlugin(Plugin):
                         await data
                         if data.result() is not None:
                             yield data.result()
-                    if meta_signal.get() is None:
+                    if meta_signal.is_armed():
                         data = loop.create_task(
                             self.__signal_single_channel(
                                 meta_signal, metas, maker, meta_lock
