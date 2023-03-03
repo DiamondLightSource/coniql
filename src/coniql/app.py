@@ -92,20 +92,18 @@ def main(args=None) -> None:
         help="Paths to .coniql.yaml files describing Channels and Devices",
     )
     parser.add_argument(
-        "--cors", action="store_true", help="Allow CORS for all origins and routes"
+        "--cors",
+        action="store_true",
+        default=False,
+        help="Allow CORS for all origins and routes",
     )
     parser.add_argument(
-        "--debug", action="store_true", help="Print stack trace on errors"
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Print stack trace on errors",
     )
     parsed_args = parser.parse_args(args)
 
-    debug = False
-    if parsed_args.debug:
-        debug = True
-
-    cors = False
-    if parsed_args.cors:
-        cors = True
-
-    app = create_app(cors, debug)
+    app = create_app(parsed_args.cors, parsed_args.debug)
     web.run_app(app)
