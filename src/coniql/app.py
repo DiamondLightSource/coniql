@@ -17,7 +17,9 @@ from . import __version__
 
 
 class ConiqlSchema(strawberry.Schema):
-    # Override to remove stack trace printer with every log
+    # Override to remove stack trace printer with every log.
+    # Note that is mechanisms is undocumented and could break if Strawberry
+    # update the underlying code this is based on.
     def process_errors(
         self,
         errors: List[GraphQLError],
