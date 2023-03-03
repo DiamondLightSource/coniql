@@ -183,7 +183,7 @@ class CAPlugin(Plugin):
                 value.disarm(values.popleft())
                 return maker.channel_from_update(**value.get())
             except IndexError:
-                # Should not happen but catch in case deque has overflowed
+                # In case deque is empty just return an empty channel
                 return maker.channel_from_update()
 
     @staticmethod
@@ -203,7 +203,7 @@ class CAPlugin(Plugin):
                 meta.disarm(metas.popleft())
                 return maker.channel_from_update(**value.get(), **meta.get())
             except IndexError:
-                # Should not happen but catch in case deque has overflowed
+                # In case deque is empty just return an empty channel
                 return maker.channel_from_update()
 
     class UpdateSignal:
