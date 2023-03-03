@@ -1,5 +1,6 @@
 import asyncio
 import collections
+import logging
 import threading
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Deque, List, Optional, Sequence
@@ -276,7 +277,7 @@ class CAPlugin(Plugin):
                 loop = asyncio.get_running_loop()
             except RuntimeError:
                 # 'RuntimeError: There is no current event loop...'
-                print("No current event loop...")
+                logging.error("No running event loop...")
                 loop = None
 
             # Handle all subsequent updates from both monitors.
