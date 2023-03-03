@@ -2,7 +2,7 @@ import asyncio
 import collections
 import threading
 from dataclasses import dataclass
-from typing import AsyncIterator, Deque, List, Optional, Sequence
+from typing import Any, AsyncIterator, Deque, List, Optional, Sequence
 
 from aioca import (
     DBE_PROPERTY,
@@ -171,7 +171,12 @@ class CAPlugin(Plugin):
         await caput(pvs, values, timeout=timeout)
 
     @staticmethod
-    async def __signal_single_channel(value, values, maker, lock):
+    async def __signal_single_channel(
+        value: "UpdateSignal",
+        values: Deque[AugmentedValue],
+        maker: CAChannelMaker,
+        lock: threading.Lock,
+    ) -> Channel:
         with lock:
             try:
                 # Consume a single value from the queue
@@ -179,12 +184,18 @@ class CAPlugin(Plugin):
                 return maker.channel_from_update(**value.get())
             except IndexError:
                 # Should not happen but catch in case deque has overflowed
-                return None
+                return maker.channel_from_update()
 
     @staticmethod
     async def __signal_double_channel(
-        value, meta, values, metas, maker, value_lock, meta_lock
-    ):
+        value: "UpdateSignal",
+        meta: "UpdateSignal",
+        values: Deque[AugmentedValue],
+        metas: Deque[AugmentedValue],
+        maker: CAChannelMaker,
+        value_lock: threading.Lock,
+        meta_lock: threading.Lock,
+    ) -> Channel:
         with value_lock and meta_lock:
             try:
                 # Consume a single value from the queue
@@ -193,7 +204,7 @@ class CAPlugin(Plugin):
                 return maker.channel_from_update(**value.get(), **meta.get())
             except IndexError:
                 # Should not happen but catch in case deque has overflowed
-                return None
+                return maker.channel_from_update()
 
     class UpdateSignal:
         def __init__(self):
@@ -208,7 +219,14 @@ class CAPlugin(Plugin):
         def get(self):
             return self.value
 
-    def __callback(self, v, dict_key, signal, value_deque, lock):
+    def __callback(
+        self,
+        v: Any,
+        dict_key: str,
+        signal: UpdateSignal,
+        value_deque: Deque[AugmentedValue],
+        lock: threading.Lock,
+    ) -> None:
         with lock:
             value_deque.append({dict_key: v})
             signal.arm()
