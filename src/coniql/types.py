@@ -124,9 +124,7 @@ class ChannelFormatter:
         number_format_string = make_number_format_string(precision)
 
         # ndarray -> base64 encoded array
-        def ndarray_to_base64_array(
-            value: np.ndarray, length: int = 0
-        ) -> Optional[Base64Array]:
+        def ndarray_to_base64_array(value: np.ndarray, length: int = 0) -> Base64Array:
             if length > 0:
                 value = value[:length]
             return Base64Array(
