@@ -178,6 +178,10 @@ class CAPlugin(Plugin):
         maker: CAChannelMaker,
         lock: threading.Lock,
     ) -> Channel:
+        """Called when a specific signals is armed indicating that data are
+        are ready to be read from the corresponding deques. The signal is
+        disarmed so it is ready for the next update and the deque's contents
+        is used to create and return a Channel object containing the update."""
         with lock:
             try:
                 # Consume a single value from the queue
@@ -197,6 +201,11 @@ class CAPlugin(Plugin):
         value_lock: threading.Lock,
         meta_lock: threading.Lock,
     ) -> Channel:
+        """Called when both value and metadata signals are armed indicating
+        that values are ready to be read from the value and metadata deques.
+        Signals are disarmed so they are ready for next update and the deque's
+        contents are used to create and return a Channel object containing
+        the update."""
         with value_lock and meta_lock:
             try:
                 # Consume a single value from the queue
@@ -208,6 +217,8 @@ class CAPlugin(Plugin):
                 return maker.channel_from_update()
 
     class UpdateSignal:
+        """Class used to signal when an update is available"""
+
         def __init__(self):
             self.signal: bool = False
 
