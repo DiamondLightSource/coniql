@@ -12,6 +12,7 @@ from coniql.types import (
     Channel,
     ChannelDisplay,
     ChannelFormatter,
+    ChannelRole,
     ChannelStatus,
     ChannelTime,
     ChannelValue,
@@ -84,7 +85,7 @@ def make_display(
     warning_percent: float,
     alarm_percent: float,
     description: str,
-    role: str,
+    role: ChannelRole,
     widget: Widget,
 ) -> ChannelDisplay:
     assert max_value > min_value, "max_value %s is not > min_value %s" % (
@@ -148,7 +149,7 @@ class SineSim(Sim):
             warning_percent,
             alarm_percent,
             description="A Sine value generator",
-            role="RO",
+            role=ChannelRole.RO,
             widget=Widget.TEXTUPDATE,
         )
         self.channel.display = display
@@ -207,7 +208,7 @@ class SineWaveSim(Sim):
             warning_percent=100.0,
             alarm_percent=100.0,
             description="A Sine waveform generator",
-            role="RO",
+            role=ChannelRole.RO,
             widget=Widget.PLOTY,
         )
         self.channel.display = display
@@ -261,7 +262,7 @@ class RampWaveSim(Sim):
             warning_percent=100.0,
             alarm_percent=100.0,
             description="A ramp waveform generator",
-            role="RO",
+            role=ChannelRole.RO,
             widget=Widget.PLOTY,
         )
         self.channel.display = display

@@ -11,10 +11,18 @@ import strawberry
 from .coniql_schema import DisplayForm, Widget
 
 
+@strawberry.type
 @dataclass
 class Range:
-    min: Optional[float]
-    max: Optional[float]
+    """
+    A range of numbers. Null in either field means unbounded in that direction.
+    A value is in range if min <= value <= max
+    """
+
+    # The minimum number that is in this range
+    min: float
+    # The maximum that is in this range
+    max: float
 
     def contains(self, value: float) -> bool:
         rmin = math.nan if self.min is None else self.min
@@ -34,18 +42,29 @@ DISPLAY_FORM_MAP = [
 ]
 
 
-@dataclass
+@strawberry.type
 class ChannelDisplay:
+    # A human readable possibly multi-line description for a tooltip
     description: str
-    role: str
-    widget: Widget
+    # What access role does the Channel have
+    role: "ChannelRole"
+    # Default widget to display this Channel
+    widget: Optional[Widget]
+    # If numeric, the range the put value should be within
     controlRange: Optional[Range] = None
+    # If numeric, the range the current value should be within
     displayRange: Optional[Range] = None
+    # If numeric, the range outside of which an alarm will be produced
     alarmRange: Optional[Range] = None
+    # If numeric, the range outside of which a warning will be produced
     warningRange: Optional[Range] = None
+    # If numeric, the physical units for the value field
     units: Optional[str] = None
+    # If numeric, the number of decimal places to display
     precision: Optional[int] = None
+    # If numeric, how should value be displayed
     form: Optional[DisplayForm] = None
+    # If given, the value should be one of these choices
     choices: Optional[List[str]] = None
 
 

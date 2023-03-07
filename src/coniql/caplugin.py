@@ -24,6 +24,7 @@ from coniql.types import (
     Channel,
     ChannelDisplay,
     ChannelFormatter,
+    ChannelRole,
     ChannelStatus,
     ChannelTime,
     ChannelValue,
@@ -80,7 +81,7 @@ class CAChannelMaker:
             value = ChannelValue(meta_value, self.formatter)
             display = ChannelDisplay(
                 description=self.name,
-                role="RW",
+                role=ChannelRole.RW,
                 widget=Widget.TEXTINPUT,
                 form=None,
             )

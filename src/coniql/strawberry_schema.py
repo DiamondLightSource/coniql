@@ -13,8 +13,7 @@ from coniql.plugin import PluginStore
 from coniql.simplugin import SimPlugin
 from coniql.types import Base64Array as TypeBase64Array
 from coniql.types import Channel as TypeChannel
-from coniql.types import ChannelDisplay as TypeChannelDisplay
-from coniql.types import ChannelRole as ChannelRole
+from coniql.types import ChannelDisplay
 from coniql.types import ChannelStatus as TypeChannelStatus
 from coniql.types import ChannelTime as TypeChannelTime
 from coniql.types import ChannelValue as TypeChannelValue
@@ -59,70 +58,6 @@ class SubscribeChannel(DeferredChannel):
     def __init__(self, channel_id: str, channel: TypeChannel):
         self.id = channel_id
         self.channel = channel
-
-
-@strawberry.enum
-class Widget(Enum):
-    """
-    Widget that should be used to display a Channel
-    """
-
-    # Editable text input
-    TEXTINPUT = "TEXTINPUT"
-    # Read-only text display
-    TEXTUPDATE = "TEXTUPDATE"
-    # Multiline read-only text display
-    MULTILINETEXTUPDATE = "MULTILINETEXTUPDATE"
-    # Read-only LED indicator
-    LED = "LED"
-    # Editable combo-box style menu for selecting between fixed choices
-    COMBO = "COMBO"
-    # Editable check box
-    CHECKBOX = "CHECKBOX"
-    # Editable progress type bar
-    BAR = "BAR"
-    # Clickable button to send default value to Channel
-    BUTTON = "BUTTON"
-    # X-axis for lines on a graph. Only valid within a Group with widget Plot
-    PLOTX = "PLOTX"
-    # Y-axis for a line on a graph. Only valid within a Group with widget Plot
-    PLOTY = "PLOTY"
-
-
-@strawberry.enum
-class DisplayForm(Enum):
-    """
-    Instructions for how a number should be formatted for display
-    """
-
-    # Use the default representation from value
-    DEFAULT = "DEFAULT"
-    # Force string representation, most useful for array of bytes
-    STRING = "STRING"
-    # Binary, precision determines number of binary digits
-    BINARY = "BINARY"
-    # Decimal, precision determines number of digits after decimal point
-    DECIMAL = "DECIMAL"
-    # Hexadecimal, precision determines number of hex digits
-    HEX = "HEX"
-    # Exponential, precision determines number of digits after decimal point
-    EXPONENTIAL = "EXPONENTIAL"
-    # Exponential where exponent is multiple of 3, precision determines number
-    # of digits after decimal point
-    ENGINEERING = "ENGINEERING"
-
-
-@strawberry.type
-class Range:
-    """
-    A range of numbers. Null in either field means unbounded in that direction.
-    A value is in range if min <= value <= max
-    """
-
-    # The minimum number that is in this range
-    min: float
-    # The maximum that is in this range
-    max: float
 
 
 @strawberry.enum
@@ -211,32 +146,6 @@ class ChannelTime(TypeChannelTime):
         return datetime.datetime.fromtimestamp(root.seconds)
 
 
-@strawberry.type
-class ChannelDisplay:
-    # A human readable possibly multi-line description for a tooltip
-    description: str
-    # What access role does the Channel have
-    role: ChannelRole
-    # Default widget to display this Channel
-    widget: Optional[Widget]
-    # If numeric, the range the put value should be within
-    controlRange: Optional[Range]
-    # If numeric, the range the current value should be within
-    displayRange: Optional[Range]
-    # If numeric, the range outside of which an alarm will be produced
-    alarmRange: Optional[Range]
-    # If numeric, the range outside of which a warning will be produced
-    warningRange: Optional[Range]
-    # If numeric, the physical units for the value field
-    units: Optional[str]
-    # If numeric, the number of decimal places to display
-    precision: Optional[int]
-    # If numeric, how should value be displayed
-    form: Optional[DisplayForm]
-    # If given, the value should be one of these choices
-    choices: Optional[List[str]]
-
-
 async def resolver_value(root: DeferredChannel) -> Optional[TypeChannelValue]:
     channel = await root.get_channel()
     return channel.get_value()
@@ -252,7 +161,7 @@ async def resolver_status(root: DeferredChannel) -> Optional[TypeChannelStatus]:
     return channel.get_status()
 
 
-async def resolver_display(root: DeferredChannel) -> Optional[TypeChannelDisplay]:
+async def resolver_display(root: DeferredChannel) -> Optional[ChannelDisplay]:
     channel = await root.get_channel()
     return channel.get_display()
 
