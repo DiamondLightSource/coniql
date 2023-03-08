@@ -3,7 +3,7 @@ import base64
 import datetime
 import json
 from enum import Enum
-from typing import AsyncGenerator, List, Optional, Sequence
+from typing import AsyncGenerator, List, Optional, Sequence, Union
 
 import numpy as np
 import strawberry
@@ -239,17 +239,17 @@ class Mutation:
             pvs.append(store.transport_pv(pv)[1])
         results = []
         for value in put_values:
+            put_value: Union[str, np.ndarray] = value
             if value[:1] in "[{":
                 # need to json decode
-                value = json.loads(value)
-                if isinstance(value, dict):
+                put_value = json.loads(value)
+                if isinstance(put_value, dict):
                     # decode base64 array
-                    dtype = np.dtype(value["numberType"].lower())
-                    value_b = base64.b64decode(value["base64"])
+                    dtype = np.dtype(put_value["numberType"].lower())
+                    value_b = base64.b64decode(put_value["base64"])
                     # https://stackoverflow.com/a/6485943
-                    value_nd = np.frombuffer(value_b, dtype=dtype)
-                    value = np.array2string(value_nd)
-            results.append(value)
+                    put_value = np.frombuffer(value_b, dtype=dtype)
+            results.append(put_value)
         assert len(results) == len(pvs), "Mismatch in ids and values length"
         assert (
             len(plugins) == 1
