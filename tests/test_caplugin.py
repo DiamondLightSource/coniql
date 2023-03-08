@@ -109,7 +109,8 @@ async def test_put_list(ioc: Popen, schema: Schema, list_put: str):
             dict(
                 value=dict(
                     stringArray=["0.0", "1.7", "2.0"], base64Array=BASE64_0_1688_2
-                )
+                ),
+                time=ANY,
             )
         ]
     )
@@ -122,7 +123,7 @@ async def test_put_base64(ioc: Popen, schema: Schema, base64_put: str):
     query = base64_put
     result = await schema.execute(query)
     assert result.data == dict(
-        putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]))]
+        putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]), time=ANY)]
     )
 
 

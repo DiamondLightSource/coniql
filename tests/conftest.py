@@ -190,8 +190,7 @@ def longout_subscribe():
     return longout_subscribe_query(PV_PREFIX)
 
 
-@pytest.fixture(scope="session")
-def ticking_subscribe():
+def ticking_subscribe_query():
     return (
         """
 subscription {
@@ -208,6 +207,11 @@ subscription {
 """
         % PV_PREFIX
     )
+
+
+@pytest.fixture(scope="session")
+def ticking_subscribe():
+    return ticking_subscribe_query()
 
 
 @pytest.fixture(scope="session")
@@ -242,6 +246,9 @@ mutation {
                 base64
             }
         }
+        time {
+            datetime
+        }
     }
 }
 """
@@ -257,6 +264,9 @@ mutation {
     putChannels(ids: ["ca://%swaveform"], values: [%s]) {
         value {
             stringArray
+        }
+        time {
+            datetime
         }
     }
 }

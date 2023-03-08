@@ -34,6 +34,7 @@ from .conftest import (
     ioc_creator,
     longout_subscribe_query,
     run_ioc,
+    ticking_subscribe_query,
 )
 
 
@@ -145,7 +146,8 @@ async def test_put_list(ioc: Popen, client: Any, list_put: str):
                 dict(
                     value=dict(
                         stringArray=["0.0", "1.7", "2.0"], base64Array=BASE64_0_1688_2
-                    )
+                    ),
+                    time=ANY,
                 )
             ]
         )
@@ -161,7 +163,9 @@ async def test_put_base64(ioc: Popen, client: Any, base64_put: str):
     assert resp.status == 200
     result = await resp.json()
     assert result == dict(
-        data=dict(putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]))])
+        data=dict(
+            putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]), time=ANY)]
+        )
     )
 
 
@@ -214,76 +218,53 @@ async def test_subscribe_disconnect(client: Any):
         assert ws.closed
 
 
+subscribe_params = [
+    (
+        GRAPHQL_TRANSPORT_WS_PROTOCOL,
+        ConnectionInitMessage().as_dict(),
+        ConnectionAckMessage().as_dict(),
+        SubscribeMessage(
+            id="sub1",
+            payload=SubscribeMessagePayload(query=ticking_subscribe_query()),
+        ).as_dict(),
+    ),
+    (
+        GRAPHQL_WS_PROTOCOL,
+        OperationMessage(type=GQL_CONNECTION_INIT),
+        OperationMessage(type=GQL_CONNECTION_ACK),
+        OperationMessage(
+            type=GQL_START,
+            id="sub1",
+            payload=StartPayload(query=ticking_subscribe_query()),
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize("ws_protocol,msg_init,msg_ack,msg_send", subscribe_params)
 @pytest.mark.asyncio
-async def test_subscribe_ticking_graphql_transport_ws_protocol(
-    ioc: Popen, client: Any, ticking_subscribe: str
+async def test_subscribe_pv(
+    ioc: Popen,
+    client: Any,
+    ws_protocol,
+    msg_init,
+    msg_ack,
+    msg_send,
 ):
-    query = ticking_subscribe
     results = []
     await caput(PV_PREFIX + "ticking", 0.0)
     start = time.time()
-    async with client.ws_connect(
-        "/ws", protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL]
-    ) as ws:
-        await ws.send_json(ConnectionInitMessage().as_dict())
+    async with client.ws_connect("/ws", protocols=[ws_protocol]) as ws:
+        await ws.send_json(msg_init)
 
         response = await ws.receive_json()
-        assert response == ConnectionAckMessage().as_dict()
+        assert response == msg_ack
 
-        await ws.send_json(
-            SubscribeMessage(
-                id="sub1",
-                payload=SubscribeMessagePayload(query=query),
-            ).as_dict()
-        )
+        await ws.send_json(msg_send)
         while True:
             if time.time() - start > 0.5:
                 break
             result = await ws.receive_json()
-            results.append(result["payload"])
-        for i in range(3):
-            display = None
-            if i == 0:
-                display = dict(precision=5, units="mm")
-            assert results[i] == dict(
-                data=dict(
-                    subscribeChannel=dict(
-                        value=dict(string="%.5f mm" % i), display=display
-                    )
-                )
-            )
-        assert len(results) == 3
-
-        await ws.close()
-        assert ws.closed
-
-
-@pytest.mark.asyncio
-async def test_subscribe_ticking_graphql_ws_protocol(
-    ioc: Popen, client: Any, ticking_subscribe: str
-):
-    query = ticking_subscribe
-    results = []
-    await caput(PV_PREFIX + "ticking", 0.0)
-    start = time.time()
-    async with client.ws_connect("/ws", protocols=[GRAPHQL_WS_PROTOCOL]) as ws:
-        await ws.send_json(OperationMessage(type=GQL_CONNECTION_INIT))
-
-        response = await ws.receive_json()
-        assert response == OperationMessage(type=GQL_CONNECTION_ACK)
-
-        await ws.send_json(
-            OperationMessage(
-                type=GQL_START,
-                id="sub1",
-                payload=StartPayload(query=query),
-            )
-        )
-        while True:
-            if time.time() - start > 0.5:
-                break
-            result = await ws.receive_json()
-            # Ignore keep alive messages
             if result["type"] == GQL_CONNECTION_KEEP_ALIVE:
                 continue
             results.append(result["payload"])
