@@ -15,7 +15,10 @@ SOFT_RECORDS = str(Path(__file__).parent / "soft_records.db")
 
 PV_PREFIX = "".join(random.choice(string.ascii_uppercase) for _ in range(12)) + ":"
 
-BASE64_0_1688_2 = dict(numberType="FLOAT64", base64="AAAAAAAAAAA1XrpJDAL7PwAAAAAAAABA")
+BASE64_0_1688_2 = {
+    "numberType": "FLOAT64",
+    "base64": "AAAAAAAAAAA1XrpJDAL7PwAAAAAAAABA",
+}
 
 
 def wait_for_ioc(ioc):

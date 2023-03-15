@@ -46,14 +46,17 @@ query {
         if i != 0:
             await asyncio.sleep(1.0)
         result = await schema.execute(query)
-        assert result.data == dict(
-            getChannel=dict(
-                value=dict(
-                    float=x, string="%.5f" % x, base64Array=None, stringArray=None
-                ),
-                display=dict(widget="TEXTUPDATE"),
-            ),
-        )
+        assert result.data == {
+            "getChannel": {
+                "value": {
+                    "float": x,
+                    "string": "%.5f" % x,
+                    "base64Array": None,
+                    "stringArray": None,
+                },
+                "display": {"widget": "TEXTUPDATE"},
+            },
+        }
 
 
 @pytest.mark.asyncio
@@ -97,7 +100,7 @@ subscription {
         if time.time() - start > 2:
             break
     for i, x in enumerate(EXPECTED_SIM_SINE):
-        assert results[i] == dict(subscribeChannel=dict(value=dict(float=x)))
+        assert results[i] == {"subscribeChannel": {"value": {"float": x}}}
     assert len(results) == 3
 
 
@@ -128,7 +131,7 @@ subscription {
         ["3.00000", "4.00000", "5.00000"],
     ]
     for i, x in enumerate(expected):
-        assert results[i] == dict(subscribeChannel=dict(value=dict(stringArray=x)))
+        assert results[i] == {"subscribeChannel": {"value": {"stringArray": x}}}
 
 
 @pytest.mark.asyncio
@@ -148,36 +151,36 @@ query {
 }
 """
     result = await schema.execute(query)
-    assert result.data == dict(
-        getChannel=dict(
-            value=dict(
-                string=str(np.zeros(50)),
-                stringArray=["%.5f" % x for x in np.zeros(10)],
-                base64Array=dict(
-                    numberType="FLOAT64",
-                    base64=base64.b64encode(np.zeros(50).tobytes()).decode(),
-                ),
-            )
-        )
-    )
+    assert result.data == {
+        "getChannel": {
+            "value": {
+                "string": str(np.zeros(50)),
+                "stringArray": ["%.5f" % x for x in np.zeros(10)],
+                "base64Array": {
+                    "numberType": "FLOAT64",
+                    "base64": base64.b64encode(np.zeros(50).tobytes()).decode(),
+                },
+            }
+        }
+    }
     await asyncio.sleep(1.0)
     result = await schema.execute(query)
     assert result.data is not None
     b64s = result.data["getChannel"]["value"]["base64Array"]["base64"]
     str_value = np.frombuffer(base64.b64decode(b64s), dtype=np.float64)
     value = base64.b64decode(b64s)
-    assert result.data == dict(
-        getChannel=dict(
-            value=dict(
-                string=str(str_value),
-                stringArray=["%.5f" % x for x in str_value[:10]],
-                base64Array=dict(
-                    numberType="FLOAT64",
-                    base64=base64.b64encode(value).decode(),
-                ),
-            )
-        )
-    )
+    assert result.data == {
+        "getChannel": {
+            "value": {
+                "string": str(str_value),
+                "stringArray": ["%.5f" % x for x in str_value[:10]],
+                "base64Array": {
+                    "numberType": "FLOAT64",
+                    "base64": base64.b64encode(value).decode(),
+                },
+            }
+        }
+    }
 
 
 def test_cli_version():
