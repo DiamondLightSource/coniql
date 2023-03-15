@@ -4,7 +4,9 @@ import random
 import string
 import subprocess
 import sys
+from datetime import datetime
 from pathlib import Path
+from unittest.mock import ANY
 
 import pytest
 from aioca import purge_channel_caches
@@ -73,10 +75,20 @@ def ioc():
     ioc_cleanup(process)
 
 
-@pytest.fixture(scope="session")
-def int_query():
-    return (
-        """
+def check_put_timestamp(result):
+    thens = [
+        datetime.fromisoformat(r["time"]["datetime"]) for r in result["putChannels"]
+    ]
+
+    now = datetime.now()
+    for then in thens:
+        diff = now - then
+        # Shouldn't take more than this time to get the result of a put out
+        assert diff.total_seconds() < 0.2
+
+
+longout_get_query = (
+    """
 query {
     getChannel(id: "ca://%slongout") {
         value {
@@ -111,14 +123,30 @@ query {
     }
 }
 """
-        % PV_PREFIX
-    )
+    % PV_PREFIX
+)
 
 
-@pytest.fixture(scope="session")
-def str_query():
-    return (
-        """
+longout_get_query_result = {
+    "getChannel": {
+        "value": {"float": 42.0, "string": "42"},
+        "display": {
+            "widget": "TEXTINPUT",
+            "controlRange": {"min": 10.0, "max": 90.0},
+            "displayRange": {"min": 0.0, "max": 100.0},
+            "alarmRange": {"min": 2.0, "max": 98.0},
+            "warningRange": {"min": 5.0, "max": 96.0},
+            "units": "",
+            "precision": None,
+            "form": None,
+        },
+        "status": {"quality": "VALID"},
+    },
+}
+
+
+longout_str_get_query = (
+    """
 query {
     getChannel(id: "ca://%slongout.RTYP") {
         value {
@@ -127,30 +155,14 @@ query {
     }
 }
 """
-        % PV_PREFIX
-    )
+    % PV_PREFIX
+)
 
 
-@pytest.fixture(scope="session")
-def nan_query():
-    return (
-        """
-query {
-    getChannel(id: "ca://%snan") {
-        value {
-            float
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
+longout_str_get_query_result = {"getChannel": {"value": {"string": "longout"}}}
 
-
-@pytest.fixture(scope="session")
-def enum_query():
-    return (
-        """
+enum_get_query = (
+    """
 query {
     getChannel(id: "ca://%senum") {
         value {
@@ -163,11 +175,114 @@ query {
     }
 }
 """
-        % PV_PREFIX
-    )
+    % PV_PREFIX
+)
 
 
-def longout_subscribe_query(pv_prefix):
+enum_get_query_result = {
+    "getChannel": {
+        "value": {"string": "nm", "float": 3.0},
+        "display": {"choices": ["m", "mm", "um", "nm"]},
+    }
+}
+
+nan_get_query = (
+    """
+query {
+    getChannel(id: "ca://%snan") {
+        value {
+            float
+        }
+    }
+}
+"""
+    % PV_PREFIX
+)
+
+nan_get_query_result = {"getChannel": {"value": {"float": None}}}
+
+long_and_enum_put_query = """
+mutation {
+    putChannels(ids: ["ca://%slongout", "ca://%senum"], values: ["55", "1"]) {
+        value {
+            string
+        }
+        time {
+            datetime
+        }
+    }
+}
+""" % (
+    PV_PREFIX,
+    PV_PREFIX,
+)
+
+long_and_enum_put_query_result = {
+    "putChannels": [
+        {"value": {"string": "55"}, "time": ANY},
+        {"value": {"string": "mm"}, "time": ANY},
+    ]
+}
+
+list_put_query = (
+    """
+mutation {
+    putChannels(ids: ["ca://%swaveform"], values: ["[0, 1.688, 2]"]) {
+        value {
+            stringArray
+            base64Array {
+                numberType
+                base64
+            }
+        }
+        time {
+            datetime
+        }
+    }
+}
+"""
+    % PV_PREFIX
+)
+
+list_put_query_result = {
+    "putChannels": [
+        {
+            "value": {
+                "stringArray": ["0.0", "1.7", "2.0"],
+                "base64Array": BASE64_0_1688_2,
+            },
+            "time": ANY,
+        }
+    ]
+}
+
+base64_put_query = """
+mutation {
+    putChannels(ids: ["ca://%swaveform"], values: [%s]) {
+        value {
+            stringArray
+        }
+        time {
+            datetime
+        }
+    }
+}
+""" % (
+    PV_PREFIX,
+    json.dumps(json.dumps(BASE64_0_1688_2)),
+)
+
+base64_put_query_result = {
+    "putChannels": [
+        {
+            "value": {"stringArray": ["0.0", "1.7", "2.0"]},
+            "time": ANY,
+        }
+    ]
+}
+
+
+def get_longout_subscription_query(pv_prefix):
     return (
         """
 subscription {
@@ -185,14 +300,13 @@ subscription {
     )
 
 
-@pytest.fixture(scope="session")
-def longout_subscribe():
-    return longout_subscribe_query(PV_PREFIX)
+longout_subscription_result = [
+    {"subscribeChannel": {"value": {"float": 42.0}, "status": {"quality": "VALID"}}},
+    {"subscribeChannel": {"value": None, "status": {"quality": "INVALID"}}},
+]
 
-
-def ticking_subscribe_query():
-    return (
-        """
+ticking_subscription_query = (
+    """
 subscription {
     subscribeChannel(id: "ca://%sticking") {
         value {
@@ -205,72 +319,16 @@ subscription {
     }
 }
 """
-        % PV_PREFIX
-    )
+    % PV_PREFIX
+)
 
-
-@pytest.fixture(scope="session")
-def ticking_subscribe():
-    return ticking_subscribe_query()
-
-
-@pytest.fixture(scope="session")
-def long_and_enum_put():
-    return """
-mutation {
-    putChannels(ids: ["ca://%slongout", "ca://%senum"], values: ["55", "1"]) {
-        value {
-            string
+ticking_subscription_result = [
+    {
+        "subscribeChannel": {
+            "value": {"string": "0.00000 mm"},
+            "display": {"precision": 5, "units": "mm"},
         }
-        time {
-            datetime
-        }
-    }
-}
-""" % (
-        PV_PREFIX,
-        PV_PREFIX,
-    )
-
-
-@pytest.fixture(scope="session")
-def list_put():
-    return (
-        """
-mutation {
-    putChannels(ids: ["ca://%swaveform"], values: ["[0, 1.688, 2]"]) {
-        value {
-            stringArray
-            base64Array {
-                numberType
-                base64
-            }
-        }
-        time {
-            datetime
-        }
-    }
-}
-"""
-        % PV_PREFIX
-    )
-
-
-@pytest.fixture(scope="session")
-def base64_put():
-    value = json.dumps(json.dumps(BASE64_0_1688_2))
-    return """
-mutation {
-    putChannels(ids: ["ca://%swaveform"], values: [%s]) {
-        value {
-            stringArray
-        }
-        time {
-            datetime
-        }
-    }
-}
-""" % (
-        PV_PREFIX,
-        value,
-    )
+    },
+    {"subscribeChannel": {"value": {"string": "1.00000 mm"}, "display": None}},
+    {"subscribeChannel": {"value": {"string": "2.00000 mm"}, "display": None}},
+]

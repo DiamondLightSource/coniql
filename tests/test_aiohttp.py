@@ -1,13 +1,11 @@
 import asyncio
-import math
 import time
-from datetime import datetime
 from subprocess import Popen
 from typing import Any, Dict, List
-from unittest.mock import ANY
 
 import pytest
-from aioca import caget, caput
+from aioca import caput
+from aiohttp.test_utils import TestClient
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 from strawberry.subscriptions.protocols.graphql_transport_ws.types import (
     ConnectionAckMessage,
@@ -29,12 +27,28 @@ from strawberry.subscriptions.protocols.graphql_ws.types import (
 from coniql.app import create_app
 
 from .conftest import (
-    BASE64_0_1688_2,
     PV_PREFIX,
+    base64_put_query,
+    base64_put_query_result,
+    check_put_timestamp,
+    enum_get_query,
+    enum_get_query_result,
+    get_longout_subscription_query,
     ioc_creator,
-    longout_subscribe_query,
+    list_put_query,
+    list_put_query_result,
+    long_and_enum_put_query,
+    long_and_enum_put_query_result,
+    longout_get_query,
+    longout_get_query_result,
+    longout_str_get_query,
+    longout_str_get_query_result,
+    longout_subscription_result,
+    nan_get_query,
+    nan_get_query_result,
     run_ioc,
-    ticking_subscribe_query,
+    ticking_subscription_query,
+    ticking_subscription_result,
 )
 
 
@@ -47,134 +61,49 @@ async def client(aiohttp_client):
     return client
 
 
-@pytest.mark.asyncio
-async def test_get_int_pv(ioc: Popen, client: Any, int_query: str):
-    query = int_query
+@pytest.mark.parametrize(
+    "query, expected_result",
+    [
+        (longout_get_query, longout_get_query_result),
+        (longout_str_get_query, longout_str_get_query_result),
+        (enum_get_query, enum_get_query_result),
+        (nan_get_query, nan_get_query_result),
+    ],
+    ids=["int_query", "str_query", "enum_query", "nan_query"],
+)
+async def test_aiohttp_client_get_pv(
+    ioc: Popen, client: TestClient, query: str, expected_result: str
+):
     resp = await client.get("/ws", params={"query": query})
     assert resp.status == 200
     result = await resp.json()
-    assert result == dict(
-        data=dict(
-            getChannel=dict(
-                value=dict(float=42.0, string="42"),
-                display=dict(
-                    widget="TEXTINPUT",
-                    controlRange=dict(min=10.0, max=90.0),
-                    displayRange=dict(min=0.0, max=100.0),
-                    alarmRange=dict(min=2.0, max=98.0),
-                    warningRange=dict(min=5.0, max=96.0),
-                    units="",
-                    precision=None,
-                    form=None,
-                ),
-                status=dict(quality="VALID"),
-            ),
-        )
-    )
+    assert result["data"] == expected_result
 
 
-@pytest.mark.asyncio
-async def test_get_str_pv(ioc: Popen, client: Any, str_query: str):
-    query = str_query
-    resp = await client.get("/ws", params={"query": query})
-    assert resp.status == 200
-    result = await resp.json()
-    assert result == dict(data=dict(getChannel=dict(value=dict(string="longout"))))
-
-
-@pytest.mark.asyncio
-async def test_get_nan_pv(ioc: Popen, client: Any, nan_query: str):
-    query = nan_query
-    val = await caget(PV_PREFIX + "nan")
-    assert math.isnan(val)
-    resp = await client.get("/ws", params={"query": query})
-    assert resp.status == 200
-    result = await resp.json()
-    assert result == dict(data=dict(getChannel=dict(value=dict(float=None))))
-
-
-@pytest.mark.asyncio
-async def test_get_enum_pv(ioc: Popen, client: Any, enum_query: str):
-    query = enum_query
-    resp = await client.get("/ws", params={"query": query})
-    assert resp.status == 200
-    result = await resp.json()
-    assert result == dict(
-        data=dict(
-            getChannel=dict(
-                value=dict(string="nm", float=3.0),
-                display=dict(choices=["m", "mm", "um", "nm"]),
-            )
-        )
-    )
-
-
-@pytest.mark.asyncio
-async def test_put_long_and_enum(ioc: Popen, client: Any, long_and_enum_put: str):
-    query = long_and_enum_put
+@pytest.mark.parametrize(
+    "query, expected_result",
+    [
+        (long_and_enum_put_query, long_and_enum_put_query_result),
+        (list_put_query, list_put_query_result),
+        (base64_put_query, base64_put_query_result),
+    ],
+    ids=["long_and_enum_query", "list_query", "base64_query"],
+)
+async def test_aiohttp_client_put_pv(
+    ioc: Popen, client: TestClient, query: str, expected_result: str
+):
     resp = await client.post("/ws", json={"query": query})
-    assert resp.status == 200
     result = await resp.json()
-    assert result == dict(
-        data=dict(
-            putChannels=[
-                dict(value=dict(string="55"), time=ANY),
-                dict(value=dict(string="mm"), time=ANY),
-            ]
-        )
-    )
-    thens = [
-        datetime.fromisoformat(r["time"]["datetime"])
-        for r in result["data"]["putChannels"]
-    ]
-    now = datetime.now()
-    for then in thens:
-        diff = now - then
-        # Shouldn't take more than this time to get the result of a put out
-        assert diff.total_seconds() < 0.2
+    assert result["data"] == expected_result
+    check_put_timestamp(result["data"])
 
 
 @pytest.mark.asyncio
-async def test_put_list(ioc: Popen, client: Any, list_put: str):
-    query = list_put
-    resp = await client.post("/ws", json={"query": query})
-    assert resp.status == 200
-    result = await resp.json()
-    assert result == dict(
-        data=dict(
-            putChannels=[
-                dict(
-                    value=dict(
-                        stringArray=["0.0", "1.7", "2.0"], base64Array=BASE64_0_1688_2
-                    ),
-                    time=ANY,
-                )
-            ]
-        )
-    )
-
-
-@pytest.mark.asyncio
-async def test_put_base64(ioc: Popen, client: Any, base64_put: str):
-    # first dump gives {"key": "value"}, a json string
-    # second dump gives \{\"key\": \"value\"\}, an escaped json string
-    query = base64_put
-    resp = await client.post("/ws", json={"query": query})
-    assert resp.status == 200
-    result = await resp.json()
-    assert result == dict(
-        data=dict(
-            putChannels=[dict(value=dict(stringArray=["0.0", "1.7", "2.0"]), time=ANY)]
-        )
-    )
-
-
-@pytest.mark.asyncio
-async def test_subscribe_disconnect(client: Any):
+async def test_subscribe_disconnect(client: TestClient):
     pv_prefix = PV_PREFIX + "EXTRA:"
     ioc_process = ioc_creator(pv_prefix)
     run_ioc(ioc_process)
-    query = longout_subscribe_query(pv_prefix)
+    query = get_longout_subscription_query(pv_prefix)
     results: List[Dict[str, Any]] = []
     async with client.ws_connect(
         "/ws", protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL]
@@ -195,27 +124,19 @@ async def test_subscribe_disconnect(client: Any):
             result = await ws.receive_json()
             if not results:
                 # First response; now disconnect.
-                results.append(result["payload"])
+                results.append(result["payload"]["data"])
                 ioc_process.communicate("exit()")
             else:
                 # Second response; done.
-                results.append(result["payload"])
+                results.append(result["payload"]["data"])
                 break
-
-        assert len(results) == 2
-        assert results[0] == dict(
-            data=dict(
-                subscribeChannel=dict(
-                    value=dict(float=42), status=dict(quality="VALID")
-                )
-            )
-        )
-        assert results[1] == dict(
-            data=dict(subscribeChannel=dict(value=None, status=dict(quality="INVALID")))
-        )
 
         await ws.close()
         assert ws.closed
+
+    assert len(results) == 2
+    assert results[0] == longout_subscription_result[0]
+    assert results[1] == longout_subscription_result[1]
 
 
 subscribe_params = [
@@ -225,7 +146,7 @@ subscribe_params = [
         ConnectionAckMessage().as_dict(),
         SubscribeMessage(
             id="sub1",
-            payload=SubscribeMessagePayload(query=ticking_subscribe_query()),
+            payload=SubscribeMessagePayload(query=ticking_subscription_query),
         ).as_dict(),
     ),
     (
@@ -235,30 +156,36 @@ subscribe_params = [
         OperationMessage(
             type=GQL_START,
             id="sub1",
-            payload=StartPayload(query=ticking_subscribe_query()),
+            payload=StartPayload(query=ticking_subscription_query),
         ),
     ),
 ]
 
 
-@pytest.mark.parametrize("ws_protocol,msg_init,msg_ack,msg_send", subscribe_params)
+@pytest.mark.parametrize(
+    "ws_protocol,msg_init,msg_ack,msg_send",
+    subscribe_params,
+    ids=["graphql_transport_ws_protocol", "graphql_ws_protocol"],
+)
 @pytest.mark.asyncio
 async def test_subscribe_pv(
     ioc: Popen,
-    client: Any,
+    client: TestClient,
     ws_protocol,
     msg_init,
     msg_ack,
     msg_send,
 ):
     results = []
-    await caput(PV_PREFIX + "ticking", 0.0)
-    start = time.time()
+
     async with client.ws_connect("/ws", protocols=[ws_protocol]) as ws:
         await ws.send_json(msg_init)
 
         response = await ws.receive_json()
         assert response == msg_ack
+
+        await caput(PV_PREFIX + "ticking", 0.0)
+        start = time.time()
 
         await ws.send_json(msg_send)
         while True:
@@ -267,19 +194,10 @@ async def test_subscribe_pv(
             result = await ws.receive_json()
             if result["type"] == GQL_CONNECTION_KEEP_ALIVE:
                 continue
-            results.append(result["payload"])
-        for i in range(3):
-            display = None
-            if i == 0:
-                display = dict(precision=5, units="mm")
-            assert results[i] == dict(
-                data=dict(
-                    subscribeChannel=dict(
-                        value=dict(string="%.5f mm" % i), display=display
-                    )
-                )
-            )
-        assert len(results) == 3
+            results.append(result["payload"]["data"])
 
         await ws.close()
         assert ws.closed
+    for i in range(3):
+        assert results[i] == ticking_subscription_result[i]
+    assert len(results) == 3
