@@ -13,6 +13,9 @@ on:
 jobs:
   docs:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8"]
 
     steps:
       - name: Avoid git conflicts when tag and branch pushed at same time
@@ -27,6 +30,7 @@ jobs:
         uses: dls-controls/pipenv-run-action@v1
         with:
           pipenv-run: docs
+          python-version: ${{ matrix.python }}
 
       - name: Move to versioned directory
         # e.g. master or 0.1.2
@@ -34,6 +38,8 @@ jobs:
 
       - name: Write versions.txt
         run: pipenv run sphinx_rtd_theme_github_versions .github/pages
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Publish Docs to gh-pages
         if: github.event_name == 'push'
