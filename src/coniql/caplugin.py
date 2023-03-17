@@ -20,10 +20,10 @@ from aioca.types import AugmentedValue
 from coniql.coniql_schema import Widget
 from coniql.plugin import Plugin, PutValue
 from coniql.types import (
-    CHANNEL_QUALITY_MAP,
     Channel,
     ChannelDisplay,
     ChannelFormatter,
+    ChannelQuality,
     ChannelRole,
     ChannelStatus,
     ChannelTime,
@@ -112,7 +112,7 @@ class CAChannelMaker:
             if time_value.ok:
                 assert time_value.timestamp
                 value = ChannelValue(time_value, self.formatter)
-                quality = CHANNEL_QUALITY_MAP[time_value.severity]
+                quality = ChannelQuality.get_channel_quality_str(time_value.severity)
                 if self.cached_status is None or self.cached_status.quality != quality:
                     status = ChannelStatus(
                         quality=quality,
@@ -133,7 +133,6 @@ class CAChannelMaker:
                     mutable=self.writeable,
                 )
                 self.cached_status = status
-
         return CAChannel(value, time, status, display)
 
 
@@ -179,10 +178,10 @@ class CAPlugin(Plugin):
         maker: CAChannelMaker,
         lock: threading.Lock,
     ) -> Channel:
-        """Called when a specific signals is armed indicating that data are
-        are ready to be read from the corresponding deques. The signal is
-        disarmed so it is ready for the next update and the deque's contents
-        is used to create and return a Channel object containing the update."""
+        """Called when a specific signal is armed indicating that a value is
+        ready to be read from the input deque. The signal is disarmed so it is
+        ready for the next update and the deque's contents is used to create
+        and return a Channel object containing the update."""
         with lock:
             try:
                 # Consume a single value from the queue

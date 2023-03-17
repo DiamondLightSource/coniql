@@ -2,14 +2,13 @@ import asyncio
 import base64
 import datetime
 import json
-from enum import Enum
-from typing import AsyncGenerator, List, Optional, Sequence, Union
+from typing import AsyncGenerator, List, Optional, Sequence, Set, Union
 
 import numpy as np
 import strawberry
 
 from coniql.caplugin import CAPlugin
-from coniql.plugin import PluginStore
+from coniql.plugin import Plugin, PluginStore
 from coniql.simplugin import SimPlugin
 from coniql.types import Base64Array as TypeBase64Array
 from coniql.types import Channel as TypeChannel
@@ -58,26 +57,6 @@ class SubscribeChannel(DeferredChannel):
     def __init__(self, channel_id: str, channel: TypeChannel):
         self.id = channel_id
         self.channel = channel
-
-
-@strawberry.enum
-class ChannelQuality(Enum):
-    """
-    Indication of how the current value of a Channel should be interpreted
-    """
-
-    # Value is known, valid, nothing is wrong
-    VALID = "VALID"
-    # Value is known, valid, but is in the range generating a warning
-    WARNING = "WARNING"
-    # Value is known, valid, but is in the range generating an alarm condition
-    ALARM = "ALARM"
-    # Value is known, but not valid, e.g. a RW before its first put
-    INVALID = "INVALID"
-    # The value is unknown, for instance because the channel is disconnected
-    UNDEFINED = "UNDEFINED"
-    # The Channel is currently in the process of being changed
-    CHANGING = "CHANGING"
 
 
 async def resolve_float(root: TypeChannelValue) -> Optional[float]:
@@ -228,8 +207,8 @@ class Mutation:
     ) -> Sequence[Channel]:
         """Put a list of values to a list of Channels"""
         store: PluginStore = store_global
-        pvs = []
-        plugins = set()
+        pvs: List[str] = []
+        plugins: Set[Plugin] = set()
         put_values = values
         for id in ids:
             plugin, channel_id = store.plugin_config_id(id)

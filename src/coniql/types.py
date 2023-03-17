@@ -30,6 +30,30 @@ class Range:
         return rmin <= value <= rmax
 
 
+class ChannelQuality(Enum):
+    """
+    Indication of how the current value of a Channel should be interpreted
+    """
+
+    # Value is known, valid, nothing is wrong
+    VALID = "VALID"
+    # Value is known, valid, but is in the range generating a warning
+    WARNING = "WARNING"
+    # Value is known, valid, but is in the range generating an alarm condition
+    ALARM = "ALARM"
+    # Value is known, but not valid, e.g. a RW before its first put
+    INVALID = "INVALID"
+    # The value is unknown, for instance because the channel is disconnected
+    UNDEFINED = "UNDEFINED"
+    # The Channel is currently in the process of being changed
+    CHANGING = "CHANGING"
+
+    @classmethod
+    def get_channel_quality_str(cls, severity: int) -> str:
+        channel_quality_map = [key.value for key in cls]
+        return channel_quality_map[severity]
+
+
 # Map from display form to DisplayForm enum
 DISPLAY_FORM_MAP = [
     DisplayForm.DEFAULT,
@@ -69,7 +93,6 @@ class ChannelDisplay:
 
 
 @strawberry.enum
-@dataclass
 class NumberType(Enum):
     INT8 = "INT8"
     UINT8 = "UINT8"
@@ -187,16 +210,6 @@ class ChannelFormatter:
         self.to_float = to_float
         self.to_base64_array = to_base64_array
         self.to_string_array = to_string_array
-
-
-# Map from alarm.severity to ChannelQuality string
-CHANNEL_QUALITY_MAP = [
-    "VALID",
-    "WARNING",
-    "ALARM",
-    "INVALID",
-    "UNDEFINED",
-]
 
 
 @dataclass
