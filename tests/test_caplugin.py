@@ -106,8 +106,8 @@ async def test_subscribe_disconnect(schema: Schema):
 async def test_subscribe_ticking(ioc: Popen, schema: Schema):
     results = []
     await caput(PV_PREFIX + "ticking", 0.0)
-    start = time.time()
     resp = await schema.subscribe(ticking_subscription_query)
+    start = time.time()
     async for result in resp:
         if time.time() - start > 1.0:
             break

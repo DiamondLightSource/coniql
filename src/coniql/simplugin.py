@@ -2,7 +2,7 @@ import asyncio
 import math
 import time
 from dataclasses import dataclass, replace
-from typing import AsyncGenerator, Dict, List, Optional, Sequence, Set, Type
+from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Set, Type
 
 import numpy as np
 
@@ -285,6 +285,8 @@ class SimPlugin(Plugin):
         self.sims: Dict[str, Sim] = {}
         # {pv: {queue_for_each_listener}}
         self.listeners: Dict[str, Set[asyncio.Queue[Channel]]] = {}
+        # Set of asyncio tasks running
+        self.task_references: Set[asyncio.Task[Any]] = set()
 
     async def _start_computing(self, pv: str):
         sim = self.sims[pv]
@@ -316,7 +318,14 @@ class SimPlugin(Plugin):
             assert display
             self.sims[pv] = inst
             self.listeners[pv] = set()
-            asyncio.create_task(self._start_computing(pv))
+            task = asyncio.create_task(self._start_computing(pv))
+            self.task_references.add(task)
+
+            def _on_completion(t):
+                self.task_references.remove(t)
+
+            task.add_done_callback(_on_completion)
+
         return self.sims[pv].channel
 
     async def subscribe_channel(self, pv: str) -> AsyncGenerator[Channel, None]:

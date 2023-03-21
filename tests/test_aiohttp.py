@@ -34,6 +34,7 @@ from .conftest import (
     enum_get_query,
     enum_get_query_result,
     get_longout_subscription_query,
+    ioc_cleanup,
     ioc_creator,
     list_put_query,
     list_put_query_result,
@@ -137,6 +138,7 @@ async def test_subscribe_disconnect(client: TestClient):
     assert len(results) == 2
     assert results[0] == longout_subscription_result[0]
     assert results[1] == longout_subscription_result[1]
+    ioc_cleanup(ioc_process)
 
 
 subscribe_params = [
@@ -180,14 +182,12 @@ async def test_subscribe_pv(
 
     async with client.ws_connect("/ws", protocols=[ws_protocol]) as ws:
         await ws.send_json(msg_init)
-
         response = await ws.receive_json()
         assert response == msg_ack
-
-        await caput(PV_PREFIX + "ticking", 0.0)
+        await asyncio.sleep(0.1)
         start = time.time()
-
         await ws.send_json(msg_send)
+        await caput(PV_PREFIX + "ticking", 0.0)
         while True:
             if time.time() - start > 0.5:
                 break
@@ -198,6 +198,6 @@ async def test_subscribe_pv(
 
         await ws.close()
         assert ws.closed
+    assert len(results) == 3
     for i in range(3):
         assert results[i] == ticking_subscription_result[i]
-    assert len(results) == 3

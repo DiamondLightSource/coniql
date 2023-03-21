@@ -28,7 +28,7 @@ def wait_for_ioc(ioc):
             return
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def event_loop():
     try:
         loop = asyncio.get_running_loop()
