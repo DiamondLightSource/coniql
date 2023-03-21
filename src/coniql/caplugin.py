@@ -31,6 +31,8 @@ from coniql.types import (
     Range,
 )
 
+coniql_logger = logging.getLogger(__name__)
+
 
 class CAChannelMaker:
     def __init__(self, name, writeable: bool):
@@ -288,9 +290,8 @@ class CAPlugin(Plugin):
                 loop = asyncio.get_running_loop()
             except RuntimeError:
                 # 'RuntimeError: There is no current event loop...'
-                logging.error("No running event loop...")
+                coniql_logger.error("No running event loop...", stack_info=True)
                 loop = None
-
             # Handle all subsequent updates from both monitors.
             firstChannelReceived = False
             while True:

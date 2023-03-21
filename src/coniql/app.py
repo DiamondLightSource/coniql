@@ -1,51 +1,26 @@
 import logging
 from argparse import ArgumentParser
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import aiohttp_cors
 import strawberry
 from aiohttp import web
-from graphql import GraphQLError
 from strawberry.aiohttp.views import GraphQLView
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
-from strawberry.types import ExecutionContext
 
 import coniql.strawberry_schema as schema
 
 from . import __version__
 
 
-class ConiqlSchema(strawberry.Schema):
-    # Override to remove stack trace printer with every log.
-    # Note that is mechanisms is undocumented and could break if Strawberry
-    # update the underlying code this is based on.
-    def process_errors(
-        self,
-        errors: List[GraphQLError],
-        execution_context: Optional[ExecutionContext] = None,
-    ) -> None:
-        for error in errors:
-            if not error.message:
-                logging.error("Unknown error occurred. Enable debugging to find cause.")
-            else:
-                logging.error(error.message)
-
-
 def create_schema(debug: bool):
     # Create the schema
-    if debug:
-        return strawberry.Schema(
-            query=schema.Query,
-            subscription=schema.Subscription,
-            mutation=schema.Mutation,
-        )
-    else:
-        return ConiqlSchema(
-            query=schema.Query,
-            subscription=schema.Subscription,
-            mutation=schema.Mutation,
-        )
+    return strawberry.Schema(
+        query=schema.Query,
+        subscription=schema.Subscription,
+        mutation=schema.Mutation,
+    )
 
 
 def create_app(use_cors: bool, debug: bool, graphiql: bool):
@@ -77,6 +52,30 @@ def create_app(use_cors: bool, debug: bool, graphiql: bool):
             cors.add(route, allow_all)
 
     return app
+
+
+def configure_logger(debug: bool = False, fmt: Optional[str] = None) -> None:
+    class OptionalTraceFormatter(logging.Formatter):
+        def __init__(self, debug: bool = False, fmt: Optional[str] = None) -> None:
+            self.debug = debug
+            super().__init__(fmt)
+
+        def formatStack(self, stack_info: str) -> str:
+            """Option to suppress the stack trace output"""
+            if not self.debug:
+                return ""
+            return super().formatStack(stack_info)
+
+    # Handler to print to stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG if debug else logging.ERROR)
+    console.setFormatter(OptionalTraceFormatter(debug, fmt))
+
+    # Attach it to both Coniql and Strawberry loggers
+    strawberry_logger = logging.getLogger("strawberry")
+    strawberry_logger.addHandler(console)
+    coniql_logger = logging.getLogger("coniql")
+    coniql_logger.addHandler(console)
 
 
 def main(args=None) -> None:
@@ -111,6 +110,9 @@ def main(args=None) -> None:
         help="Enable GraphiQL for testing at localhost:8080/ws",
     )
     parsed_args = parser.parse_args(args)
+
+    logger_fmt = "[%(asctime)s::%(name)s::%(levelname)s]: %(message)s"
+    configure_logger(parsed_args.debug, logger_fmt)
 
     app = create_app(parsed_args.cors, parsed_args.debug, parsed_args.graphiql)
     web.run_app(app)
