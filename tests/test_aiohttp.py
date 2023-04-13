@@ -1,5 +1,6 @@
 import asyncio
 import time
+from datetime import timedelta
 from subprocess import Popen
 from typing import Any, Dict, List
 
@@ -58,7 +59,10 @@ async def client(aiohttp_client):
     cors = True
     debug = False
     graphiql = False
-    client = await aiohttp_client(create_app(cors, debug, graphiql))
+    connection_init_wait_timeout = timedelta(seconds=2)
+    client = await aiohttp_client(
+        create_app(cors, debug, graphiql, connection_init_wait_timeout)
+    )
     return client
 
 

@@ -1,5 +1,6 @@
 import logging
 from argparse import ArgumentParser
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -23,16 +24,29 @@ def create_schema(debug: bool):
     )
 
 
-def create_app(use_cors: bool, debug: bool, graphiql: bool):
+def create_app(
+    use_cors: bool,
+    debug: bool,
+    graphiql: bool,
+    connection_init_wait_timeout: Optional[timedelta] = None,
+):
     # Create the schema
     strawberry_schema = create_schema(debug)
 
     # Create the GraphQL view to attach to the app
-    view = GraphQLView(
-        schema=strawberry_schema,
-        subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
-        graphiql=graphiql,
-    )
+    if connection_init_wait_timeout:
+        view = GraphQLView(
+            schema=strawberry_schema,
+            subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
+            graphiql=graphiql,
+            connection_init_wait_timeout=connection_init_wait_timeout,
+        )
+    else:  # Use default connection_init_wait_timeout
+        view = GraphQLView(
+            schema=strawberry_schema,
+            subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
+            graphiql=graphiql,
+        )
 
     # Create app
     app = web.Application()
