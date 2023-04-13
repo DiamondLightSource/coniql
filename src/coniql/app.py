@@ -2,7 +2,7 @@ import logging
 from argparse import ArgumentParser
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import aiohttp_cors
 import strawberry
@@ -33,20 +33,17 @@ def create_app(
     # Create the schema
     strawberry_schema = create_schema(debug)
 
-    # Create the GraphQL view to attach to the app
+    kwargs: Any = {}
     if connection_init_wait_timeout:
-        view = GraphQLView(
-            schema=strawberry_schema,
-            subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
-            graphiql=graphiql,
-            connection_init_wait_timeout=connection_init_wait_timeout,
-        )
-    else:  # Use default connection_init_wait_timeout
-        view = GraphQLView(
-            schema=strawberry_schema,
-            subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
-            graphiql=graphiql,
-        )
+        kwargs["connection_init_wait_timeout"] = connection_init_wait_timeout
+
+    # Create the GraphQL view to attach to the app
+    view = GraphQLView(
+        schema=strawberry_schema,
+        subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
+        graphiql=graphiql,
+        **kwargs
+    )
 
     # Create app
     app = web.Application()
