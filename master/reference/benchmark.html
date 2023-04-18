@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Benchmarking &mdash; coniql 0.2+8.gf9a05b6 documentation</title>
+  <title>Benchmarking &mdash; coniql 0.2+69.g43b61f9 documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -15,9 +15,8 @@
   <![endif]-->
   
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/underscore.js"></script>
         <script src="../_static/doctools.js"></script>
+        <script src="../_static/sphinx_highlight.js"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -30,15 +29,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search"  style="background: rgb(7, 43, 93)" >
-            <a href="../index.html" class="icon icon-home"> coniql
-            <img src="../_static/coniql-logo.svg" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            coniql
+              <img src="../_static/coniql-logo.svg" class="logo" alt="Logo"/>
           </a>
               <div class="version">
                 master
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -86,8 +89,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
-      <li>Benchmarking</li>
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Benchmarking</li>
       <li class="wy-breadcrumbs-aside">
             <a href="../_sources/reference/benchmark.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -98,15 +101,15 @@
            <div itemprop="articleBody">
              
   <section id="benchmarking">
-<h1>Benchmarking<a class="headerlink" href="#benchmarking" title="Permalink to this headline"></a></h1>
+<h1>Benchmarking<a class="headerlink" href="#benchmarking" title="Permalink to this heading"></a></h1>
 <p>In order to evaluate changes made to the server, we have developed some scripts which request increasingly large waveforms and measure the update rate.
 Benchmark scripts are written in both Python and js (using the Node runtime) in an attempt to remove language or runtime effects.
 It is possible other graphQL clients will provide different performance characteristics in the future, although we have good reason to believe we are currently hitting other limits.
 For more information on the results of benchmarking so far, see <a class="reference external" href="https://github.com/dls-controls/cs-web-proto/wiki/Performance-with-Coniql">this page</a>.</p>
 <section id="instructions">
-<h2>Instructions<a class="headerlink" href="#instructions" title="Permalink to this headline"></a></h2>
+<h2>Instructions<a class="headerlink" href="#instructions" title="Permalink to this heading"></a></h2>
 <section id="python-client">
-<h3>Python Client<a class="headerlink" href="#python-client" title="Permalink to this headline"></a></h3>
+<h3>Python Client<a class="headerlink" href="#python-client" title="Permalink to this heading"></a></h3>
 <p>To setup the Python client, install the development dependencies:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">install</span> <span class="o">--</span><span class="n">dev</span>
 </pre></div>
@@ -121,7 +124,7 @@ For more information on the results of benchmarking so far, see <a class="refere
 </div>
 </section>
 <section id="js-client">
-<h3>JS Client<a class="headerlink" href="#js-client" title="Permalink to this headline"></a></h3>
+<h3>JS Client<a class="headerlink" href="#js-client" title="Permalink to this heading"></a></h3>
 <p>To run the JS client, you must first install Node.js on your system.
 Follow the instructions <a class="reference external" href="https://nodejs.org/en/">here</a>.</p>
 <p>Then, install the necessary (and minimal) JS packages:</p>
@@ -138,7 +141,7 @@ Follow the instructions <a class="reference external" href="https://nodejs.org/e
 </div>
 </section>
 <section id="expected-results">
-<h3>Expected Results<a class="headerlink" href="#expected-results" title="Permalink to this headline"></a></h3>
+<h3>Expected Results<a class="headerlink" href="#expected-results" title="Permalink to this heading"></a></h3>
 <p>Both clients are requesting increasingly large waveforms with an update time of 0.1s.
 Therefore, the frequency printed after each test should be around 10 Hz to start with.
 Naturally this will drop off as the size increases.</p>
