@@ -2,22 +2,56 @@ import base64
 import math
 import time
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional
+from enum import Enum
+from typing import Any, Callable, List, Optional
 
 import numpy as np
+import strawberry
 
 from .coniql_schema import DisplayForm, Widget
 
 
+@strawberry.type
 @dataclass
 class Range:
-    min: Optional[float]
-    max: Optional[float]
+    """
+    A range of numbers. Null in either field means unbounded in that direction.
+    A value is in range if min <= value <= max
+    """
+
+    # The minimum number that is in this range
+    min: float
+    # The maximum that is in this range
+    max: float
 
     def contains(self, value: float) -> bool:
         rmin = math.nan if self.min is None else self.min
         rmax = math.nan if self.max is None else self.max
         return rmin <= value <= rmax
+
+
+class ChannelQuality(Enum):
+    """
+    Indication of how the current value of a Channel should be interpreted
+    """
+
+    # Value is known, valid, nothing is wrong
+    VALID = "VALID"
+    # Value is known, valid, but is in the range generating a warning
+    WARNING = "WARNING"
+    # Value is known, valid, but is in the range generating an alarm condition
+    ALARM = "ALARM"
+    # Value is known, but not valid, e.g. a RW before its first put
+    INVALID = "INVALID"
+    # The value is unknown, for instance because the channel is disconnected
+    UNDEFINED = "UNDEFINED"
+    # The Channel is currently in the process of being changed
+    CHANGING = "CHANGING"
+
+    @classmethod
+    def get_channel_quality_str(cls, severity: int) -> str:
+        channel_quality_map = [key.value for key in cls]
+        return channel_quality_map[severity]
 
 
 # Map from display form to DisplayForm enum
@@ -32,24 +66,67 @@ DISPLAY_FORM_MAP = [
 ]
 
 
-@dataclass
+@strawberry.type
 class ChannelDisplay:
+    # A human readable possibly multi-line description for a tooltip
     description: str
-    role: str
-    widget: Widget
+    # What access role does the Channel have
+    role: "ChannelRole"
+    # Default widget to display this Channel
+    widget: Optional[Widget]
+    # If numeric, the range the put value should be within
     controlRange: Optional[Range] = None
+    # If numeric, the range the current value should be within
     displayRange: Optional[Range] = None
+    # If numeric, the range outside of which an alarm will be produced
     alarmRange: Optional[Range] = None
+    # If numeric, the range outside of which a warning will be produced
     warningRange: Optional[Range] = None
+    # If numeric, the physical units for the value field
     units: Optional[str] = None
+    # If numeric, the number of decimal places to display
     precision: Optional[int] = None
+    # If numeric, how should value be displayed
     form: Optional[DisplayForm] = None
+    # If given, the value should be one of these choices
     choices: Optional[List[str]] = None
 
 
-def make_number_format_string(
-    form: Optional[DisplayForm], precision: Optional[int]
-) -> str:
+@strawberry.enum
+class NumberType(Enum):
+    INT8 = "INT8"
+    UINT8 = "UINT8"
+    INT16 = "INT16"
+    UINT16 = "UINT16"
+    INT32 = "INT32"
+    UINT32 = "UINT32"
+    INT64 = "INT64"
+    UINT64 = "UINT64"
+    FLOAT32 = "FLOAT32"
+    FLOAT64 = "FLOAT64"
+
+
+@strawberry.enum
+class ChannelRole(Enum):
+    """
+    What access role has the Channel
+    """
+
+    RO = "RO"
+    WO = "WO"
+    RW = "RW"
+
+
+@strawberry.type
+@dataclass
+class Base64Array:
+    # Type of the native array
+    numberType: NumberType
+    # Base64 encoded version of the array
+    base64: str
+
+
+def make_number_format_string(precision: Optional[int]) -> str:
     assert precision is not None
     return "{:.%df}" % precision
 
@@ -66,9 +143,9 @@ def return_none(*args, **kwargs):
 class ChannelFormatter:
     @classmethod
     def for_number(
-        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
+        cls, precision: Optional[int], units: Optional[str]
     ) -> "ChannelFormatter":
-        number_format_string = make_number_format_string(form, precision)
+        number_format_string = make_number_format_string(precision)
         if units:
             units_format_string = f"{number_format_string} {units}"
         else:
@@ -84,20 +161,16 @@ class ChannelFormatter:
 
     @classmethod
     def for_ndarray(
-        cls, form: Optional[DisplayForm], precision: Optional[int], units: Optional[str]
+        cls, precision: Optional[int], units: Optional[str]
     ) -> "ChannelFormatter":
-        number_format_string = make_number_format_string(form, precision)
+        number_format_string = make_number_format_string(precision)
 
         # ndarray -> base64 encoded array
-        def ndarray_to_base64_array(
-            value: np.ndarray, length: int = 0
-        ) -> Optional[Dict[str, str]]:
+        def ndarray_to_base64_array(value: np.ndarray, length: int = 0) -> Base64Array:
             if length > 0:
                 value = value[:length]
-            return dict(
-                numberType=value.dtype.name.upper(),
-                # https://stackoverflow.com/a/6485943
-                base64=base64.b64encode(value.tobytes()).decode(),
+            return Base64Array(
+                value.dtype.name.upper(), base64.b64encode(value.tobytes()).decode()
             )
 
         # ndarray -> [str] uses given precision
@@ -129,7 +202,7 @@ class ChannelFormatter:
         to_string: Callable[[Any], str] = str,
         to_string_with_units: Callable[[Any], str] = str,
         to_float: Callable[[Any], Optional[float]] = return_none,
-        to_base64_array: Callable[[Any, int], Optional[Dict[str, str]]] = return_none,
+        to_base64_array: Callable[[Any, int], Optional[Base64Array]] = return_none,
         to_string_array: Callable[[Any, int], Optional[List[str]]] = return_none,
     ):
         self.to_string = to_string
@@ -139,20 +212,17 @@ class ChannelFormatter:
         self.to_string_array = to_string_array
 
 
-# Map from alarm.severity to ChannelQuality string
-CHANNEL_QUALITY_MAP = [
-    "VALID",
-    "WARNING",
-    "ALARM",
-    "INVALID",
-    "UNDEFINED",
-]
-
-
 @dataclass
 class ChannelStatus:
+    """
+    The current status of a Channel, including alarm and connection status
+    """
+
+    # Of what quality is the current Channel value
     quality: str
+    # Free form text describing the current status
     message: str
+    # Whether the Channel will currently accept mutations
     mutable: bool
 
     @classmethod
@@ -180,14 +250,22 @@ class ChannelStatus:
         return cls("CHANGING", message, mutable)
 
 
+@strawberry.type
 @dataclass
 class ChannelTime:
+    """
+    Timestamp indicating when a value was last updated
+    """
+
+    # Floating point number of seconds since Jan 1, 1970 00:00:00 UTC
     seconds: float
+    # A more accurate version of the nanoseconds part of the seconds field
     nanoseconds: int
+    # An integer value whose interpretation is deliberately undefined
     userTag: int
 
     @classmethod
-    def now(cls):
+    def now(cls) -> "ChannelTime":
         now = time.time()
         return cls(now, int(now % 1 / 1e-9), 0)
 

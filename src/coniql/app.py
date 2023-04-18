@@ -1,49 +1,92 @@
-import traceback
+import logging
 from argparse import ArgumentParser
+from datetime import timedelta
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Optional
 
 import aiohttp_cors
+import strawberry
 from aiohttp import web
-from tartiflette import Engine, TartifletteError
-from tartiflette_aiohttp import register_graphql_handlers
+from strawberry.aiohttp.views import GraphQLView
+from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
-from coniql.caplugin import CAPlugin
-from coniql.plugin import PluginStore
-from coniql.pvaplugin import PVAPlugin
-from coniql.simplugin import SimPlugin
+import coniql.strawberry_schema as schema
 
 from . import __version__
 
 
-async def error_coercer(exception: Exception, error: Dict[str, Any]) -> Dict[str, Any]:
-    if isinstance(exception, TartifletteError):
-        e = exception.original_error
-    else:
-        e = exception
-    if e:
-        traceback.print_exception(type(e), e, e.__traceback__)
-    return error
-
-
-def make_engine() -> Engine:
-    engine = Engine(
-        sdl=Path(__file__).resolve().parent / "schema.gql",
-        error_coercer=error_coercer,
-        modules=["coniql.resolvers"],
+def create_schema(debug: bool):
+    # Create the schema
+    return strawberry.Schema(
+        query=schema.Query,
+        subscription=schema.Subscription,
+        mutation=schema.Mutation,
     )
-    return engine
 
 
-def make_context(*schema_paths: Path) -> Dict[str, Any]:
-    store = PluginStore()
-    store.add_plugin("ssim", SimPlugin())
-    store.add_plugin("pva", PVAPlugin())
-    store.add_plugin("ca", CAPlugin(), set_default=True)
-    for path in schema_paths:
-        store.add_device_config(path)
-    context = dict(store=store)
-    return context
+def create_app(
+    use_cors: bool,
+    debug: bool,
+    graphiql: bool,
+    connection_init_wait_timeout: Optional[timedelta] = None,
+):
+    # Create the schema
+    strawberry_schema = create_schema(debug)
+
+    kwargs: Any = {}
+    if connection_init_wait_timeout:
+        kwargs["connection_init_wait_timeout"] = connection_init_wait_timeout
+
+    # Create the GraphQL view to attach to the app
+    view = GraphQLView(
+        schema=strawberry_schema,
+        subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
+        graphiql=graphiql,
+        **kwargs
+    )
+
+    # Create app
+    app = web.Application()
+    # Add routes
+    app.router.add_route("GET", "/ws", view)
+    app.router.add_route("POST", "/ws", view)
+    app.router.add_route("POST", "/graphql", view)
+    # Enable CORS for all origins on all routes (if applicable)
+    if use_cors:
+        cors = aiohttp_cors.setup(app)
+        for route in app.router.routes():
+            allow_all = {
+                "*": aiohttp_cors.ResourceOptions(
+                    allow_headers=("*"), max_age=3600, allow_credentials=True
+                )
+            }
+            cors.add(route, allow_all)
+
+    return app
+
+
+def configure_logger(debug: bool = False, fmt: Optional[str] = None) -> None:
+    class OptionalTraceFormatter(logging.Formatter):
+        def __init__(self, debug: bool = False, fmt: Optional[str] = None) -> None:
+            self.debug = debug
+            super().__init__(fmt)
+
+        def formatStack(self, stack_info: str) -> str:
+            """Option to suppress the stack trace output"""
+            if not self.debug:
+                return ""
+            return super().formatStack(stack_info)
+
+    # Handler to print to stderr
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG if debug else logging.ERROR)
+    console.setFormatter(OptionalTraceFormatter(debug, fmt))
+
+    # Attach it to both Coniql and Strawberry loggers
+    strawberry_logger = logging.getLogger("strawberry")
+    strawberry_logger.addHandler(console)
+    coniql_logger = logging.getLogger("coniql")
+    coniql_logger.addHandler(console)
 
 
 def main(args=None) -> None:
@@ -60,29 +103,27 @@ def main(args=None) -> None:
         help="Paths to .coniql.yaml files describing Channels and Devices",
     )
     parser.add_argument(
-        "--cors", action="store_true", help="Allow CORS for all origins and routes"
+        "--cors",
+        action="store_true",
+        default=False,
+        help="Allow CORS for all origins and routes",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Print stack trace on errors",
+    )
+    parser.add_argument(
+        "--graphiql",
+        action="store_true",
+        default=False,
+        help="Enable GraphiQL for testing at localhost:8080/ws",
     )
     parsed_args = parser.parse_args(args)
 
-    context = make_context(*parsed_args.config_paths)
-    app = register_graphql_handlers(
-        app=web.Application(),
-        executor_context=context,
-        executor_http_endpoint="/graphql",
-        subscription_ws_endpoint="/ws",
-        graphiql_enabled=True,
-        engine=make_engine(),
-    )
+    logger_fmt = "[%(asctime)s::%(name)s::%(levelname)s]: %(message)s"
+    configure_logger(parsed_args.debug, logger_fmt)
 
-    if parsed_args.cors:
-        # Enable CORS for all origins on all routes.
-        cors = aiohttp_cors.setup(app)
-        for route in app.router.routes():
-            allow_all = {
-                "*": aiohttp_cors.ResourceOptions(
-                    allow_headers=("*"), max_age=3600, allow_credentials=True
-                )
-            }
-            cors.add(route, allow_all)
-
+    app = create_app(parsed_args.cors, parsed_args.debug, parsed_args.graphiql)
     web.run_app(app)

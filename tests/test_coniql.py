@@ -7,19 +7,24 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from tartiflette import Engine
+from graphql import SourceLocation
+from strawberry import Schema
 
 from coniql import __version__
-from coniql.app import make_context
+from coniql.app import create_schema
 
 TEST_DIR = Path(__file__).resolve().parent
-
 
 EXPECTED_SIM_SINE = [0.0, 2.938926261462366, 4.755282581475768]
 
 
+@pytest.fixture(scope="session")
+def schema():
+    return create_schema(False)
+
+
 @pytest.mark.asyncio
-async def test_get_sim_sine(engine: Engine):
+async def test_get_sim_sine(schema: Schema):
     query = """
 query {
     getChannel(id: "ssim://sine(-5,5,10,1,60)") {
@@ -37,267 +42,25 @@ query {
     }
 }
 """
-    context = make_context()
     for i, x in enumerate(EXPECTED_SIM_SINE):
         if i != 0:
             await asyncio.sleep(1.0)
-        result = await engine.execute(query, context=context)
-        assert result == dict(
-            data=dict(
-                getChannel=dict(
-                    value=dict(
-                        float=x, string="%.5f" % x, base64Array=None, stringArray=None
-                    ),
-                    display=dict(widget="TEXTUPDATE"),
-                ),
-            )
-        )
-
-
-@pytest.mark.asyncio
-async def test_get_channels(engine: Engine):
-    query = """
-query {
-    getChannels(filter:"ssim://sinewave(5*") {
-        id
-        display {
-            description
-        }
-        value {
-            stringArray(length:2)
-        }
-    }
-}
-"""
-    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
-    result = await engine.execute(query, context=context)
-    assert result == dict(
-        data=dict(
-            getChannels=[
-                dict(
-                    id="ssim://sinewave(5.0, 1000)",
-                    display=dict(description="A low frequency sine wave"),
-                    value=dict(stringArray=["0.00000", "0.00000"]),
-                ),
-            ]
-        )
-    )
-
-
-@pytest.mark.asyncio
-async def test_get_channel_config(engine: Engine):
-    query = """
-query {
-    getChannelConfig(id:"ssim://sine") {
-        readPv
-        writePv
-        description
-        displayForm
-        widget
-    }
-}
-"""
-    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
-    result = await engine.execute(query, context=context)
-    assert result == dict(
-        data=dict(
-            getChannelConfig=dict(
-                readPv="ssim://sine",
-                writePv=None,
-                description="A slow updating sine scalar value",
-                displayForm=None,
-                widget=None,
-            )
-        )
-    )
-
-
-@pytest.mark.asyncio
-async def test_get_device(engine: Engine):
-    query = """
-query {
-  getDevice(id:"Xspress3") {
-    id
-    children {
-      name
-      label
-      child {
-        ... on Channel {
-          id
-          value {
-            float
-          }
-        }
-        ... on Group {
-          layout
-        }
-        ... on Device {
-          id
-        }
-      }
-    }
-  }
-}
-"""
-    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
-    result = await engine.execute(query, context=context)
-    assert result == {
-        "data": {
-            "getDevice": {
-                "id": "Xspress3",
-                "children": [
-                    {
-                        "name": "Temperature",
-                        "label": "Temperature",
-                        "child": {"id": "ssim://sine(40, 50)", "value": {"float": 0}},
-                    },
-                    {
-                        "name": "Channel1",
-                        "label": "Channel1",
-                        "child": {"id": "Xspress3.Channel1"},
-                    },
-                    {
-                        "name": "Channel2",
-                        "label": "Channel2",
-                        "child": {"id": "Xspress3.Channel2"},
-                    },
-                    {
-                        "name": "Channel3",
-                        "label": "Channel3",
-                        "child": {"id": "Xspress3.Channel3"},
-                    },
-                    {
-                        "name": "Channel4",
-                        "label": "Channel4",
-                        "child": {"id": "Xspress3.Channel4"},
-                    },
-                ],
-            }
-        }
-    }
-
-
-@pytest.mark.asyncio
-async def test_get_devices(engine: Engine):
-    query = """
-query {
-  getDevices(filter:"Sine*") {
-    id
-    children(flatten:true) {
-      name
-      child {
-        ... on Channel {
-          id
-          value {
-            float
-          }
-        }
-        ... on Group {
-          layout
-          children {
-            name
-          }
-        }
-        ... on Device {
-          id
-        }
-      }
-    }
-  }
-}
-"""
-    context = make_context(TEST_DIR / "simdevices.coniql.yaml")
-    result = await engine.execute(query, context=context)
-    assert result == {
-        "data": {
-            "getDevices": [
-                {
-                    "id": "Sine1",
-                    "children": [
-                        {
-                            "name": "FastSine",
-                            "child": {
-                                "id": "ssim://sine(-10, 10, 100, 0.1)",
-                                "value": {"float": 0.0},
-                            },
-                        },
-                        {
-                            "name": "SlowSine",
-                            "child": {"id": "ssim://sine", "value": {"float": 0.0}},
-                        },
-                        {
-                            "name": "Waves",
-                            "child": {
-                                "layout": "PLOT",
-                                "children": [
-                                    {"name": "HighFrequency"},
-                                    {"name": "LowFrequency"},
-                                ],
-                            },
-                        },
-                        {
-                            "name": "HighFrequency",
-                            "child": {
-                                "id": "ssim://sinewave(0.1, 1000)",
-                                "value": {"float": None},
-                            },
-                        },
-                        {
-                            "name": "LowFrequency",
-                            "child": {
-                                "id": "ssim://sinewave(5.0, 1000)",
-                                "value": {"float": None},
-                            },
-                        },
-                    ],
+        result = await schema.execute(query)
+        assert result.data == {
+            "getChannel": {
+                "value": {
+                    "float": x,
+                    "string": "%.5f" % x,
+                    "base64Array": None,
+                    "stringArray": None,
                 },
-                {
-                    "children": [
-                        {
-                            "name": "FastSine",
-                            "child": {
-                                "id": "ssim://sine(-10, 10, 100, 0.1)",
-                                "value": {"float": 0.0},
-                            },
-                        },
-                        {
-                            "name": "SlowSine",
-                            "child": {"id": "ssim://sine", "value": {"float": 0.0}},
-                        },
-                        {
-                            "name": "Waves",
-                            "child": {
-                                "layout": "PLOT",
-                                "children": [
-                                    {"name": "HighFrequency"},
-                                    {"name": "LowFrequency"},
-                                ],
-                            },
-                        },
-                        {
-                            "name": "HighFrequency",
-                            "child": {
-                                "id": "ssim://sinewave(0.1, 1000)",
-                                "value": {"float": None},
-                            },
-                        },
-                        {
-                            "name": "LowFrequency",
-                            "child": {
-                                "id": "ssim://sinewave(5.0, 1000)",
-                                "value": {"float": None},
-                            },
-                        },
-                    ],
-                    "id": "Sine2",
-                },
-            ]
+                "display": {"widget": "TEXTUPDATE"},
+            },
         }
-    }
 
 
 @pytest.mark.asyncio
-async def test_put_sim_sine_fails(engine: Engine):
+async def test_put_sim_sine_fails(schema: Schema):
     query = """
 mutation {
     putChannels(ids: ["ssim://sine"], values: ["32"]) {
@@ -307,22 +70,19 @@ mutation {
     }
 }
 """
-    context = make_context()
-    result = await engine.execute(query, context=context)
-    assert result == dict(
-        data=None,
-        errors=[
-            dict(
-                locations=[dict(column=5, line=3)],
-                message="Cannot put ['32'] to ['sine'], as they aren't writeable",
-                path=["putChannels"],
-            )
-        ],
+    result = await schema.execute(query)
+    assert result.data is None
+    assert result.errors is not None
+    assert (
+        result.errors[0].message
+        == "Cannot put ['32'] to ['sine'], as they aren't writeable"
     )
+    assert result.errors[0].locations == [SourceLocation(column=5, line=3)]
+    assert result.errors[0].path == ["putChannels"]
 
 
 @pytest.mark.asyncio
-async def test_subscribe_sim_sine(engine: Engine):
+async def test_subscribe_sim_sine(schema: Schema):
     query = """
 subscription {
     subscribeChannel(id: "ssim://sine") {
@@ -332,20 +92,20 @@ subscription {
     }
 }
 """
-    context = make_context()
     results = []
     start = time.time()
-    async for result in engine.subscribe(query, context=context):
-        results.append(result)
+    resp = await schema.subscribe(query)
+    async for result in resp:
+        results.append(result.data)
         if time.time() - start > 2:
             break
     for i, x in enumerate(EXPECTED_SIM_SINE):
-        assert results[i] == dict(data=dict(subscribeChannel=dict(value=dict(float=x))))
+        assert results[i] == {"subscribeChannel": {"value": {"float": x}}}
     assert len(results) == 3
 
 
 @pytest.mark.asyncio
-async def test_subscribe_ramp_wave(engine: Engine):
+async def test_subscribe_ramp_wave(schema: Schema):
     query = """
 subscription {
     subscribeChannel(id: "ssim://rampwave(3, 0.2)") {
@@ -355,11 +115,11 @@ subscription {
     }
 }
 """
-    context = make_context()
     results = []
     start = time.time()
-    async for result in engine.subscribe(query, context=context):
-        results.append(result)
+    resp = await schema.subscribe(query)
+    async for result in resp:
+        results.append(result.data)
         if len(results) == 4:
             break
     # First result immediate, then takes 3x 0.2s
@@ -371,13 +131,11 @@ subscription {
         ["3.00000", "4.00000", "5.00000"],
     ]
     for i, x in enumerate(expected):
-        assert results[i] == dict(
-            data=dict(subscribeChannel=dict(value=dict(stringArray=x)))
-        )
+        assert results[i] == {"subscribeChannel": {"value": {"stringArray": x}}}
 
 
 @pytest.mark.asyncio
-async def test_get_sim_sinewave(engine: Engine):
+async def test_get_sim_sinewave(schema: Schema):
     query = """
 query {
     getChannel(id: "ssim://sinewave") {
@@ -392,40 +150,37 @@ query {
     }
 }
 """
-    context = make_context()
-    result = await engine.execute(query, context=context)
-    assert result == dict(
-        data=dict(
-            getChannel=dict(
-                value=dict(
-                    string=str(np.zeros(50)),
-                    stringArray=["%.5f" % x for x in np.zeros(10)],
-                    base64Array=dict(
-                        numberType="FLOAT64",
-                        base64=base64.b64encode(np.zeros(50).tobytes()).decode(),
-                    ),
-                )
-            )
-        )
-    )
+    result = await schema.execute(query)
+    assert result.data == {
+        "getChannel": {
+            "value": {
+                "string": str(np.zeros(50)),
+                "stringArray": ["%.5f" % x for x in np.zeros(10)],
+                "base64Array": {
+                    "numberType": "FLOAT64",
+                    "base64": base64.b64encode(np.zeros(50).tobytes()).decode(),
+                },
+            }
+        }
+    }
     await asyncio.sleep(1.0)
-    result = await engine.execute(query, context=context)
-    b64s = result["data"]["getChannel"]["value"]["base64Array"]["base64"]
-    value = np.frombuffer(base64.b64decode(b64s), dtype=np.float64)
-    assert result == dict(
-        data=dict(
-            getChannel=dict(
-                value=dict(
-                    string=str(value),
-                    stringArray=["%.5f" % x for x in value[:10]],
-                    base64Array=dict(
-                        numberType="FLOAT64",
-                        base64=base64.b64encode(value).decode(),
-                    ),
-                )
-            )
-        )
-    )
+    result = await schema.execute(query)
+    assert result.data is not None
+    b64s = result.data["getChannel"]["value"]["base64Array"]["base64"]
+    str_value = np.frombuffer(base64.b64decode(b64s), dtype=np.float64)
+    value = base64.b64decode(b64s)
+    assert result.data == {
+        "getChannel": {
+            "value": {
+                "string": str(str_value),
+                "stringArray": ["%.5f" % x for x in str_value[:10]],
+                "base64Array": {
+                    "numberType": "FLOAT64",
+                    "base64": base64.b64encode(value).decode(),
+                },
+            }
+        }
+    }
 
 
 def test_cli_version():

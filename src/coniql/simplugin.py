@@ -2,17 +2,17 @@ import asyncio
 import math
 import time
 from dataclasses import dataclass, replace
-from typing import AsyncGenerator, Dict, List, Optional, Set, Type
+from typing import Any, AsyncGenerator, Dict, List, Optional, Sequence, Set, Type
 
 import numpy as np
 
 from coniql.coniql_schema import DisplayForm, Widget
-from coniql.device_config import ChannelConfig
 from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     Channel,
     ChannelDisplay,
     ChannelFormatter,
+    ChannelRole,
     ChannelStatus,
     ChannelTime,
     ChannelValue,
@@ -85,7 +85,7 @@ def make_display(
     warning_percent: float,
     alarm_percent: float,
     description: str,
-    role: str,
+    role: ChannelRole,
     widget: Widget,
 ) -> ChannelDisplay:
     assert max_value > min_value, "max_value %s is not > min_value %s" % (
@@ -149,18 +149,21 @@ class SineSim(Sim):
             warning_percent,
             alarm_percent,
             description="A Sine value generator",
-            role="RO",
+            role=ChannelRole.RO,
             widget=Widget.TEXTUPDATE,
         )
         self.channel.display = display
         self.channel.value = ChannelValue(
             0,
-            ChannelFormatter.for_number(display.form, display.precision, display.units),
+            ChannelFormatter.for_number(display.precision, display.units),
         )
 
     def compute_changes(self):
         self.x += self.step
         value = self.min + (math.sin(self.x) + 1.0) / 2.0 * self.range
+        assert self.channel.display is not None
+        assert self.channel.display.alarmRange is not None
+        assert self.channel.display.warningRange is not None
         if not self.channel.display.alarmRange.contains(value):
             status = ChannelStatus.alarm("Outside alarm range")
         elif not self.channel.display.warningRange.contains(value):
@@ -205,15 +208,13 @@ class SineWaveSim(Sim):
             warning_percent=100.0,
             alarm_percent=100.0,
             description="A Sine waveform generator",
-            role="RO",
+            role=ChannelRole.RO,
             widget=Widget.PLOTY,
         )
         self.channel.display = display
         self.channel.value = ChannelValue(
             np.zeros(self.size, dtype=np.float64),
-            ChannelFormatter.for_ndarray(
-                display.form, display.precision, display.units
-            ),
+            ChannelFormatter.for_ndarray(display.precision, display.units),
         )
 
     def compute_changes(self) -> Channel:
@@ -261,15 +262,13 @@ class RampWaveSim(Sim):
             warning_percent=100.0,
             alarm_percent=100.0,
             description="A ramp waveform generator",
-            role="RO",
+            role=ChannelRole.RO,
             widget=Widget.PLOTY,
         )
         self.channel.display = display
         self.channel.value = ChannelValue(
             self.ramps[: self.size],
-            ChannelFormatter.for_ndarray(
-                display.form, display.precision, display.units
-            ),
+            ChannelFormatter.for_ndarray(display.precision, display.units),
         )
 
     def compute_changes(self) -> Channel:
@@ -286,6 +285,8 @@ class SimPlugin(Plugin):
         self.sims: Dict[str, Sim] = {}
         # {pv: {queue_for_each_listener}}
         self.listeners: Dict[str, Set[asyncio.Queue[Channel]]] = {}
+        # Set of asyncio tasks running
+        self.task_references: Set[asyncio.Task[Any]] = set()
 
     async def _start_computing(self, pv: str):
         sim = self.sims[pv]
@@ -302,9 +303,7 @@ class SimPlugin(Plugin):
         del self.sims[pv]
         del self.listeners[pv]
 
-    async def get_channel(
-        self, pv: str, timeout: float, config: ChannelConfig
-    ) -> Channel:
+    async def get_channel(self, pv: str, timeout: float) -> Channel:
         if pv not in self.sims:
             if "(" in pv:
                 assert pv.endswith(")"), "Missing closing bracket in %r" % pv
@@ -317,21 +316,22 @@ class SimPlugin(Plugin):
             inst = cls(*parameters)
             display = inst.channel.display
             assert display
-            # Use config values in preference to defaults
-            display.description = config.description or display.description
-            display.form = config.display_form or display.form
-            display.widget = config.widget or display.widget
             self.sims[pv] = inst
             self.listeners[pv] = set()
-            asyncio.create_task(self._start_computing(pv))
+            task = asyncio.create_task(self._start_computing(pv))
+            self.task_references.add(task)
+
+            def _on_completion(t):
+                self.task_references.remove(t)
+
+            task.add_done_callback(_on_completion)
+
         return self.sims[pv].channel
 
-    async def subscribe_channel(
-        self, pv: str, config: ChannelConfig
-    ) -> AsyncGenerator[Channel, None]:
+    async def subscribe_channel(self, pv: str) -> AsyncGenerator[Channel, None]:
         q: asyncio.Queue[Channel] = asyncio.Queue()
         try:
-            channel = await self.get_channel(pv, 0, config)
+            channel = await self.get_channel(pv, 0)
             self.listeners[pv].add(q)
             yield channel
             while True:
@@ -340,6 +340,6 @@ class SimPlugin(Plugin):
             self.listeners[pv].remove(q)
 
     async def put_channels(
-        self, pvs: List[str], values: List[PutValue], timeout: float
+        self, pvs: List[str], values: Sequence[PutValue], timeout: float
     ):
         raise RuntimeError(f"Cannot put {values!r} to {pvs}, as they aren't writeable")
