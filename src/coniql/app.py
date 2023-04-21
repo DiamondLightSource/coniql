@@ -11,6 +11,13 @@ from strawberry.aiohttp.views import GraphQLView
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
 import coniql.strawberry_schema as schema
+from coniql.metrics import (
+    MetricsExtension,
+    MetricsGraphQLTransportWSHandler,
+    MetricsGraphQLWSHandler,
+    handle_metrics,
+    metrics_middleware,
+)
 
 from . import __version__
 
@@ -21,7 +28,15 @@ def create_schema(debug: bool):
         query=schema.Query,
         subscription=schema.Subscription,
         mutation=schema.Mutation,
+        extensions=[MetricsExtension],
     )
+
+
+class GraphQLViewExtension(GraphQLView):
+    """Use custom handlers to enable inprogress metrics for subscriptions"""
+
+    graphql_transport_ws_handler_class = MetricsGraphQLTransportWSHandler
+    graphql_ws_handler_class = MetricsGraphQLWSHandler
 
 
 def create_app(
@@ -38,7 +53,7 @@ def create_app(
         kwargs["connection_init_wait_timeout"] = connection_init_wait_timeout
 
     # Create the GraphQL view to attach to the app
-    view = GraphQLView(
+    view = GraphQLViewExtension(
         schema=strawberry_schema,
         subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
         graphiql=graphiql,
@@ -46,7 +61,8 @@ def create_app(
     )
 
     # Create app
-    app = web.Application()
+    app = web.Application(middlewares=[metrics_middleware])
+
     # Add routes
     app.router.add_route("GET", "/ws", view)
     app.router.add_route("POST", "/ws", view)
