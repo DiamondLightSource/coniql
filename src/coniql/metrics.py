@@ -1,5 +1,6 @@
-from aiohttp import RequestInfo, web
+from aiohttp import web
 from aiohttp.hdrs import ACCEPT
+from aiohttp.web_request import Request
 from aioprometheus import REGISTRY, Counter, Gauge, Summary, inprogress, timer
 from aioprometheus.renderer import render
 from strawberry.aiohttp.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
@@ -19,7 +20,7 @@ class MetricsExtension(SchemaExtension):
         yield
 
 
-async def handle_metrics(request: RequestInfo):
+async def handle_metrics(request: Request):
     """Create the HTML output for all defined metrics"""
     content, http_headers = render(REGISTRY, request.headers.getall(ACCEPT, []))
     return web.Response(body=content, headers=http_headers)
@@ -27,7 +28,7 @@ async def handle_metrics(request: RequestInfo):
 
 @web.middleware
 @timer(REQUEST_TIME)  # Keeps track of duration of all requests
-async def metrics_middleware(request: web.Request, handler):
+async def metrics_middleware(request: Request, handler):
     """Middleware that is called for all requests to the aiohttp server"""
     REQUESTS.inc({"route": "middleware ", "path": request.path})
     response = await handler(request)

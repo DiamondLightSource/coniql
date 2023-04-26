@@ -7,6 +7,7 @@ from typing import Any, Optional
 import aiohttp_cors
 import strawberry
 from aiohttp import web
+from aiohttp.hdrs import METH_GET, METH_POST
 from strawberry.aiohttp.views import GraphQLView
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
@@ -64,9 +65,12 @@ def create_app(
     app = web.Application(middlewares=[metrics_middleware])
 
     # Add routes
-    app.router.add_route("GET", "/ws", view)
-    app.router.add_route("POST", "/ws", view)
-    app.router.add_route("POST", "/graphql", view)
+    app.router.add_route(METH_GET, "/ws", view)
+    app.router.add_route(METH_POST, "/ws", view)
+    app.router.add_route(METH_POST, "/graphql", view)
+
+    app.router.add_route(METH_GET, "/metrics", handle_metrics)
+
     # Enable CORS for all origins on all routes (if applicable)
     if use_cors:
         cors = aiohttp_cors.setup(app)
