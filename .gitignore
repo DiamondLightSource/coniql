@@ -8,6 +8,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 env/
+.venv
 build/
 develop-eggs/
 dist/
@@ -22,6 +23,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+**/_version.py
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -58,48 +60,9 @@ docs/_build/
 # PyBuilder
 target/
 
-# DLS build dir and virtual environment
-/prefix/
-/venv/
-/lightweight-venv/
-/installed.files
-<<<<<<< HEAD
+# likely venv names
+.venv*
+venv*
 
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# pyenv
-.python-version
-
-# celery beat schedule file
-celerybeat-schedule
-
-# SageMath parsed files
-*.sage.py
-
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-
-# node modules
-node_modules/
-=======
->>>>>>> skeleton-merge-branch
+# further build artifacts
+lockfiles/
