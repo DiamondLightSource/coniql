@@ -5,7 +5,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 import aiohttp_cors
-import strawberry
 from aiohttp import web
 from aiohttp.hdrs import METH_GET, METH_POST
 from strawberry.aiohttp.views import GraphQLView
@@ -16,6 +15,7 @@ from coniql.metrics import (
     MetricsExtension,
     MetricsGraphQLTransportWSHandler,
     MetricsGraphQLWSHandler,
+    SchemaWithMetrics,
     handle_metrics,
     metrics_middleware,
 )
@@ -25,7 +25,7 @@ from . import __version__
 
 def create_schema(debug: bool):
     # Create the schema
-    return strawberry.Schema(
+    return SchemaWithMetrics(
         query=schema.Query,
         subscription=schema.Subscription,
         mutation=schema.Mutation,
