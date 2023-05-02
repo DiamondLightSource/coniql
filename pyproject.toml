@@ -63,7 +63,7 @@ write_to = "src/python3_pip_skeleton/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
-plugins = strawberry.ext.mypy_plugin
+plugins = "strawberry.ext.mypy_plugin"
 
 [tool.isort]
 float_to_top = true
