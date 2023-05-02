@@ -23,7 +23,6 @@ from strawberry.schema import Schema
 from strawberry.types import ExecutionContext
 
 # Create all the metrics for the entire application here
-# TODO: const labels?
 REQUESTS_IN_PROGRESS = Gauge(
     "coniql_request_in_progress", "Number of requests in progress"
 )
@@ -57,14 +56,15 @@ class SchemaWithMetrics(Schema):
     ):
         """Override to count the number of GraphQL errors"""
         labels = {"route": "GraphQL"}
-        for _ in range(len(errors)):
+        # Technically there could be multiple GraphQL errors present, but for metric
+        # purposes we really only care that any happened.
+        if len(errors):
             if (
                 execution_context
                 and execution_context.context
                 and "request" in execution_context.context
             ):
-                # TODO: different label per error? Otherwise we could increment
-                # multiple times
+                # If we can, add the remote end's address
                 labels.update({"remote": execution_context.context["request"].remote})
 
             REQUEST_EXCEPTIONS.inc(labels)
@@ -104,9 +104,8 @@ def update_subscription_metrics(
 
     difference = current_dropped_count - last_dropped_count
 
-    # Avoid adding 0 as that causes the metric+labels to be published
-    if difference:
-        DROPPED_UPDATES.add(labels, difference)
+    # Note that adding 0 will still cause the metric to be published
+    DROPPED_UPDATES.add(labels, difference)
     return current_dropped_count
 
 
@@ -125,7 +124,6 @@ async def handle_metrics(request: Request):
 
 
 @web.middleware
-# TODO: The below timer also tracks the response time of the /metrics endpoint itself...
 @timer(REQUEST_TIME)  # Keeps track of duration of all requests
 @count_exceptions(
     REQUEST_EXCEPTIONS, {"route": "middleware"}
@@ -139,11 +137,5 @@ async def metrics_middleware(request: Request, handler):
         REQUESTS.inc({"route": "middleware ", "path": request.path})
 
     response = await handler(request)
-
-    # TODO: Work out how to ignore e.g. HTTP 404 errors on favicon as there just
-    # isn't one
-    # Probably hold off until:
-    # - Get newest favicon from Becky (maybe)
-    # - Wait until Andy has ported to newest skeleton
 
     return response
