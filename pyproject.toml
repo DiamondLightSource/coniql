@@ -59,7 +59,7 @@ name = "Tom Cobb"
 
 
 [tool.setuptools_scm]
-write_to = "src/python3_pip_skeleton/_version.py"
+write_to = "src/coniql/_version.py"
 
 [tool.mypy]
 ignore_missing_imports = true # Ignore missing stubs in imported modules
@@ -83,7 +83,7 @@ exclude = [".tox", "venv"]
 # Run pytest with all our checkers, and don't spam us with massive tracebacks on error
 addopts = """
     --tb=native -vv --doctest-modules --doctest-glob="*.rst"
-    --cov=python3_pip_skeleton --cov-report term --cov-report xml:cov.xml
+    --cov=coniql --cov-report term --cov-report xml:cov.xml
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
 filterwarnings = "error"
@@ -92,7 +92,7 @@ testpaths = "docs src tests"
 asyncio_mode = "auto"
 
 [tool.coverage.run]
-data_file = "/tmp/python3_pip_skeleton.coverage"
+data_file = "/tmp/coniql.coverage"
 
 [tool.coverage.paths]
 # Tests are run from installed location, map back to the src directory
