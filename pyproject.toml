@@ -89,6 +89,7 @@ addopts = """
 filterwarnings = "error"
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
+asyncio_mode = "auto"
 
 [tool.coverage.run]
 data_file = "/tmp/python3_pip_skeleton.coverage"
