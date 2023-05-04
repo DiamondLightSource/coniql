@@ -10,6 +10,22 @@ from unittest.mock import ANY
 
 import pytest
 from aioca import purge_channel_caches
+from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
+from strawberry.subscriptions.protocols.graphql_transport_ws.types import (
+    ConnectionAckMessage,
+    ConnectionInitMessage,
+    SubscribeMessage,
+    SubscribeMessagePayload,
+)
+from strawberry.subscriptions.protocols.graphql_ws import (
+    GQL_CONNECTION_ACK,
+    GQL_CONNECTION_INIT,
+    GQL_START,
+)
+from strawberry.subscriptions.protocols.graphql_ws.types import (
+    OperationMessage,
+    StartPayload,
+)
 
 from coniql.app import create_app
 
@@ -349,3 +365,35 @@ ticking_subscription_result = [
     {"subscribeChannel": {"value": {"string": "1.00000 mm"}, "display": None}},
     {"subscribeChannel": {"value": {"string": "2.00000 mm"}, "display": None}},
 ]
+
+subscribe_params = [
+    (
+        GRAPHQL_TRANSPORT_WS_PROTOCOL,
+        ConnectionInitMessage().as_dict(),
+        ConnectionAckMessage().as_dict(),
+        SubscribeMessage(
+            id="sub1",
+            payload=SubscribeMessagePayload(query=ticking_subscription_query),
+        ).as_dict(),
+    ),
+    (
+        GRAPHQL_WS_PROTOCOL,
+        OperationMessage(type=GQL_CONNECTION_INIT),
+        OperationMessage(type=GQL_CONNECTION_ACK),
+        OperationMessage(
+            type=GQL_START,
+            id="sub1",
+            payload=StartPayload(query=ticking_subscription_query),
+        ),
+    ),
+]
+
+
+@pytest.fixture(
+    scope="session",
+    params=subscribe_params,
+    ids=["graphql_transport_ws_protocol", "graphql_ws_protocol"],
+)
+def subscription_data(request):
+    """Fixture for the possible subscription types"""
+    return request.param

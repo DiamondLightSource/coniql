@@ -20,18 +20,20 @@ from graphql import GraphQLError
 from strawberry.aiohttp.handlers import GraphQLTransportWSHandler, GraphQLWSHandler
 from strawberry.extensions import SchemaExtension
 from strawberry.schema import Schema
+from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 from strawberry.types import ExecutionContext
 
 # Create all the metrics for the entire application here
-REQUESTS_IN_PROGRESS = Gauge(
-    "coniql_request_in_progress", "Number of requests in progress"
+SUBSCRIPTIONS_IN_PROGRESS = Gauge(
+    "coniql_subscriptions_in_progress", "Number of subscriptions in progress"
 )
 REQUEST_TIME = Summary(
     "coniql_request_processing_seconds", "Time spent processing request"
 )
 REQUESTS = Counter("coniql_request_total", "Total number of requests")
 REQUEST_EXCEPTIONS = Counter(
-    "coniql_request_handler_exceptions", "Number of exceptions in requests"
+    "coniql_request_handler_exceptions",
+    "Number of exceptions and GraphQL errors in requests",
 )
 DROPPED_UPDATES = Gauge(
     "coniql_dropped_updates", "Number of updates dropped in subscriptions"
@@ -76,7 +78,8 @@ class MetricsGraphQLTransportWSHandler(GraphQLTransportWSHandler):
     annotation. Tracks how many subscriptions are currently active."""
 
     @inprogress(
-        REQUESTS_IN_PROGRESS, labels={"type": "subscription_GraphQLTransportWS"}
+        SUBSCRIPTIONS_IN_PROGRESS,
+        labels={"type": f"subscription_{GRAPHQL_TRANSPORT_WS_PROTOCOL}"},
     )
     async def handle_request(self):
         await super().handle_request()
@@ -86,7 +89,10 @@ class MetricsGraphQLWSHandler(GraphQLWSHandler):
     """Custom override of GraphQLWSHandler to allow adding the @inprogress
     annotation. Tracks how many subscriptions are currently active."""
 
-    @inprogress(REQUESTS_IN_PROGRESS, labels={"type": "subscription_GraphQLWS"})
+    @inprogress(
+        SUBSCRIPTIONS_IN_PROGRESS,
+        labels={"type": f"subscription_{GRAPHQL_WS_PROTOCOL}"},
+    )
     async def handle_request(self):
         await super().handle_request()
 

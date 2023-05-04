@@ -13,7 +13,7 @@ from coniql.metrics import (
     REQUEST_EXCEPTIONS,
     REQUEST_TIME,
     REQUESTS,
-    REQUESTS_IN_PROGRESS,
+    SUBSCRIPTIONS_IN_PROGRESS,
     update_subscription_metrics,
 )
 
@@ -53,7 +53,7 @@ async def test_metrics_endpoint(client: TestClient):
     assert REQUEST_EXCEPTIONS.name in text
     assert REQUEST_TIME.name in text
     assert REQUESTS.name in text
-    assert REQUESTS_IN_PROGRESS.name in text
+    assert SUBSCRIPTIONS_IN_PROGRESS.name in text
 
 
 @pytest.mark.asyncio
@@ -172,6 +172,32 @@ async def test_metrics_mocked_dropped_updates(client: TestClient):
 
     last_dropped = update_subscription_metrics(mocked_subscription, last_dropped, {})
     assert last_dropped == 5
+
+
+@pytest.mark.asyncio
+async def test_metrics_subscriptions_in_progress(
+    ioc, client: TestClient, subscription_data
+):
+    """Test metrics for subscriptions in progress"""
+    ws_protocol, msg_init, msg_ack, msg_send = subscription_data
+
+    async with client.ws_connect("/ws", protocols=[ws_protocol]) as ws:
+        await ws.send_json(msg_init)
+        response = await ws.receive_json()
+        assert response == msg_ack
+
+        await ws.send_json(msg_send)
+
+        resp = await client.get("/metrics")
+        assert resp.status == 200
+
+        text = await resp.text()
+        assert (
+            f'coniql_request_in_progress{{type="subscription_{ws_protocol}"}} 1' in text
+        )
+
+        await ws.close()
+        assert ws.closed
 
 
 @pytest.mark.asyncio
