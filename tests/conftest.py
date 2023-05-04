@@ -4,12 +4,14 @@ import random
 import string
 import subprocess
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from unittest.mock import ANY
 
 import pytest
 from aioca import purge_channel_caches
+
+from coniql.app import create_app
 
 SOFT_RECORDS = str(Path(__file__).parent / "soft_records.db")
 
@@ -88,6 +90,18 @@ def check_put_timestamp(result):
         diff = now - then
         # Shouldn't take more than this time to get the result of a put out
         assert diff.total_seconds() < 0.2
+
+
+@pytest.fixture(scope="function")
+async def client(aiohttp_client):
+    cors = True
+    debug = False
+    graphiql = False
+    connection_init_wait_timeout = timedelta(seconds=2)
+    client = await aiohttp_client(
+        create_app(cors, debug, graphiql, connection_init_wait_timeout)
+    )
+    return client
 
 
 longout_get_query = (

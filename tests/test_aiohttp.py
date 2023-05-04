@@ -1,6 +1,5 @@
 import asyncio
 import time
-from datetime import timedelta
 from subprocess import Popen
 from typing import Any, Dict, List
 
@@ -24,8 +23,6 @@ from strawberry.subscriptions.protocols.graphql_ws.types import (
     OperationMessage,
     StartPayload,
 )
-
-from coniql.app import create_app
 
 from .conftest import (
     PV_PREFIX,
@@ -52,18 +49,6 @@ from .conftest import (
     ticking_subscription_query,
     ticking_subscription_result,
 )
-
-
-@pytest.fixture(scope="function")
-async def client(aiohttp_client):
-    cors = True
-    debug = False
-    graphiql = False
-    connection_init_wait_timeout = timedelta(seconds=2)
-    client = await aiohttp_client(
-        create_app(cors, debug, graphiql, connection_init_wait_timeout)
-    )
-    return client
 
 
 @pytest.mark.parametrize(

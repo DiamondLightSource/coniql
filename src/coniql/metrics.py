@@ -66,7 +66,6 @@ class SchemaWithMetrics(Schema):
             ):
                 # If we can, add the remote end's address
                 labels.update({"remote": execution_context.context["request"].remote})
-
             REQUEST_EXCEPTIONS.inc(labels)
 
         super().process_errors(errors, execution_context)
@@ -112,6 +111,10 @@ def update_subscription_metrics(
 def update_active_channels() -> None:
     """Inspect aioca's channel cache to see how many active channels there are"""
     channel_cache = _Context.get_channel_cache()
+    # TODO: This will count every channel that has ever connected, not
+    # specifically every ACTIVE channel!
+    # Probably fixable once this issue is resolved:
+    # https://github.com/dls-controls/aioca/issues/37
     ACTIVE_CHANNELS.set({}, len(channel_cache._ChannelCache__channels))
 
 
@@ -134,7 +137,7 @@ async def metrics_middleware(request: Request, handler):
     # Ignore requests for some common paths.
     # Use the same list as used in aioprometheus for AGSI apps
     if request.path not in EXCLUDE_PATHS:
-        REQUESTS.inc({"route": "middleware ", "path": request.path})
+        REQUESTS.inc({"route": "middleware", "path": request.path})
 
     response = await handler(request)
 
