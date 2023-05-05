@@ -5,23 +5,39 @@ from pathlib import Path
 from typing import Any, Optional
 
 import aiohttp_cors
-import strawberry
 from aiohttp import web
+from aiohttp.hdrs import METH_GET, METH_POST
 from strawberry.aiohttp.views import GraphQLView
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
 import coniql.strawberry_schema as schema
+from coniql.metrics import (
+    MetricsExtension,
+    MetricsGraphQLTransportWSHandler,
+    MetricsGraphQLWSHandler,
+    MetricsSchema,
+    handle_metrics,
+    metrics_middleware,
+)
 
 from . import __version__
 
 
 def create_schema(debug: bool):
     # Create the schema
-    return strawberry.Schema(
+    return MetricsSchema(
         query=schema.Query,
         subscription=schema.Subscription,
         mutation=schema.Mutation,
+        extensions=[MetricsExtension],
     )
+
+
+class GraphQLViewExtension(GraphQLView):
+    """Use custom handlers to enable inprogress metrics for subscriptions"""
+
+    graphql_transport_ws_handler_class = MetricsGraphQLTransportWSHandler
+    graphql_ws_handler_class = MetricsGraphQLWSHandler
 
 
 def create_app(
@@ -38,7 +54,7 @@ def create_app(
         kwargs["connection_init_wait_timeout"] = connection_init_wait_timeout
 
     # Create the GraphQL view to attach to the app
-    view = GraphQLView(
+    view = GraphQLViewExtension(
         schema=strawberry_schema,
         subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
         graphiql=graphiql,
@@ -46,11 +62,15 @@ def create_app(
     )
 
     # Create app
-    app = web.Application()
+    app = web.Application(middlewares=[metrics_middleware])
+
     # Add routes
-    app.router.add_route("GET", "/ws", view)
-    app.router.add_route("POST", "/ws", view)
-    app.router.add_route("POST", "/graphql", view)
+    app.router.add_route(METH_GET, "/ws", view)
+    app.router.add_route(METH_POST, "/ws", view)
+    app.router.add_route(METH_POST, "/graphql", view)
+
+    app.router.add_route(METH_GET, "/metrics", handle_metrics)
+
     # Enable CORS for all origins on all routes (if applicable)
     if use_cors:
         cors = aiohttp_cors.setup(app)

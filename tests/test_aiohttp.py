@@ -1,31 +1,19 @@
 import asyncio
 import time
-from datetime import timedelta
 from subprocess import Popen
 from typing import Any, Dict, List
 
 import pytest
 from aioca import caput
 from aiohttp.test_utils import TestClient
-from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
+from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL
 from strawberry.subscriptions.protocols.graphql_transport_ws.types import (
     ConnectionAckMessage,
     ConnectionInitMessage,
     SubscribeMessage,
     SubscribeMessagePayload,
 )
-from strawberry.subscriptions.protocols.graphql_ws import (
-    GQL_CONNECTION_ACK,
-    GQL_CONNECTION_INIT,
-    GQL_CONNECTION_KEEP_ALIVE,
-    GQL_START,
-)
-from strawberry.subscriptions.protocols.graphql_ws.types import (
-    OperationMessage,
-    StartPayload,
-)
-
-from coniql.app import create_app
+from strawberry.subscriptions.protocols.graphql_ws import GQL_CONNECTION_KEEP_ALIVE
 
 from .conftest import (
     PV_PREFIX,
@@ -49,21 +37,8 @@ from .conftest import (
     nan_get_query,
     nan_get_query_result,
     run_ioc,
-    ticking_subscription_query,
     ticking_subscription_result,
 )
-
-
-@pytest.fixture(scope="function")
-async def client(aiohttp_client):
-    cors = True
-    debug = False
-    graphiql = False
-    connection_init_wait_timeout = timedelta(seconds=2)
-    client = await aiohttp_client(
-        create_app(cors, debug, graphiql, connection_init_wait_timeout)
-    )
-    return client
 
 
 @pytest.mark.parametrize(
@@ -145,44 +120,11 @@ async def test_subscribe_disconnect(client: TestClient):
     ioc_cleanup(ioc_process)
 
 
-subscribe_params = [
-    (
-        GRAPHQL_TRANSPORT_WS_PROTOCOL,
-        ConnectionInitMessage().as_dict(),
-        ConnectionAckMessage().as_dict(),
-        SubscribeMessage(
-            id="sub1",
-            payload=SubscribeMessagePayload(query=ticking_subscription_query),
-        ).as_dict(),
-    ),
-    (
-        GRAPHQL_WS_PROTOCOL,
-        OperationMessage(type=GQL_CONNECTION_INIT),
-        OperationMessage(type=GQL_CONNECTION_ACK),
-        OperationMessage(
-            type=GQL_START,
-            id="sub1",
-            payload=StartPayload(query=ticking_subscription_query),
-        ),
-    ),
-]
-
-
-@pytest.mark.parametrize(
-    "ws_protocol,msg_init,msg_ack,msg_send",
-    subscribe_params,
-    ids=["graphql_transport_ws_protocol", "graphql_ws_protocol"],
-)
 @pytest.mark.asyncio
-async def test_subscribe_pv(
-    ioc: Popen,
-    client: TestClient,
-    ws_protocol,
-    msg_init,
-    msg_ack,
-    msg_send,
-):
+async def test_subscribe_pv(ioc: Popen, client: TestClient, subscription_data):
     results = []
+
+    ws_protocol, msg_init, msg_ack, msg_send = subscription_data
 
     async with client.ws_connect("/ws", protocols=[ws_protocol]) as ws:
         await ws.send_json(msg_init)

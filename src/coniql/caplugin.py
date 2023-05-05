@@ -18,6 +18,7 @@ from aioca import (
 from aioca.types import AugmentedValue
 
 from coniql.coniql_schema import Widget
+from coniql.metrics import update_subscription_metrics
 from coniql.plugin import Plugin, PutValue
 from coniql.types import (
     Channel,
@@ -294,8 +295,21 @@ class CAPlugin(Plugin):
                 loop = None
             # Handle all subsequent updates from both monitors.
             firstChannelReceived = False
+
+            value_monitor_last_dropped = 0
+            meta_monitor_last_dropped = 0
+
             while True:
                 await asyncio.sleep(0.01)
+
+                # Update metrics for this subscription
+                value_monitor_last_dropped = update_subscription_metrics(
+                    value_monitor, value_monitor_last_dropped, {"type": "value"}
+                )
+                meta_monitor_last_dropped = update_subscription_metrics(
+                    meta_monitor, meta_monitor_last_dropped, {"type": "meta"}
+                )
+
                 # Wait to receive both channels at the beginning
                 if loop is not None and not firstChannelReceived:
                     if value_signal.is_armed() and meta_signal.is_armed():

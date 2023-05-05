@@ -17,7 +17,7 @@ description = "Interface to control systems via GraphQL over websockets"
 dependencies = [
     "typing-extensions;python_version<'3.8'",
     "strawberry-graphql",
-    "aioca",
+    "aioca>=1.7",
     "p4p",
     "ruamel.yaml",
     "aiohttp-cors",
