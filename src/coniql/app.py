@@ -15,7 +15,7 @@ from coniql.metrics import (
     MetricsExtension,
     MetricsGraphQLTransportWSHandler,
     MetricsGraphQLWSHandler,
-    SchemaWithMetrics,
+    MetricsSchema,
     handle_metrics,
     metrics_middleware,
 )
@@ -25,7 +25,7 @@ from . import __version__
 
 def create_schema(debug: bool):
     # Create the schema
-    return SchemaWithMetrics(
+    return MetricsSchema(
         query=schema.Query,
         subscription=schema.Subscription,
         mutation=schema.Mutation,

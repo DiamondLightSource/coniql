@@ -1,7 +1,7 @@
+import time
 from typing import Dict, List, Optional
 
-from aioca import Subscription
-from aioca._catools import _Context
+from aioca import Subscription, get_channel_infos
 from aiohttp import web
 from aiohttp.hdrs import ACCEPT
 from aiohttp.web_request import Request
@@ -12,7 +12,6 @@ from aioprometheus import (
     Summary,
     count_exceptions,
     inprogress,
-    timer,
 )
 from aioprometheus.asgi.middleware import EXCLUDE_PATHS
 from aioprometheus.renderer import render
@@ -48,7 +47,7 @@ class MetricsExtension(SchemaExtension):
         yield
 
 
-class SchemaWithMetrics(Schema):
+class MetricsSchema(Schema):
     """Extended Schema with metrics"""
 
     def process_errors(
@@ -116,12 +115,11 @@ def update_subscription_metrics(
 
 def update_active_channels() -> None:
     """Inspect aioca's channel cache to see how many active channels there are"""
-    channel_cache = _Context.get_channel_cache()
-    # TODO: This will count every channel that has ever connected, not
-    # specifically every ACTIVE channel!
-    # Probably fixable once this issue is resolved:
-    # https://github.com/dls-controls/aioca/issues/37
-    ACTIVE_CHANNELS.set({}, len(channel_cache._ChannelCache__channels))
+    channel_infos = get_channel_infos()
+
+    active_channels = sum(channel.connected for channel in channel_infos)
+
+    ACTIVE_CHANNELS.set({}, active_channels)
 
 
 async def handle_metrics(request: Request):
@@ -133,18 +131,23 @@ async def handle_metrics(request: Request):
 
 
 @web.middleware
-@timer(REQUEST_TIME)  # Keeps track of duration of all requests
 @count_exceptions(
     REQUEST_EXCEPTIONS, {"route": "middleware"}
 )  # Count any exceptions in any request
 async def metrics_middleware(request: Request, handler):
     """Middleware that is called for all requests to the aiohttp server"""
 
+    labels = {"route": "middleware", "path": request.path}
+
     # Ignore requests for some common paths.
     # Use the same list as used in aioprometheus for AGSI apps
     if request.path not in EXCLUDE_PATHS:
-        REQUESTS.inc({"route": "middleware", "path": request.path})
+        REQUESTS.inc(labels)
+        start_time = time.monotonic()
 
     response = await handler(request)
+
+    if request.path not in EXCLUDE_PATHS:
+        REQUEST_TIME.observe(labels, time.monotonic() - start_time)
 
     return response

@@ -76,9 +76,9 @@ async def test_metrics_query_count(ioc, client: TestClient):
 @pytest.mark.asyncio
 async def test_metrics_processing_time(ioc, client: TestClient):
     """Test metrics for duration of requests.
-    Note must make two requests as the @timer annotation won't finish timing a
-    request until after the request has finished, but the data returned is
-    created in the middle of the request so is not included"""
+    Note that this will only count the first request (/ws), as that is the only
+    completed request at the time the metrics output are created. There will be no
+    timing information for the /metrics call itself."""
 
     resp = await client.get("/ws", params={"query": longout_get_query})
     assert resp.status == 200
@@ -89,11 +89,26 @@ async def test_metrics_processing_time(ioc, client: TestClient):
     text = await resp.text()
 
     # Only expect 1 as the current request isn't tracked
-    assert "coniql_request_processing_seconds_count 1" in text
-    assert 'coniql_request_processing_seconds{quantile="0.5"}' in text
-    assert 'coniql_request_processing_seconds{quantile="0.9"}' in text
-    assert 'coniql_request_processing_seconds{quantile="0.99"}' in text
-    assert "coniql_request_processing_seconds_sum" in text
+    assert (
+        "coniql_request_processing_seconds_count"
+        '{path="/ws",route="middleware"} 1' in text
+    )
+    assert (
+        "coniql_request_processing_seconds"
+        '{path="/ws",quantile="0.5",route="middleware"}' in text
+    )
+    assert (
+        "coniql_request_processing_seconds"
+        '{path="/ws",quantile="0.9",route="middleware"}' in text
+    )
+    assert (
+        "coniql_request_processing_seconds"
+        '{path="/ws",quantile="0.99",route="middleware"}' in text
+    )
+    assert (
+        "coniql_request_processing_seconds_sum"
+        '{path="/ws",route="middleware"}' in text
+    )
 
 
 @pytest.mark.asyncio
@@ -193,7 +208,8 @@ async def test_metrics_subscriptions_in_progress(
 
         text = await resp.text()
         assert (
-            f'coniql_request_in_progress{{type="subscription_{ws_protocol}"}} 1' in text
+            f'coniql_subscriptions_in_progress{{type="subscription_{ws_protocol}"}} 1'
+            in text
         )
 
         await ws.close()
