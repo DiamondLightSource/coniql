@@ -20,7 +20,7 @@ Supports a web interface to get, put and monitor the value of PVs.
     :alt: Test Coverage
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/coniql.svg
-    :target: https://pypi.org/project/python3-pip-skeleton
+    :target: https://pypi.org/project/coniql
 
 .. |license| image:: https://img.shields.io/badge/License-Apache%202.0-blue.svg
     :target: https://opensource.org/licenses/Apache-2.0

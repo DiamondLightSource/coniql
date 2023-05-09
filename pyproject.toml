@@ -54,7 +54,7 @@ dev = [
 coniql = "coniql.app:main"
 
 [project.urls]
-GitHub = "https://github.com/DiamondLightSource/python3-pip-skeleton"
+GitHub = "https://github.com/DiamondLightSource/coniql"
 
 [[project.authors]] # Further authors may be added by duplicating this section
 email = "tom.cobbl@diamond.ac.uk"
