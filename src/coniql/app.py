@@ -58,7 +58,7 @@ def create_app(
         schema=strawberry_schema,
         subscription_protocols=[GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL],
         graphiql=graphiql,
-        **kwargs
+        **kwargs,
     )
 
     # Create app

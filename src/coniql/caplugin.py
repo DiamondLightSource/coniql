@@ -222,7 +222,7 @@ class CAPlugin(Plugin):
     class UpdateSignal:
         """Class used to signal when an update is available"""
 
-        def __init__(self):
+        def __init__(self) -> None:
             self.signal: bool = False
 
         def arm(self):

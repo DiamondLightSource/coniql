@@ -28,7 +28,7 @@ class Plugin:
 
 
 class PluginStore:
-    def __init__(self):
+    def __init__(self) -> None:
         # {transport: plugin}
         self.plugins: Dict[str, Plugin] = {}
 

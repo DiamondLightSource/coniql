@@ -21,6 +21,9 @@ dependencies = [
     "p4p",
     "ruamel.yaml",
     "aiohttp-cors",
+    "aioprometheus",
+    # Lower versions cause odd behaviour in epicscorelibs when testing the --version flag
+    "setuptools>=67",
 ] # Add project dependencies here, e.g. ["click", "numpy"]
 dynamic = ["version"]
 license.file = "LICENSE"
@@ -45,7 +48,6 @@ dev = [
     "types-mock",
     "pytest-asyncio>0.17",
     "pytest-aiohttp",
-    "setuptools>=67",
 ]
 
 [project.scripts]
@@ -63,7 +65,7 @@ name = "Tom Cobb"
 write_to = "src/coniql/_version.py"
 
 [tool.mypy]
-ignore_missing_imports = true # Ignore missing stubs in imported modules
+ignore_missing_imports = true          # Ignore missing stubs in imported modules
 plugins = "strawberry.ext.mypy_plugin"
 
 [tool.isort]

@@ -280,7 +280,7 @@ class RampWaveSim(Sim):
 
 
 class SimPlugin(Plugin):
-    def __init__(self):
+    def __init__(self) -> None:
         # {pv: Sim}
         self.sims: Dict[str, Sim] = {}
         # {pv: {queue_for_each_listener}}

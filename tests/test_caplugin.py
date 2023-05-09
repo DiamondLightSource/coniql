@@ -1,6 +1,6 @@
 import time
 from subprocess import Popen
-from typing import Any, Dict, List
+from typing import Any, AsyncIterator, Dict, List
 
 import pytest
 from aioca import caput
@@ -86,8 +86,10 @@ async def test_subscribe_disconnect(schema: Schema):
     query = get_longout_subscription_query(pv_prefix)
     results: List[Dict[str, Any]] = []
     resp = await schema.subscribe(query)
+    assert isinstance(resp, AsyncIterator)
     async for result in resp:
         assert result.errors is None
+        assert result.data
         if not results:
             # First response; now disconnect.
             results.append(result.data)
@@ -107,6 +109,7 @@ async def test_subscribe_ticking(ioc: Popen, schema: Schema):
     results = []
     await caput(PV_PREFIX + "ticking", 0.0)
     resp = await schema.subscribe(ticking_subscription_query)
+    assert isinstance(resp, AsyncIterator)
     start = time.time()
     async for result in resp:
         if time.time() - start > 1.0:

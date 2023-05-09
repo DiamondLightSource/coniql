@@ -4,6 +4,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import AsyncIterator
 
 import numpy as np
 import pytest
@@ -95,6 +96,7 @@ subscription {
     results = []
     start = time.time()
     resp = await schema.subscribe(query)
+    assert isinstance(resp, AsyncIterator)
     async for result in resp:
         results.append(result.data)
         if time.time() - start > 2:
@@ -118,6 +120,7 @@ subscription {
     results = []
     start = time.time()
     resp = await schema.subscribe(query)
+    assert isinstance(resp, AsyncIterator)
     async for result in resp:
         results.append(result.data)
         if len(results) == 4:
