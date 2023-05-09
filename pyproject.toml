@@ -48,6 +48,7 @@ dev = [
     "types-mock",
     "pytest-asyncio>0.17",
     "pytest-aiohttp",
+    "websockets",                       # Required for benchmarking tests
 ]
 
 [project.scripts]

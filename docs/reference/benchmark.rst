@@ -14,15 +14,15 @@ Python Client
 
 To setup the Python client, install the development dependencies::
 
-    pipenv install --dev
+    pip install -e .[dev]
 
 Open a terminal and run the server::
 
-    pipenv run python -m coniql
+    python -m coniql
 
 Open a new terminal and run the client::
 
-    pipenv run python benchmark/asyncClient.py
+    python benchmark/asyncClient.py
 
 JS Client
 ~~~~~~~~~
@@ -36,7 +36,7 @@ Then, install the necessary (and minimal) JS packages::
 
 Open a terminal and run the server::
 
-    pipenv run python -m coniql
+    python -m coniql
 
 Open a new terminal and run the client::
 
