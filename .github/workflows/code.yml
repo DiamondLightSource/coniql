@@ -142,6 +142,7 @@ jobs:
         with:
           images: ${{ env.IMAGE_REPOSITORY }}
           tags: |
+            type=edge,branch=integration
             type=ref,event=tag
             type=raw,value=latest
 
