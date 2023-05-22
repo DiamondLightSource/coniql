@@ -1,5 +1,13 @@
 [
   {
+    "version": "master",
+    "url": "https://dls-controls.github.io/coniql/master/"
+  },
+  {
+    "version": "main",
+    "url": "https://dls-controls.github.io/coniql/main/"
+  },
+  {
     "version": "0.2",
     "url": "https://dls-controls.github.io/coniql/0.2/"
   }
