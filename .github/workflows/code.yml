@@ -26,11 +26,6 @@ jobs:
       - name: Lint
         run: tox -e pre-commit,mypy
 
-      - name: Install minimum python version
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python }}
-
   test:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     strategy:
