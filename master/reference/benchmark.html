@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Benchmarking &mdash; coniql 0.2+76.ge9e08e0 documentation</title>
+  <title>Benchmarking &mdash; coniql 0.3.dev149+gfc4e5db documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -72,7 +72,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference external" href="https://github.com/dls-controls/coniql/releases">Releases</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/coniql/releases">Releases</a></li>
 <li class="toctree-l1"><a class="reference external" href="genindex.html#http://">Index</a></li>
 </ul>
 
@@ -105,21 +105,21 @@
 <p>In order to evaluate changes made to the server, we have developed some scripts which request increasingly large waveforms and measure the update rate.
 Benchmark scripts are written in both Python and js (using the Node runtime) in an attempt to remove language or runtime effects.
 It is possible other graphQL clients will provide different performance characteristics in the future, although we have good reason to believe we are currently hitting other limits.
-For more information on the results of benchmarking so far, see <a class="reference external" href="https://github.com/dls-controls/cs-web-proto/wiki/Performance-with-Coniql">this page</a>.</p>
+For more information on the results of benchmarking so far, see <a class="reference external" href="https://github.com/DiamondLightSource/cs-web-proto/wiki/Performance-with-Coniql">this page</a>.</p>
 <section id="instructions">
 <h2>Instructions<a class="headerlink" href="#instructions" title="Permalink to this heading"></a></h2>
 <section id="python-client">
 <h3>Python Client<a class="headerlink" href="#python-client" title="Permalink to this heading"></a></h3>
 <p>To setup the Python client, install the development dependencies:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">install</span> <span class="o">--</span><span class="n">dev</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span><span class="p">[</span><span class="n">dev</span><span class="p">]</span>
 </pre></div>
 </div>
 <p>Open a terminal and run the server:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">run</span> <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">coniql</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">coniql</span>
 </pre></div>
 </div>
 <p>Open a new terminal and run the client:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">run</span> <span class="n">python</span> <span class="n">benchmark</span><span class="o">/</span><span class="n">asyncClient</span><span class="o">.</span><span class="n">py</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="n">benchmark</span><span class="o">/</span><span class="n">asyncClient</span><span class="o">.</span><span class="n">py</span>
 </pre></div>
 </div>
 </section>
@@ -132,7 +132,7 @@ Follow the instructions <a class="reference external" href="https://nodejs.org/e
 </pre></div>
 </div>
 <p>Open a terminal and run the server:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">run</span> <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">coniql</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">coniql</span>
 </pre></div>
 </div>
 <p>Open a new terminal and run the client:</p>

@@ -6,5 +6,9 @@
   {
     "version": "0.2",
     "url": "https://dls-controls.github.io/coniql/0.2/"
+  },
+  {
+    "version": "update-skeleton",
+    "url": "https://dls-controls.github.io/coniql/update-skeleton/"
   }
 ]
