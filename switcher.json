@@ -1,14 +1,14 @@
 [
   {
-    "version": "master",
-    "url": "https://dls-controls.github.io/coniql/master/"
-  },
-  {
     "version": "main",
-    "url": "https://dls-controls.github.io/coniql/main/"
+    "url": "https://DiamondLightSource.github.io/coniql/main/"
   },
   {
     "version": "0.2",
-    "url": "https://dls-controls.github.io/coniql/0.2/"
+    "url": "https://DiamondLightSource.github.io/coniql/0.2/"
+  },
+  {
+    "version": "integration_setup",
+    "url": "https://DiamondLightSource.github.io/coniql/integration_setup/"
   }
 ]
