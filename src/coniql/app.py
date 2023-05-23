@@ -1,7 +1,6 @@
 import logging
 from argparse import ArgumentParser
 from datetime import timedelta
-from pathlib import Path
 from typing import Any, Optional
 
 import aiohttp_cors
@@ -115,13 +114,6 @@ def main(args=None) -> None:
     """
     parser = ArgumentParser(description="CONtrol system Interface over graphQL")
     parser.add_argument("--version", action="version", version=__version__)
-    parser.add_argument(
-        "config_paths",
-        metavar="PATH",
-        type=Path,
-        nargs="*",
-        help="Paths to .coniql.yaml files describing Channels and Devices",
-    )
     parser.add_argument(
         "--cors",
         action="store_true",
