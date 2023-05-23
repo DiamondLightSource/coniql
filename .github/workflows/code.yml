@@ -141,10 +141,12 @@ jobs:
         uses: docker/metadata-action@v4
         with:
           images: ${{ env.IMAGE_REPOSITORY }}
+          # Add the "edge" tag on all commits to the "integration" branch.
+          # Add the "latest" tag to repository tags only
           tags: |
             type=edge,branch=integration
             type=ref,event=tag
-            type=raw,value=latest
+            type=raw,value=latest, enable=${{ github.ref_type == 'tag' }}
 
       - name: Set up Docker Buildx
         id: buildx
@@ -155,6 +157,7 @@ jobs:
         with:
           build-args: |
             PIP_OPTIONS=-r lockfiles/requirements.txt dist/*.whl
+          # Push images to GHCR that are either repository tags or commits on the "integration" branch
           push: ${{ github.event_name == 'push' && ( github.ref_type == 'tag' || github.ref_name == 'integration' ) }}
           load: ${{ ! (github.event_name == 'push' && ( github.ref_type == 'tag' || github.ref_name == 'integration' )) }}
           tags: ${{ steps.meta.outputs.tags }}
