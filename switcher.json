@@ -10,9 +10,5 @@
   {
     "version": "integration",
     "url": "https://DiamondLightSource.github.io/coniql/integration/"
-  },
-  {
-    "version": "remove_config_path",
-    "url": "https://DiamondLightSource.github.io/coniql/remove_config_path/"
   }
 ]
