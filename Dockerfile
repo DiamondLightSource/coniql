@@ -35,4 +35,4 @@ ENV PATH=/venv/bin:$PATH
 # change this entrypoint if it is not the same as the repo
 ENTRYPOINT ["coniql"]
 # Run coniql with CORS enabled.
-CMD ["--cors", "motordevices.coniql.yaml"]
+CMD ["--cors"]
