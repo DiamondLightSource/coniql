@@ -166,8 +166,8 @@ jobs:
           file: ./Dockerfile
           # If you have a long docker build, uncomment the following to turn on caching
           # For short build times this makes it a little slower
-          #cache-from: type=gha
-          #cache-to: type=gha,mode=max
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Test cli works in runtime image
         # Despite the name, .tags actually includes the full repo path as well
