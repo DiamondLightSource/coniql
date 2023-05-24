@@ -170,7 +170,8 @@ jobs:
           #cache-to: type=gha,mode=max
 
       - name: Test cli works in runtime image
-        run: docker run ${{ env.IMAGE_REPOSITORY }} --version
+        # Despite the name, .tags actually includes the full repo path as well
+        run: docker run ${{ steps.meta.outputs.tags }} --version
 
   release:
     # upload to PyPI and make a release on every tag
