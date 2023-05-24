@@ -1,10 +1,10 @@
 Run a server
 ============
 
-Coniql exposes an interface to Channels and Devices. A Channel maps to a single
-value, with timeStamp, status information, and display level metadata. A Device
-consists of nested Groups of named Channels. Channels can be backed by different
-data stores, provided via a plugin interface.
+Coniql exposes an interface to Channels. A Channel maps to a single
+value, with timeStamp, status information, and display level metadata. 
+Channels can be backed by different data stores, provided via a plugin 
+interface.
 
 For example:
 
@@ -170,50 +170,3 @@ Coniql can also provide its values over pvAccess. To try this out you will need 
 working installation of `EPICS 7 <https://epics.anl.gov/base/R7-0/index.php>`_. You can
 then start a soft IOC, or add the PVA plugin to IOCs to expose PVs. The PVs work
 like CA, but have the prefix ``pva://``
-
-
-Devices
--------
-
-If you run up coniql with a configuration file, it can also expose Devices. For instance
-of you run the example::
-
-    pipenv run python -m coniql tests/simdevices.coniql.yaml
-
-You can ask for a list of all the Devices with something like::
-
-  query {
-    getDevices(filter: "*") {
-      id
-    }
-  }
-
-You can get more details about a particular device with this::
-
-  query {
-    getDevice(id:"Xspress3") {
-      id
-      children(flatten:true) {
-        name
-        label
-        child {
-          __typename
-          ... on Channel {
-            id
-          }
-          ... on Device {
-            id
-          }
-          ... on Group {
-            layout
-            children {
-              name
-            }
-          }
-        }
-      }
-    }
-  }
-
-Then you will see a Device output, showing a flattened view of its child Channels
-and Devices. You can then recurse down to see "Xspress3.Channel1".

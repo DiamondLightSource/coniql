@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Run a server &mdash; coniql 0.3.dev149+gfc4e5db documentation</title>
+  <title>Run a server &mdash; coniql 0.3.dev151+gb122e7f documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -14,6 +14,8 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
         <script src="../_static/doctools.js"></script>
         <script src="../_static/sphinx_highlight.js"></script>
@@ -62,7 +64,6 @@
 <li class="toctree-l2"><a class="reference internal" href="#sim-plugin">Sim Plugin</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#ca-plugin">CA Plugin</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pva-plugin">PVA Plugin</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#devices">Devices</a></li>
 </ul>
 </li>
 </ul>
@@ -105,10 +106,10 @@
              
   <section id="run-a-server">
 <h1>Run a server<a class="headerlink" href="#run-a-server" title="Permalink to this heading"></a></h1>
-<p>Coniql exposes an interface to Channels and Devices. A Channel maps to a single
-value, with timeStamp, status information, and display level metadata. A Device
-consists of nested Groups of named Channels. Channels can be backed by different
-data stores, provided via a plugin interface.</p>
+<p>Coniql exposes an interface to Channels. A Channel maps to a single
+value, with timeStamp, status information, and display level metadata.
+Channels can be backed by different data stores, provided via a plugin
+interface.</p>
 <p>For example:</p>
 <img alt="../_images/concrete-device-layer.svg" src="../_images/concrete-device-layer.svg" /><section id="running-a-server">
 <h2>Running a server<a class="headerlink" href="#running-a-server" title="Permalink to this heading"></a></h2>
@@ -261,51 +262,6 @@ the coniql directory type:</p>
 working installation of <a class="reference external" href="https://epics.anl.gov/base/R7-0/index.php">EPICS 7</a>. You can
 then start a soft IOC, or add the PVA plugin to IOCs to expose PVs. The PVs work
 like CA, but have the prefix <code class="docutils literal notranslate"><span class="pre">pva://</span></code></p>
-</section>
-<section id="devices">
-<h2>Devices<a class="headerlink" href="#devices" title="Permalink to this heading"></a></h2>
-<p>If you run up coniql with a configuration file, it can also expose Devices. For instance
-of you run the example:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">run</span> <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">coniql</span> <span class="n">tests</span><span class="o">/</span><span class="n">simdevices</span><span class="o">.</span><span class="n">coniql</span><span class="o">.</span><span class="n">yaml</span>
-</pre></div>
-</div>
-<p>You can ask for a list of all the Devices with something like:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="p">{</span>
-  <span class="n">getDevices</span><span class="p">(</span><span class="nb">filter</span><span class="p">:</span> <span class="s2">&quot;*&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nb">id</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>You can get more details about a particular device with this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="p">{</span>
-  <span class="n">getDevice</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span><span class="s2">&quot;Xspress3&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nb">id</span>
-    <span class="n">children</span><span class="p">(</span><span class="n">flatten</span><span class="p">:</span><span class="n">true</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">name</span>
-      <span class="n">label</span>
-      <span class="n">child</span> <span class="p">{</span>
-        <span class="n">__typename</span>
-        <span class="o">...</span> <span class="n">on</span> <span class="n">Channel</span> <span class="p">{</span>
-          <span class="nb">id</span>
-        <span class="p">}</span>
-        <span class="o">...</span> <span class="n">on</span> <span class="n">Device</span> <span class="p">{</span>
-          <span class="nb">id</span>
-        <span class="p">}</span>
-        <span class="o">...</span> <span class="n">on</span> <span class="n">Group</span> <span class="p">{</span>
-          <span class="n">layout</span>
-          <span class="n">children</span> <span class="p">{</span>
-            <span class="n">name</span>
-          <span class="p">}</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</div>
-<p>Then you will see a Device output, showing a flattened view of its child Channels
-and Devices. You can then recurse down to see “Xspress3.Channel1”.</p>
 </section>
 </section>
 
