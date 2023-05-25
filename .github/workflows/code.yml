@@ -143,10 +143,13 @@ jobs:
           images: ${{ env.IMAGE_REPOSITORY }}
           # Add the "edge" tag on all commits to the "integration" branch.
           # Add the "latest" tag to repository tags only
+          # Add a placeholder tag  to all other commits on all other branches
+          # (This tag should never be published to the container repo)
           tags: |
             type=edge,branch=integration
             type=ref,event=tag
-            type=raw,value=latest, enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=latest,enable=${{ github.ref_type == 'tag' }}
+            type=raw,value=placeholder,enable=${{ github.ref_type == 'branch' && github.red_name != 'integration' }}
 
       - name: Set up Docker Buildx
         id: buildx
