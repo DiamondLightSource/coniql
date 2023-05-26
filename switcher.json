@@ -14,5 +14,9 @@
   {
     "version": "test-branch",
     "url": "https://DiamondLightSource.github.io/coniql/test-branch/"
+  },
+  {
+    "version": "update_favicon",
+    "url": "https://DiamondLightSource.github.io/coniql/update_favicon/"
   }
 ]
