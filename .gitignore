@@ -69,3 +69,7 @@ lockfiles/
 
 # Javascript files used for benchmarking tests
 node_modules/*
+
+# Benchmark files
+benchmark/*db
+benchmark/*.txt
