@@ -10,7 +10,6 @@ args=("$@")
 
 # Some parameters
 SUB_DIR="benchmark"
-N_PVS=100
 N_SAMPLES=1000
 # 1 = old, 2 = new
 PROTOCOL=2
@@ -25,12 +24,16 @@ Help()
     echo " - Usage:"
     echo "     Run from the top of the coniql directory"
     echo "       ./benchmark/run_performance_test <coniql-path> <number-of-clients>"
+    echo "          <number-of-pvs>"
     echo "     where:"
-    echo "       - <coniql-path> = path to Python virtual env where the Coniql"
-    echo "                         application has been installed"
-    echo "       - <number-of-clients> = number of websocket clients to run"
+    echo "       - <coniql-path> = [required] path to Python virtual env where the "
+    echo "                          Coniql application has been installed"
+    echo "       - <number-of-clients> = [optional] number of websocket clients to run."
+    echo "                                If not provided then default is 1."
+    echo "         <number-of-pvs> = [optional] number of PVs to subscribe to. If not "
+    echo "                            provided then default is 100."
     echo "     E.g."
-    echo "       ./benchmark/run_performance_test ../venv 2"
+    echo "       ./benchmark/run_performance_test ../venv 2 100"
     echo " ************************************************************************ "
 }
 
@@ -50,7 +53,7 @@ fi
 
 if [ -z ${args[1]} ]; then
     N_CLIENTS=1
-    echo "Number of clients not provided, defaulting to 1"
+    echo "Number of clients not provided, defaulting to $N_CLIENTS"
 else
     N_CLIENTS=${args[1]} 
     if ! [[ $N_CLIENTS =~ ^[0-9]+$ ]]; then
@@ -59,9 +62,21 @@ else
     fi
 fi
 
+if [ -z ${args[2]} ]; then
+    N_PVS=1
+    echo "Number of PVs not provided, defaulting to $N_PVS"
+else
+    N_PVS=${args[2]} 
+    if ! [[ $N_PVS =~ ^[0-9]+$ ]]; then
+        echo "Number of PVs must be an integer"
+        exit
+    fi
+fi
+
 
 # Setup: create db file for EPICS 
-for ((i=0;i<N_PVS;i++))
+echo "-> Creating EPICS db with $N_PVS PVs"
+for ((i=0;i<$N_PVS;i++))
 do
     if [ $i -lt 10 ]; then 
         str_name="0$i"
@@ -134,4 +149,3 @@ pids=$(pgrep softIoc)
 kill -INT $pids
 pids=$(pgrep coniql)
 kill -INT $pids
-
