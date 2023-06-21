@@ -16,7 +16,7 @@ classifiers = [
 description = "Interface to control systems via GraphQL over websockets"
 dependencies = [
     "typing-extensions;python_version<'3.8'",
-    "strawberry-graphql",
+    "strawberry-graphql==0.181.0",
     "aioca>=1.7",
     "p4p",
     "ruamel.yaml",
