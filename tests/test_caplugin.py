@@ -1,9 +1,8 @@
-import time
 from subprocess import Popen
-from typing import Any, AsyncIterator, Dict, List
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import pytest
-from aioca import caput
+from aioca import caget
 from strawberry import Schema
 
 from coniql.app import create_schema
@@ -16,6 +15,7 @@ from .conftest import (
     enum_get_query,
     enum_get_query_result,
     get_longout_subscription_query,
+    get_ticking_subscription_result,
     ioc_creator,
     list_put_query,
     list_put_query_result,
@@ -30,7 +30,6 @@ from .conftest import (
     nan_get_query_result,
     run_ioc,
     ticking_subscription_query,
-    ticking_subscription_result,
 )
 
 
@@ -106,15 +105,20 @@ async def test_subscribe_disconnect(schema: Schema):
 
 @pytest.mark.asyncio
 async def test_subscribe_ticking(ioc: Popen, schema: Schema):
-    results = []
-    await caput(PV_PREFIX + "ticking", 0.0)
+    results: List[Optional[Dict[str, Any]]] = []
     resp = await schema.subscribe(ticking_subscription_query)
     assert isinstance(resp, AsyncIterator)
-    start = time.time()
+    startVal = 0.0
+    count = 0
     async for result in resp:
-        if time.time() - start > 1.0:
+        if count > 2:
             break
+        # Get the starting value in the subscription for checks later
+        if count == 0:
+            startVal = await caget(PV_PREFIX + "ticking")
         results.append(result.data)
-    for i in range(3):
-        assert results[i] == ticking_subscription_result[i]
+        count += 1
     assert len(results) == 3
+    subscription_result = get_ticking_subscription_result(startVal)
+    for i in range(3):
+        assert results[i] == subscription_result[i]

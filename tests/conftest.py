@@ -355,16 +355,29 @@ subscription {
     % PV_PREFIX
 )
 
-ticking_subscription_result = [
-    {
-        "subscribeChannel": {
-            "value": {"string": "0.00000 mm"},
-            "display": {"precision": 5, "units": "mm"},
-        }
-    },
-    {"subscribeChannel": {"value": {"string": "1.00000 mm"}, "display": None}},
-    {"subscribeChannel": {"value": {"string": "2.00000 mm"}, "display": None}},
-]
+
+def get_ticking_subscription_result(startVal):
+    return [
+        {
+            "subscribeChannel": {
+                "value": {"string": "{}0000 mm".format(startVal)},
+                "display": {"precision": 5, "units": "mm"},
+            }
+        },
+        {
+            "subscribeChannel": {
+                "value": {"string": "{}0000 mm".format(startVal + 1)},
+                "display": None,
+            }
+        },
+        {
+            "subscribeChannel": {
+                "value": {"string": "{}0000 mm".format(startVal + 2)},
+                "display": None,
+            }
+        },
+    ]
+
 
 subscribe_params = [
     (

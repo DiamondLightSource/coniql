@@ -1,10 +1,9 @@
 import asyncio
-import time
 from subprocess import Popen
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pytest
-from aioca import caput
+from aioca import caget
 from aiohttp.test_utils import TestClient
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL
 from strawberry.subscriptions.protocols.graphql_transport_ws.types import (
@@ -23,6 +22,7 @@ from .conftest import (
     enum_get_query,
     enum_get_query_result,
     get_longout_subscription_query,
+    get_ticking_subscription_result,
     ioc_cleanup,
     ioc_creator,
     list_put_query,
@@ -37,7 +37,6 @@ from .conftest import (
     nan_get_query,
     nan_get_query_result,
     run_ioc,
-    ticking_subscription_result,
 )
 
 
@@ -122,7 +121,7 @@ async def test_subscribe_disconnect(client: TestClient):
 
 @pytest.mark.asyncio
 async def test_subscribe_pv(ioc: Popen, client: TestClient, subscription_data):
-    results = []
+    results: List[Optional[Dict[str, Any]]] = []
 
     ws_protocol, msg_init, msg_ack, msg_send = subscription_data
 
@@ -130,20 +129,25 @@ async def test_subscribe_pv(ioc: Popen, client: TestClient, subscription_data):
         await ws.send_json(msg_init)
         response = await ws.receive_json()
         assert response == msg_ack
-        await asyncio.sleep(0.1)
-        start = time.time()
         await ws.send_json(msg_send)
-        await caput(PV_PREFIX + "ticking", 0.0)
+        startVal = 0.0
+        count = 0
         while True:
-            if time.time() - start > 0.5:
+            if count > 2:
                 break
+            # Get the starting value in the subscription for checks later
+            if count == 0:
+                startVal = await caget(PV_PREFIX + "ticking")
             result = await ws.receive_json()
+
             if result["type"] == GQL_CONNECTION_KEEP_ALIVE:
                 continue
             results.append(result["payload"]["data"])
+            count += 1
 
         await ws.close()
         assert ws.closed
     assert len(results) == 3
+    subscription_result = get_ticking_subscription_result(startVal)
     for i in range(3):
-        assert results[i] == ticking_subscription_result[i]
+        assert results[i] == subscription_result[i]
