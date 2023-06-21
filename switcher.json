@@ -4,12 +4,12 @@
     "url": "https://DiamondLightSource.github.io/coniql/main/"
   },
   {
-    "version": "0.2",
-    "url": "https://DiamondLightSource.github.io/coniql/0.2/"
-  },
-  {
     "version": "0.3",
     "url": "https://DiamondLightSource.github.io/coniql/0.3/"
+  },
+  {
+    "version": "0.2",
+    "url": "https://DiamondLightSource.github.io/coniql/0.2/"
   },
   {
     "version": "add_performance_test_script",
