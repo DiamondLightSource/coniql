@@ -4,12 +4,12 @@
     "url": "https://DiamondLightSource.github.io/coniql/main/"
   },
   {
-    "version": "0.3",
-    "url": "https://DiamondLightSource.github.io/coniql/0.3/"
-  },
-  {
     "version": "0.2",
     "url": "https://DiamondLightSource.github.io/coniql/0.2/"
+  },
+  {
+    "version": "0.3",
+    "url": "https://DiamondLightSource.github.io/coniql/0.3/"
   },
   {
     "version": "add_performance_test_script",
@@ -18,10 +18,6 @@
   {
     "version": "integration",
     "url": "https://DiamondLightSource.github.io/coniql/integration/"
-  },
-  {
-    "version": "pin_strawberry_version",
-    "url": "https://DiamondLightSource.github.io/coniql/pin_strawberry_version/"
   },
   {
     "version": "test-branch",
