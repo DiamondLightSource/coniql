@@ -246,10 +246,7 @@ def main():
     t.start()
     for i in range(n_pvs):
         # Get the PV name
-        if i < 10:
-            pv_name = PV_PREFIX + "0" + str(i)
-        else:
-            pv_name = PV_PREFIX + str(i)
+        pv_name = PV_PREFIX + str(i)
 
         t = threading.Thread(
             target=coniql_subscription,

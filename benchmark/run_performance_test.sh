@@ -78,21 +78,20 @@ fi
 echo "-> Creating EPICS db with $N_PVS PVs"
 for ((i=0;i<$N_PVS;i++))
 do
-    if [ $i -lt 10 ]; then 
-        str_name="0$i"
-    else
-        str_name="$i"
-    fi
 
-    STR="record(calcout, \"TEST:REC$str_name\"){ field(DESC, \"Performance test record\") \
-    field(SCAN, \".1 second\") field(A, \"0\") field(CALC, \"A + 1\") field(OUT, \"TEST:REC$str_name.A\")}"
+    record_name="TEST:REC$i"
+    cat <<EOF
+record(calcout, "$record_name")
+{
+    field(DESC, "Performance test record")
+    field(SCAN, ".1 second")
+    field(A, "0")
+    field(CALC, "A + 1")
+    field(OUT, "$record_name.A")
+}
+EOF
 
-    if [ $i -eq 0 ]; then
-        echo $STR > $SUB_DIR/coniqlPerformanceTestDb.db
-    else 
-        echo $STR >> $SUB_DIR/coniqlPerformanceTestDb.db
-    fi
-done
+done >$SUB_DIR/coniqlPerformanceTestDb.db
 
 
 # 1. EPICS IOCS
