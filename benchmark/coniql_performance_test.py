@@ -92,7 +92,6 @@ class GraphQLClient:
                         else:
                             if msg_count > n_messages:
                                 break
-                                print("break")
                             msg_count = msg_count + 1
                     else:
                         continue
