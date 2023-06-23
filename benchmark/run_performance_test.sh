@@ -142,7 +142,9 @@ done
 echo " Completed"
 
 # Clean up long running applications (EPICS & Coniql)
-pids=$(pgrep softIoc)
-kill -INT $pids
-pids=$(pgrep coniql)
-kill -INT $pids
+for pid in $(pgrep softIoc) $(pgrep coniql)
+do
+    if [ -n "$pid" ]; then
+        kill -INT $pid
+    fi
+done
