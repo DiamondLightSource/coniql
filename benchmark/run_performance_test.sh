@@ -1,18 +1,10 @@
 #!/bin/bash
-# Usage ./run_performance_test <path/to/coniql/venv> <number-of-clients>
-#   <path/to/coniql/venv> = path to the location of the python virtual 
-#                           environment where Coniql has been installed
-#   <number-of-clients>   = number of websocket clients to start up
-
 
 # Get command line arguments
 args=("$@")
 
 # Some parameters
 SUB_DIR="benchmark"
-N_SAMPLES=1000
-# 1 = old, 2 = new
-PROTOCOL=2
 
 Help()
 {
@@ -25,24 +17,33 @@ Help()
     echo "     Run from the top of the coniql directory"
     echo "       ./benchmark/run_performance_test <options...>"
     echo "     options:"
-    echo "      -h | --help:    display this help message"
-    echo "      -p | --path:    [required] path to Python virtual env. where the"
-    echo "                       Coniql application has been installed."
-    echo "      -c | --clients: [optional] number of websocket clients to run."
-    echo "                       If not provided then default is 1."
-    echo "      -n | --npvs:    [optional] number of PVs to subscribe to. If not "
-    echo "                      provided then default is 100."
+    echo "      -h | --help:      display this help message"
+    echo "      -p | --path:      [required] path to Python virtual env. where the"
+    echo "                         Coniql application has been installed."
+    echo "      -c | --clients:   [optional] number of websocket clients to run."
+    echo "                         If not provided then default is 1."
+    echo "      -n | --npvs:      [optional] number of PVs to subscribe to. If not "
+    echo "                         provided then default is 100."
+    echo "      -s | --samples:   [optional] number of sample to collect. If not "
+    echo "                         provided then default is 1000."
+    echo "      -w | --websocket: [optional] websocket protocol to use. "
+    echo "                         Options: "
+    echo "                               1: graphql-ws (old)"
+    echo "                               2: graphql-transport-ws (new)"
+    echo "                         If not provided then default is 2."
     echo "     E.g."
-    echo "       ./benchmark/run_performance_test -p ../venv -c 1 -n 10"
+    echo "      ./benchmark/run_performance_test -p ../venv -c 1 -n 10 -s 1000 -w 2"
     echo " ************************************************************************ "
 }
 
+# Display help message if not arguments are provided
 if [ -z ${args[0]} ]; then
     Help
     exit
 fi
 
-VALID_ARGS=$(getopt -o hp:c:n: --long help,path:,clients:,npvs: -- "$@")
+# Parse command line options
+VALID_ARGS=$(getopt -o hp:c:n:s:w: --long help,path:,clients:,npvs:,samples:,websocket: -- "$@")
 if [[ $? -ne 0 ]]; then
     exit 1;
 fi
@@ -78,6 +79,25 @@ while [ : ]; do
             fi
             shift 2
             ;;
+        -s | --samples)
+            N_SAMPLES="$2"
+            if ! [[ $N_SAMPLES =~ ^[0-9]+$ ]]; then
+                echo "Number of samples must be an integer"
+                exit
+            fi
+            shift 2
+            ;;
+        -w | --websocket)
+            PROTOCOL="$2"
+            if [[ $PROTOCOL -ne 1 ]] && [[ $PROTOCOL -ne 2 ]]; then
+                echo "Invalid websocket protocol option"
+                echo " Select from:"
+                echo "  1: graphql-ws (old)"
+                echo "  2: graphql-transport-ws (new)"
+                exit
+            fi
+            shift 2
+            ;;
         --) shift; 
             break 
             ;;
@@ -97,6 +117,14 @@ fi
 if [ -z $N_PVS ]; then
     N_PVS=1
     echo "Number of PVs not provided, defaulting to $N_PVS"
+fi
+if [ -z $N_SAMPLES ]; then
+    N_SAMPLES=1000
+    echo "Number of samples not provided, defaulting to $N_SAMPLES"
+fi
+if [ -z $PROTOCOL ]; then
+    PROTOCOL=2
+    echo "Websocket protocol not provided, defaulting to 'graphql-transport-ws' (2)"
 fi
 
 # Setup: create db file for EPICS 
