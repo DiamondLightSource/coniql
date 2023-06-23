@@ -113,11 +113,9 @@ OUTPUT_FILE="$SUB_DIR/performance_test_results_NClients_$N_CLIENTS.txt"
 PYCMD="python $SUB_DIR/coniql_performance_test.py -n $N_PVS -s $N_SAMPLES -p $PROTOCOL -f $OUTPUT_FILE"
 for ((i=1;i<=$N_CLIENTS;i++)) 
 do
-    VENV_DIR="venv_test$i"
-    INSTALL3="python -m venv $VENV_DIR;source $VENV_DIR/bin/activate;pip install --upgrade pip;\
-    pip install websockets;pip install psutil"
-    CLEANUP3="deactivate;rm -rf $VENV_DIR"
-    CMD3="sleep 1;$INSTALL3;$PYCMD;$CLEANUP3;sleep 10"
+    VENV="source $CONIQL_DIR/bin/activate"
+    CLEANUP3="deactivate"
+    CMD3="sleep 10;$VENV;$PYCMD;$CLEANUP3;sleep 10"
     TAB3=(--tab -- bash -c "${CMD3}")
     echo "-> Starting websocket client $i"
     gnome-terminal "${TAB3[@]}"
