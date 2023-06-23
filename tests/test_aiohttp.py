@@ -1,9 +1,9 @@
 import asyncio
+import time
 from subprocess import Popen
 from typing import Any, Dict, List, Optional
 
 import pytest
-from aioca import caget
 from aiohttp.test_utils import TestClient
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL
 from strawberry.subscriptions.protocols.graphql_transport_ws.types import (
@@ -16,6 +16,7 @@ from strawberry.subscriptions.protocols.graphql_ws import GQL_CONNECTION_KEEP_AL
 
 from .conftest import (
     PV_PREFIX,
+    SUBSCRIPTION_TIMEOUT,
     base64_put_query,
     base64_put_query_result,
     check_put_timestamp,
@@ -130,16 +131,21 @@ async def test_subscribe_pv(ioc: Popen, client: TestClient, subscription_data):
         response = await ws.receive_json()
         assert response == msg_ack
         await ws.send_json(msg_send)
-        startVal = 0.0
         count = 0
+        start = time.time()
         while True:
+            if time.time() - start > SUBSCRIPTION_TIMEOUT:
+                pytest.fail("Timeout waiting for subscription data")
             if count > 2:
                 break
-            # Get the starting value in the subscription for checks later
-            if count == 0:
-                startVal = await caget(PV_PREFIX + "ticking")
-            result = await ws.receive_json()
 
+            # Set a timeout on wait for a websocket response as this blocks for the
+            # GRAPHQL_TRANSPORT_WS_PROTOCOL. A "keep alive" response is constantly
+            # sent for the GRAPHQL_WS_PROTOCOL so still need the above timeout to catch
+            # this case.
+            result = await asyncio.wait_for(
+                ws.receive_json(), timeout=SUBSCRIPTION_TIMEOUT
+            )
             if result["type"] == GQL_CONNECTION_KEEP_ALIVE:
                 continue
             results.append(result["payload"]["data"])
@@ -148,6 +154,10 @@ async def test_subscribe_pv(ioc: Popen, client: TestClient, subscription_data):
         await ws.close()
         assert ws.closed
     assert len(results) == 3
+    # Determine the starting value in the subscription
+    startSub = results[0]
+    assert startSub
+    startVal = startSub["subscribeChannel"]["value"]["float"]
     subscription_result = get_ticking_subscription_result(startVal)
     for i in range(3):
         assert results[i] == subscription_result[i]

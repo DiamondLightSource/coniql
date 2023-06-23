@@ -1,14 +1,15 @@
+import asyncio
 from subprocess import Popen
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 import pytest
-from aioca import caget
 from strawberry import Schema
 
 from coniql.app import create_schema
 
 from .conftest import (
     PV_PREFIX,
+    SUBSCRIPTION_TIMEOUT,
     base64_put_query,
     base64_put_query_result,
     check_put_timestamp,
@@ -108,17 +109,20 @@ async def test_subscribe_ticking(ioc: Popen, schema: Schema):
     results: List[Optional[Dict[str, Any]]] = []
     resp = await schema.subscribe(ticking_subscription_query)
     assert isinstance(resp, AsyncIterator)
-    startVal = 0.0
     count = 0
-    async for result in resp:
+    while True:
         if count > 2:
             break
-        # Get the starting value in the subscription for checks later
-        if count == 0:
-            startVal = await caget(PV_PREFIX + "ticking")
+        # Set a timeout on wait for a response as otherwise this call will
+        # block forever unless the schema.subscribe() receives data
+        result = await asyncio.wait_for(resp.__anext__(), timeout=SUBSCRIPTION_TIMEOUT)
         results.append(result.data)
         count += 1
     assert len(results) == 3
+    # Determine the starting value in the subscription
+    startSub = results[0]
+    assert startSub
+    startVal = startSub["subscribeChannel"]["value"]["float"]
     subscription_result = get_ticking_subscription_result(startVal)
     for i in range(3):
         assert results[i] == subscription_result[i]

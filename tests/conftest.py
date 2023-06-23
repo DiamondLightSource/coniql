@@ -38,6 +38,8 @@ BASE64_0_1688_2 = {
     "base64": "AAAAAAAAAAA1XrpJDAL7PwAAAAAAAABA",
 }
 
+SUBSCRIPTION_TIMEOUT = 10
+
 
 def wait_for_ioc(ioc):
     while True:
@@ -344,6 +346,7 @@ subscription {
     subscribeChannel(id: "ca://%sticking") {
         value {
             string(units: true)
+            float
         }
         display {
             precision
@@ -360,19 +363,19 @@ def get_ticking_subscription_result(startVal):
     return [
         {
             "subscribeChannel": {
-                "value": {"string": "{}0000 mm".format(startVal)},
+                "value": {"string": f"{startVal}0000 mm", "float": startVal},
                 "display": {"precision": 5, "units": "mm"},
             }
         },
         {
             "subscribeChannel": {
-                "value": {"string": "{}0000 mm".format(startVal + 1)},
+                "value": {"string": f"{startVal + 1}0000 mm", "float": startVal + 1},
                 "display": None,
             }
         },
         {
             "subscribeChannel": {
-                "value": {"string": "{}0000 mm".format(startVal + 2)},
+                "value": {"string": f"{startVal + 2}0000 mm", "float": startVal + 2},
                 "display": None,
             }
         },
