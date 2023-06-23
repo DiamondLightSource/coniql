@@ -14,7 +14,7 @@ cpu_average = 0
 memory_use = 0
 PV_PREFIX = "TEST:REC"
 subscriptions_list = {}
-thread_list = []
+task_list = []
 
 parser = argparse.ArgumentParser(description="Process inputs")
 parser.add_argument(
@@ -213,19 +213,17 @@ def get_subscription_query(pv_name):
     )
 
 
-def coniql_subscription(client, pv_name, n_samples):
+async def coniql_subscription(client, pv_name, n_samples):
     subscriptions_list[pv_name] = PVSubscription(pv_name)
-    asyncio.run(
-        client.subscribe(
-            idid=pv_name,
-            query=get_subscription_query(pv_name),
-            handle=data_handler,
-            n_messages=n_samples,
-        )
+    await client.subscribe(
+        idid=pv_name,
+        query=get_subscription_query(pv_name),
+        handle=data_handler,
+        n_messages=n_samples,
     )
 
 
-def main():
+async def main():
     args = parser.parse_args()
     n_pvs = int(args.n_pvs)
     n_samples = int(args.n_samples)
@@ -236,46 +234,38 @@ def main():
         protocol = "graphql-transport-ws"
     print("-> Using the websocket protocol: '" + protocol + "'")
 
-    # Create and start subscriptions
+    # Create client
     signal = StartStopSignal()
     client = GraphQLClient(
         endpoint="ws://0.0.0.0:8080/ws", signal=signal, ws_protocol=ws_protocol
     )
-    t = threading.Thread(target=cpu_monitor, args=(signal,))
-    t.start()
+    # Start CPU monitor thread
+    cpu_monitor_thread = threading.Thread(target=cpu_monitor, args=(signal,))
+    cpu_monitor_thread.start()
+
+    # Create subsciption tasks for n_pvs
     for i in range(n_pvs):
         # Get the PV name
         pv_name = PV_PREFIX + str(i)
 
-        t = threading.Thread(
-            target=coniql_subscription,
-            args=(
-                client,
-                pv_name,
-                n_samples,
-            ),
-        )
-        thread_list.append(t)
-        t.start()
+        # Create a task
+        sub_task = asyncio.create_task(coniql_subscription(client, pv_name, n_samples))
+
+        # Add to list of tasks to await
+        task_list.append(sub_task)
         print("-> Starting subscription: " + str(pv_name))
 
-    # Monitor subscription progress
+    # Signal for the CPU monitor thread to start recording CPU metrics
     signal.signal_start()
-    list_size_t0 = len(thread_list)
-    while True:
-        for thread in thread_list:
-            if not thread.is_alive():
-                thread_list.remove(thread)
-                if len(thread_list) == list_size_t0 - 1:
-                    print(
-                        "-> Subscriptions starting to close at "
-                        + str(datetime.datetime.now())
-                    )
-                    signal.signal_stop()
-        if len(thread_list) == 0:
-            print("-> All subscriptions completed at " + str(datetime.datetime.now()))
-            break
-        time.sleep(0.1)
+
+    # Await all subscriptions to complete
+    try:
+        await asyncio.gather(*task_list)
+        # Signal to CPU monitoring thread to stop recording CPU metrics
+        signal.signal_stop()
+    except Exception as e:
+        # Catch any exceptions so that we can still record results
+        print("Exception caught: ", e)
 
     # Analyse results
     missing_average = 0
@@ -333,5 +323,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
     sys.exit()
