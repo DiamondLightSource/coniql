@@ -23,56 +23,81 @@ Help()
     echo "      - Coniql installed into a Python virtual environment"
     echo " - Usage:"
     echo "     Run from the top of the coniql directory"
-    echo "       ./benchmark/run_performance_test <coniql-path> <number-of-clients>"
-    echo "          <number-of-pvs>"
-    echo "     where:"
-    echo "       - <coniql-path> = [required] path to Python virtual env where the "
-    echo "                          Coniql application has been installed"
-    echo "       - <number-of-clients> = [optional] number of websocket clients to run."
-    echo "                                If not provided then default is 1."
-    echo "         <number-of-pvs> = [optional] number of PVs to subscribe to. If not "
-    echo "                            provided then default is 100."
+    echo "       ./benchmark/run_performance_test <options...>"
+    echo "     options:"
+    echo "      -h | --help:    display this help message"
+    echo "      -p | --path:    [required] path to Python virtual env. where the"
+    echo "                       Coniql application has been installed."
+    echo "      -c | --clients: [optional] number of websocket clients to run."
+    echo "                       If not provided then default is 1."
+    echo "      -n | --npvs:    [optional] number of PVs to subscribe to. If not "
+    echo "                      provided then default is 100."
     echo "     E.g."
-    echo "       ./benchmark/run_performance_test ../venv 2 100"
+    echo "       ./benchmark/run_performance_test -p ../venv -c 1 -n 10"
     echo " ************************************************************************ "
 }
 
 if [ -z ${args[0]} ]; then
     Help
     exit
-elif [ ${args[0]} = "--help" ]; then
-    Help
-    exit 
-else
-    CONIQL_DIR=${args[0]}
-    if [ ! -d $CONIQL_DIR ]; then
-        echo "Coniql virtual env directory '$CONIQL_DIR' does not exist."
-        exit
-    fi
 fi
 
-if [ -z ${args[1]} ]; then
+VALID_ARGS=$(getopt -o hp:c:n: --long help,path:,clients:,npvs: -- "$@")
+if [[ $? -ne 0 ]]; then
+    exit 1;
+fi
+
+eval set -- "$VALID_ARGS"
+while [ : ]; do
+    case "$1" in
+        -h | --help)
+            Help
+            exit 1
+            ;;
+        -p | --path)
+            CONIQL_DIR="$2"
+            if [ ! -d $CONIQL_DIR ]; then
+                echo "Coniql virtual env directory '$CONIQL_DIR' does not exist."
+                exit 1
+            fi
+            shift 2
+            ;;
+        -c | --clients)
+            N_CLIENTS="$2" 
+            if ! [[ $N_CLIENTS =~ ^[0-9]+$ ]]; then
+                echo "Number of clients must be an integer"
+                exit
+            fi
+            shift 2
+            ;;
+        -n | --npvs)
+            N_PVS="$2"
+            if ! [[ $N_PVS =~ ^[0-9]+$ ]]; then
+                echo "Number of PVs must be an integer"
+                exit
+            fi
+            shift 2
+            ;;
+        --) shift; 
+            break 
+            ;;
+    esac
+done
+
+# Check what variables have been set by user 
+if [ -z $CONIQL_DIR ]; then
+    echo "Coniql virtual env directory has not been provided."
+    echo "Run './benchmark/run_performance_test --help' for script usage."
+    exit
+fi
+if [ -z $N_CLIENTS ]; then
     N_CLIENTS=1
     echo "Number of clients not provided, defaulting to $N_CLIENTS"
-else
-    N_CLIENTS=${args[1]} 
-    if ! [[ $N_CLIENTS =~ ^[0-9]+$ ]]; then
-        echo "Number of clients must be an integer"
-        exit
-    fi
 fi
-
-if [ -z ${args[2]} ]; then
+if [ -z $N_PVS ]; then
     N_PVS=1
     echo "Number of PVs not provided, defaulting to $N_PVS"
-else
-    N_PVS=${args[2]} 
-    if ! [[ $N_PVS =~ ^[0-9]+$ ]]; then
-        echo "Number of PVs must be an integer"
-        exit
-    fi
 fi
-
 
 # Setup: create db file for EPICS 
 echo "-> Creating EPICS db with $N_PVS PVs"
