@@ -282,7 +282,7 @@ async def main():
     cpu_monitor_thread = threading.Thread(target=cpu_monitor, args=(signal,))
     cpu_monitor_thread.start()
 
-    # Create subsciption tasks for n_pvs
+    # Create subscription tasks for n_pvs
     for i in range(n_pvs):
         # Get the PV name
         pv_name = PV_PREFIX + str(i)
