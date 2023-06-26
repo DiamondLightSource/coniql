@@ -127,6 +127,9 @@ if [ -z $PROTOCOL ]; then
     echo "Websocket protocol not provided, defaulting to 'graphql-transport-ws' (2)"
 fi
 
+# Time script
+start_time="$(date -u +%s)"
+
 # Setup: create db file for EPICS 
 echo "-> Creating EPICS db with $N_PVS PVs"
 for ((i=0;i<$N_PVS;i++))
@@ -146,29 +149,43 @@ EOF
 
 done >$SUB_DIR/coniqlPerformanceTestDb.db
 
+# Make directory to store logs
+LOG_DIR=$SUB_DIR"/logs"
+if [ ! -d $LOG_DIR ]; then
+    mkdir -p $LOG_DIR;
+fi
 
 # 1. EPICS IOCS
 CMD1="softIoc -d $SUB_DIR/coniqlPerformanceTestDb.db"
-TAB1=(--tab -- bash -c "${CMD1}")
+CMD1_TO_LOG=$CMD1" &> $LOG_DIR/epics_ioc.log"
+TAB1=(--tab -- bash -c "${CMD1_TO_LOG}")
 echo "-> Starting EPICS IOC"
 gnome-terminal "${TAB1[@]}"
 
 
 #2. Coniql
 CMD2="sleep 2;source $CONIQL_DIR/bin/activate;coniql"
-TAB2=(--tab -- bash -c "${CMD2}")
+CMD2_TO_LOG=$CMD2" &> $LOG_DIR/coniql.log"
+TAB2=(--tab -- bash -c "${CMD2_TO_LOG}")
 echo "-> Starting Coniql"
 gnome-terminal "${TAB2[@]}"
 
 
 # 3. Performance test
 OUTPUT_FILE="$SUB_DIR/performance_test_results_NClients_$N_CLIENTS.txt"
-PYCMD="python $SUB_DIR/coniql_performance_test.py -n $N_PVS -s $N_SAMPLES -p $PROTOCOL -f $OUTPUT_FILE"
+PYCMD0="python $SUB_DIR/coniql_performance_test.py -n $N_PVS -s $N_SAMPLES -p $PROTOCOL -f $OUTPUT_FILE"
 for ((i=1;i<=$N_CLIENTS;i++)) 
 do
+    PYCMD=$PYCMD0
+    # Configure first client to monitor subscription progress
+    if [ $i -eq 1 ]; then
+       PYCMD=$PYCMD0" -l" 
+    fi
+    PYCMD_TO_LOG=$PYCMD" &> $LOG_DIR/performance_test_client$i.log"
+    echo $PYCMD_TO_LOG
     VENV="source $CONIQL_DIR/bin/activate"
     CLEANUP3="deactivate"
-    CMD3="sleep 10;$VENV;$PYCMD;$CLEANUP3;sleep 10"
+    CMD3="sleep 10;$VENV;$PYCMD_TO_LOG;$CLEANUP3;sleep 10"
     TAB3=(--tab -- bash -c "${CMD3}")
     echo "-> Starting websocket client $i"
     gnome-terminal "${TAB3[@]}"
@@ -178,7 +195,8 @@ done
 # Monitor when the python performance test has finished
 loop=true
 running=false
-echo -n "-> Running "
+progress=""
+echo "-> Running "
 while $loop
 do
     sleep 1
@@ -189,8 +207,12 @@ do
         fi
     else
         running=true
-    fi
-    echo -n "."
+        tail=$(tail --lines=1 /tmp/progress.txt)
+        if [ "${tail}" != "${progress}" ]; then
+            progress="${tail}"
+            echo "   "$progress
+        fi
+    fi   
 done
 echo " Completed"
 
@@ -201,3 +223,7 @@ do
         kill -INT $pid
     fi
 done
+
+end_time="$(date -u +%s)"
+elapsed_time="$(($end_time-$start_time))"
+echo "Performance test completed in $elapsed_time seconds"

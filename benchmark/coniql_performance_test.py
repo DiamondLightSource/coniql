@@ -16,6 +16,7 @@ PV_PREFIX = "TEST:REC"
 subscriptions_list = {}
 task_list = []
 
+
 parser = argparse.ArgumentParser(description="Process inputs")
 parser.add_argument(
     "-n", "--npvs", action="store", dest="n_pvs", default=1, help="Number of PVs"
@@ -45,15 +46,32 @@ parser.add_argument(
     default="performance_test_results.txt",
     help="File to output results to",
 )
+parser.add_argument(
+    "-l",
+    "--log",
+    action="store_true",
+    dest="log_progress",
+    help="Indicate if client should log progress to tmp file",
+)
 
 
 class GraphQLClient:
-    def __init__(self, endpoint, signal, ws_protocol):
+    def __init__(self, endpoint, signal, ws_protocol, log_progress):
         self.endpoint = endpoint
         self.signal = signal
         self.ws_protocol = ws_protocol
+        self.first_subscribe = True
+        self.log = log_progress
+
+        if self.log:
+            print("Logging subscription progress")
+            self.progress_file = open("/tmp/progress.txt", "w")
 
     async def subscribe(self, idid, query, handle, n_messages):
+        monitor_progress = False
+        if self.first_subscribe and self.log:
+            monitor_progress = True
+            self.first_subscribe = False
         connection_init_message = json.dumps({"type": "connection_init", "payload": {}})
 
         request_message_graphql_ws_protocol = json.dumps(
@@ -77,6 +95,7 @@ class GraphQLClient:
                 await websocket.send(request_message_graphql_ws_protocol)
 
             msg_count = 0
+            start_time = time.time()
             async for response in websocket:
                 data = json.loads(response)
                 if data["type"] == "connection_ack":
@@ -91,8 +110,24 @@ class GraphQLClient:
                             pass
                         else:
                             if msg_count > n_messages:
+                                if self.log:
+                                    self.progress_file.close()
                                 break
                             msg_count = msg_count + 1
+                            if monitor_progress:
+                                ten_percent = round(n_messages / 10, 0)
+                                if msg_count % ten_percent == 0:
+                                    remaining_time = (
+                                        (time.time() - start_time)
+                                        / msg_count
+                                        * (n_messages - msg_count)
+                                    )
+                                    self.progress_file.write(
+                                        f"Collected {msg_count}/{n_messages} samples.\
+                                            Remaining time: {round(remaining_time, 0)}\
+                                            secs \n"
+                                    )
+                                    self.progress_file.flush()
                     else:
                         continue
 
@@ -228,6 +263,7 @@ async def main():
     n_pvs = int(args.n_pvs)
     n_samples = int(args.n_samples)
     ws_protocol = int(args.ws_protocol)
+    log_progress = args.log_progress
 
     protocol = "graphql-ws"
     if ws_protocol == 2:
@@ -237,7 +273,10 @@ async def main():
     # Create client
     signal = StartStopSignal()
     client = GraphQLClient(
-        endpoint="ws://0.0.0.0:8080/ws", signal=signal, ws_protocol=ws_protocol
+        endpoint="ws://0.0.0.0:8080/ws",
+        signal=signal,
+        ws_protocol=ws_protocol,
+        log_progress=log_progress,
     )
     # Start CPU monitor thread
     cpu_monitor_thread = threading.Thread(target=cpu_monitor, args=(signal,))
