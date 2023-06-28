@@ -54,6 +54,13 @@ parser.add_argument(
     default=None,
     help="File to log subscription progress to",
 )
+parser.add_argument(
+    "-x",
+    "--no-cpu-monitor",
+    action="store_true",
+    dest="no_cpu_monitor",
+    help="Do not run the CPU monitor",
+)
 
 
 class GraphQLClient:
@@ -65,7 +72,7 @@ class GraphQLClient:
         self.log_filename = log_filename
 
         if self.log_filename is not None:
-            print("Logging subscription progress")
+            print("-> Logging subscription progress")
             self.log_file = open(self.log_filename, "w")
 
     async def subscribe(self, idid, query, handle, n_messages):
@@ -265,6 +272,7 @@ async def main():
     n_samples = int(args.n_samples)
     ws_protocol = int(args.ws_protocol)
     log_filename = args.log_filename
+    no_cpu_monitor = args.no_cpu_monitor
 
     protocol = "graphql-ws"
     if ws_protocol == 2:
@@ -280,8 +288,11 @@ async def main():
         log_filename=log_filename,
     )
     # Start CPU monitor thread
-    cpu_monitor_thread = threading.Thread(target=cpu_monitor, args=(signal,))
-    cpu_monitor_thread.start()
+    if no_cpu_monitor:
+        print("-> Not running CPU monitor")
+    else:
+        cpu_monitor_thread = threading.Thread(target=cpu_monitor, args=(signal,))
+        cpu_monitor_thread.start()
 
     # Create subscription tasks for n_pvs
     for i in range(n_pvs):
@@ -340,26 +351,27 @@ async def main():
     # Collect results
     time.sleep(1)
 
-    res_str = "[{}](nPVs={}, nsamples={}, protocol={})| Av. missed events: {}|\
- Max missed events: {}| CPU av.: {:.2f} %| Mem usage: {:.2f} MiB\n".format(
-        datetime.datetime.now(),
-        n_pvs,
-        n_samples,
-        protocol,
-        round(missing_average),
-        missing_max,
-        cpu_average,
-        memory_use,
-    )
-    with open(args.output_file, "a") as f:
-        f.write(res_str)
+    if not no_cpu_monitor:
+        res_str = "[{}](nPVs={}, nsamples={}, protocol={})| Av. missed events: {}|\
+    Max missed events: {}| CPU av.: {:.2f} %| Mem usage: {:.2f} MiB\n".format(
+            datetime.datetime.now(),
+            n_pvs,
+            n_samples,
+            protocol,
+            round(missing_average),
+            missing_max,
+            cpu_average,
+            memory_use,
+        )
+        with open(args.output_file, "a") as f:
+            f.write(res_str)
 
-    print("\n\n ****** SUMMARY ******")
-    print(" Average missed events = " + str(round(missing_average)))
-    print(" Max. missed events = " + str(missing_max))
-    print(" CPU average: " + str(cpu_average) + " %")
-    print(" Memory usage: " + str(memory_use) + " MiB")
-    print(" *********************\n")
+        print("\n\n ****** SUMMARY ******")
+        print(" Average missed events = " + str(round(missing_average)))
+        print(" Max. missed events = " + str(missing_max))
+        print(" CPU average: " + str(cpu_average) + " %")
+        print(" Memory usage: " + str(memory_use) + " MiB")
+        print(" *********************\n")
     sys.exit()
 
 

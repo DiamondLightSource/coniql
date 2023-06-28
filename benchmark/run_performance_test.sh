@@ -180,10 +180,13 @@ PY_PROGRESS_FILE="$TMP_DIR/test_progress.txt"
 PYCMD0="python $SUB_DIR/coniql_performance_test.py -n $N_PVS -s $N_SAMPLES -p $PROTOCOL -f $OUTPUT_FILE"
 for ((i=1;i<=$N_CLIENTS;i++)) 
 do
-    PYCMD=$PYCMD0
     # Configure first client to monitor subscription progress
     if [ $i -eq 1 ]; then
-       PYCMD=$PYCMD0" --log-file $PY_PROGRESS_FILE" 
+        PYCMD=$PYCMD0" --log-file $PY_PROGRESS_FILE" 
+    else
+        # Subsequent clients should not create a CPU monitor
+        # as the first instance will handle this
+        PYCMD=$PYCMD0" --no-cpu-monitor"
     fi
     PYCMD_TO_LOG=$PYCMD" &> $LOG_DIR/performance_test_client$i.log"
     VENV="source $CONIQL_DIR/bin/activate"
