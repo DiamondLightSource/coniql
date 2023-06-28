@@ -127,9 +127,6 @@ if [ -z $PROTOCOL ]; then
     echo "Websocket protocol not provided, defaulting to 'graphql-transport-ws' (2)"
 fi
 
-# Time script
-start_time="$(date -u +%s)"
-
 # Setup: create db file for EPICS 
 echo "-> Creating EPICS db with $N_PVS PVs"
 for ((i=0;i<$N_PVS;i++))
@@ -170,8 +167,8 @@ TAB2=(--tab -- bash -c "${CMD2_TO_LOG}")
 echo "-> Starting Coniql"
 gnome-terminal "${TAB2[@]}"
 
-
-
+# Time script from starting of the Python clients
+start_time="$(date -u +%s)"
 
 # 3. Performance test
 # Create a log directory for Python script in tmp
