@@ -1,21 +1,22 @@
-import time
+import asyncio
 from subprocess import Popen
-from typing import Any, AsyncIterator, Dict, List
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import pytest
-from aioca import caput
 from strawberry import Schema
 
 from coniql.app import create_schema
 
 from .conftest import (
     PV_PREFIX,
+    SUBSCRIPTION_TIMEOUT,
     base64_put_query,
     base64_put_query_result,
     check_put_timestamp,
     enum_get_query,
     enum_get_query_result,
     get_longout_subscription_query,
+    get_ticking_subscription_result,
     ioc_creator,
     list_put_query,
     list_put_query_result,
@@ -30,7 +31,6 @@ from .conftest import (
     nan_get_query_result,
     run_ioc,
     ticking_subscription_query,
-    ticking_subscription_result,
 )
 
 
@@ -106,15 +106,23 @@ async def test_subscribe_disconnect(schema: Schema):
 
 @pytest.mark.asyncio
 async def test_subscribe_ticking(ioc: Popen, schema: Schema):
-    results = []
-    await caput(PV_PREFIX + "ticking", 0.0)
+    results: List[Optional[Dict[str, Any]]] = []
     resp = await schema.subscribe(ticking_subscription_query)
     assert isinstance(resp, AsyncIterator)
-    start = time.time()
-    async for result in resp:
-        if time.time() - start > 1.0:
+    count = 0
+    while True:
+        if count > 2:
             break
+        # Set a timeout on wait for a response as otherwise this call will
+        # block forever unless the schema.subscribe() receives data
+        result = await asyncio.wait_for(resp.__anext__(), timeout=SUBSCRIPTION_TIMEOUT)
         results.append(result.data)
-    for i in range(3):
-        assert results[i] == ticking_subscription_result[i]
+        count += 1
     assert len(results) == 3
+    # Determine the starting value in the subscription
+    startSub = results[0]
+    assert startSub
+    startVal = startSub["subscribeChannel"]["value"]["float"]
+    subscription_result = get_ticking_subscription_result(startVal)
+    for i in range(3):
+        assert results[i] == subscription_result[i]
