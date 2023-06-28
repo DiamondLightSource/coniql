@@ -18,10 +18,7 @@ dependencies = [
     "typing-extensions;python_version<'3.8'",
     # The Strawberry module is quite volatile so recommend pinning to a
     # specific version and updating to latest after testing.
-    # Currently later versions break tests due to DeprecationWarning from Strawberry.
-    # See https://github.com/strawberry-graphql/strawberry/issues/2857.
-    # Can be updated when this has been fixed by Strawberry.
-    "strawberry-graphql==0.181.0",
+    "strawberry-graphql==0.190.0",
     "aioca>=1.7",
     "p4p",
     "ruamel.yaml",
