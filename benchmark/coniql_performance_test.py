@@ -301,11 +301,12 @@ async def main():
     # Await all subscriptions to complete
     try:
         await asyncio.gather(*task_list)
-        # Signal to CPU monitoring thread to stop recording CPU metrics
-        signal.signal_stop()
     except Exception as e:
         # Catch any exceptions so that we can still record results
         print("Exception caught: ", e)
+    finally:
+        # Signal to CPU monitoring thread to stop recording CPU metrics
+        signal.signal_stop()
 
     # Analyse results
     missing_average = 0
