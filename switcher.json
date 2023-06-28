@@ -4,12 +4,12 @@
     "url": "https://DiamondLightSource.github.io/coniql/main/"
   },
   {
-    "version": "0.2",
-    "url": "https://DiamondLightSource.github.io/coniql/0.2/"
-  },
-  {
     "version": "0.3",
     "url": "https://DiamondLightSource.github.io/coniql/0.3/"
+  },
+  {
+    "version": "0.2",
+    "url": "https://DiamondLightSource.github.io/coniql/0.2/"
   },
   {
     "version": "fix_intermittent_test_failures",
@@ -26,5 +26,9 @@
   {
     "version": "update_favicon",
     "url": "https://DiamondLightSource.github.io/coniql/update_favicon/"
+  },
+  {
+    "version": "update_strawberry_version",
+    "url": "https://DiamondLightSource.github.io/coniql/update_strawberry_version/"
   }
 ]
