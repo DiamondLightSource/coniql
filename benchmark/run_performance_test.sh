@@ -171,18 +171,24 @@ echo "-> Starting Coniql"
 gnome-terminal "${TAB2[@]}"
 
 
+
+
 # 3. Performance test
+# Create a log directory for Python script in tmp
+TMP_DIR="/tmp/coniql_performance_tests_$(date +"%Y-%m-%d-%H:%M:%S")"
+mkdir -p "$TMP_DIR";
+# Define output and log file
 OUTPUT_FILE="$SUB_DIR/performance_test_results_NClients_$N_CLIENTS.txt"
+PY_PROGRESS_FILE="$TMP_DIR/test_progress.txt"
 PYCMD0="python $SUB_DIR/coniql_performance_test.py -n $N_PVS -s $N_SAMPLES -p $PROTOCOL -f $OUTPUT_FILE"
 for ((i=1;i<=$N_CLIENTS;i++)) 
 do
     PYCMD=$PYCMD0
     # Configure first client to monitor subscription progress
     if [ $i -eq 1 ]; then
-       PYCMD=$PYCMD0" -l" 
+       PYCMD=$PYCMD0" --log-file $PY_PROGRESS_FILE" 
     fi
     PYCMD_TO_LOG=$PYCMD" &> $LOG_DIR/performance_test_client$i.log"
-    echo $PYCMD_TO_LOG
     VENV="source $CONIQL_DIR/bin/activate"
     CLEANUP3="deactivate"
     CMD3="sleep 10;$VENV;$PYCMD_TO_LOG;$CLEANUP3;sleep 10"
@@ -207,7 +213,7 @@ do
         fi
     else
         running=true
-        tail=$(tail --lines=1 /tmp/progress.txt)
+        tail=$(tail --lines=1 $PY_PROGRESS_FILE)
         if [ "${tail}" != "${progress}" ]; then
             progress="${tail}"
             echo "   "$progress
