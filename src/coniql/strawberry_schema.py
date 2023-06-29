@@ -16,6 +16,7 @@ from coniql.types import ChannelDisplay
 from coniql.types import ChannelStatus as TypeChannelStatus
 from coniql.types import ChannelTime as TypeChannelTime
 from coniql.types import ChannelValue as TypeChannelValue
+from coniql.types import TypeFloatAlias
 
 store_global = PluginStore()
 store_global.add_plugin("ssim", SimPlugin())
@@ -89,13 +90,15 @@ class ChannelValue:
     """
 
     # The current value formatted as a Float, Null if not expressable
-    float = strawberry.field(resolver=resolve_float)
+    float: Optional[TypeFloatAlias] = strawberry.field(resolver=resolve_float)
     # The current value formatted as a string
-    string = strawberry.field(resolver=resolve_string)
+    string: Optional[str] = strawberry.field(resolver=resolve_string)
     # Array of base64 encoded numbers, Null if not expressable
-    base64Array = strawberry.field(resolver=resolve_base64Array)
+    base64Array: Optional[TypeBase64Array] = strawberry.field(
+        resolver=resolve_base64Array
+    )
     # Array of strings, Null if not expressable
-    stringArray = strawberry.field(resolver=resolve_stringArray)
+    stringArray: Optional[List[str]] = strawberry.field(resolver=resolve_stringArray)
 
 
 @strawberry.type
@@ -171,7 +174,7 @@ def get_channel(id: strawberry.ID, timeout: float = 5.0) -> TypeChannel:
 @strawberry.type
 class Query:
     # Get the current value of a Channel
-    getChannel: Channel = strawberry.field(resolver=get_channel)
+    getChannel: Channel = strawberry.field(resolver=get_channel)  # type: ignore
 
 
 async def subscribe_channel(id: strawberry.ID) -> AsyncGenerator[TypeChannel, None]:
