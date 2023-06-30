@@ -1,52 +1,59 @@
 Benchmarking
 ============
 
-In order to evaluate changes made to the server, we have developed some scripts which request increasingly large waveforms and measure the update rate.
-Benchmark scripts are written in both Python and js (using the Node runtime) in an attempt to remove language or runtime effects.
-It is possible other graphQL clients will provide different performance characteristics in the future, although we have good reason to believe we are currently hitting other limits.
-For more information on the results of benchmarking so far, see `this page <https://github.com/dls-controls/cs-web-proto/wiki/Performance-with-Coniql>`_.
+In order to evaluate how changes made to the server impact the performance we have created a benchmarking script to measure the CPU usage, memory usage
+and the number of dropped updates. This script is written in Python. The script creates a websocket client and starts subscriptions to a configurable 
+number of EPICS PVs. A separate thread measures the CPU and memory usage of the Coniql application while the subscriptions are running. After _N_ samples
+have been collected the thread will finish and the average CPU and memory usage will be saved to file and printed to screen. The results of the subscriptions
+are also analysed to determine how many updates were missed by Coniql.
+
+These tests require an EPICS IOC running a specific _.db_ file with _N_ PVs counting up at a rate of 10 Hz. An instance of Coniql must also be running. 
+
+To facilitate the running of all these components a bash script has also been provided. This will handle the creation of the .db file, starting the 
+EPICS IOC, starting Coniql, and running the Python performance tests.
+
 
 Instructions
 ------------
 
-Python Client
+Prerequisites 
 ~~~~~~~~~~~~~
 
-To setup the Python client, install the development dependencies::
+- EPICS installed
+- Coniql installed in a Python virtual environment
 
-    pip install -e .[dev]
+Bash script
+~~~~~~~~~~~~~
 
-Open a terminal and run the server::
+To run the bash script::
 
-    python -m coniql
+    ./benchmark/run_performance_test.sh --path <path/to/coniql/venv>
 
-Open a new terminal and run the client::
+The path to the Python virtual enviroment where Coniql is installed is required.
 
-    python benchmark/asyncClient.py
+By default this will run the Python performance tests with the following configuration:
 
-JS Client
-~~~~~~~~~
+- 1 client
+- subscriptions to 100 PVs
+- collect 1000 samples
+- use the new websocket protocol (graphql-transport-ws)
 
-To run the JS client, you must first install Node.js on your system.
-Follow the instructions `here <https://nodejs.org/en/>`_.
+These parameters can be configured using the following script options:
 
-Then, install the necessary (and minimal) JS packages::
+- ``-c <n>`` number of clients to start
+- ``-n <n>`` number of PVs to subscribe to
+- ``-s <n>`` number of samples to collect
+- ``-w <1/2>`` websocket protocol to use (1=graphql-ws, 2=graphql-transport-ws)
 
-    npm install
+See script ``--help`` option for more details.
 
-Open a terminal and run the server::
-
-    python -m coniql
-
-Open a new terminal and run the client::
-
-    node benchmark/jsThroughputTest.py
 
 Expected Results
 ~~~~~~~~~~~~~~~~
 
-Both clients are requesting increasingly large waveforms with an update time of 0.1s.
-Therefore, the frequency printed after each test should be around 10 Hz to start with.
-Naturally this will drop off as the size increases.
+Results will be output to ``benchmark/performance_test_results_NClients_X.txt``.
 
-Once all of the tests have run, a final summary will be printed to the terminal which can be easily copied and pasted into your desired spreadsheet software.
+Logs from the EPICS IOC, Coniql and Python performance script will be saved in ``benchmark/logs/``.
+
+The results of the performance test should be compared between updates to the code. For the same number of clients, PVs, samples, and the same 
+websocket protocol check that the CPU, memory and number of dropped updates remains consistent with previous results. 
