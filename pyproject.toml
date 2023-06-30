@@ -51,9 +51,11 @@ dev = [
     "sphinx-rtd-theme-github-versions",
     "tox-direct",
     "types-mock",
+    "types-requests",                   # Required for benchmarking tests
     "psutil",                           # Required for benchmarking tests
     "pytest-asyncio>0.17",
     "pytest-aiohttp",
+    "requests",                         # Required for benchmarking tests
     "websockets",                       # Required for benchmarking tests
 ]
 

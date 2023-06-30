@@ -6,7 +6,6 @@ import sys
 import threading
 import time
 
-import psutil
 import websockets
 
 # Constants
@@ -60,6 +59,13 @@ parser.add_argument(
     action="store_true",
     dest="no_cpu_monitor",
     help="Do not run the CPU monitor",
+)
+parser.add_argument(
+    "--coniql-addr",
+    action="store",
+    dest="addr",
+    help="Address of Coniql server websocket",
+    default="0.0.0.0:8080/ws",
 )
 
 
@@ -173,6 +179,9 @@ class PVSubscription:
 
 
 def cpu_monitor(signal):
+    # Keep import local so we don't need it in Container
+    import psutil
+
     pid = 0
     for proc in psutil.process_iter(["pid", "name"]):
         if proc.info["name"] == "coniql":
@@ -282,7 +291,7 @@ async def main():
     # Create client
     signal = StartStopSignal()
     client = GraphQLClient(
-        endpoint="ws://0.0.0.0:8080/ws",
+        endpoint=f"ws://{args.addr}",
         signal=signal,
         ws_protocol=ws_protocol,
         log_filename=log_filename,
@@ -351,6 +360,12 @@ async def main():
     # Collect results
     time.sleep(1)
 
+    # NOTE: Kubernetes performance test relies on these being the last 3 lines
+    # of output when not using CPU monitor
+    print("\n\n ****** SUMMARY ******")
+    print(" Average missed events = " + str(round(missing_average)))
+    print(" Max. missed events = " + str(missing_max))
+
     if not no_cpu_monitor:
         res_str = "[{}](nPVs={}, nsamples={}, protocol={})| Av. missed events: {}|\
     Max missed events: {}| CPU av.: {:.2f} %| Mem usage: {:.2f} MiB\n".format(
@@ -366,9 +381,6 @@ async def main():
         with open(args.output_file, "a") as f:
             f.write(res_str)
 
-        print("\n\n ****** SUMMARY ******")
-        print(" Average missed events = " + str(round(missing_average)))
-        print(" Max. missed events = " + str(missing_max))
         print(" CPU average: " + str(cpu_average) + " %")
         print(" Memory usage: " + str(memory_use) + " MiB")
         print(" *********************\n")

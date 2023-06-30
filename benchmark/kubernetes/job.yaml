@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kubernetes-performance-test
+spec:
+  completions: 5
+  parallelism: 5
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: python-client
+        image: gcr.io/diamond-privreg/controls/coniql/perf_client:latest
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+        args: [ 
+          "--npvs", "100", 
+          "--nsamples", "500", 
+          "--protocol", "2",
+          "--coniql-addr", "10.105.151.27:8080/ws", # TODO: Don't use static IP...
+          "--no-cpu-monitor", # We use Kubernetes features for CPU monitoring 
+        ]

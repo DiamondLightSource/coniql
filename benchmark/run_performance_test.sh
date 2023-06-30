@@ -127,24 +127,7 @@ if [ -z $PROTOCOL ]; then
     echo "Websocket protocol not provided, defaulting to 'graphql-transport-ws' (2)"
 fi
 
-# Setup: create db file for EPICS 
-echo "-> Creating EPICS db with $N_PVS PVs"
-for ((i=0;i<$N_PVS;i++))
-do
-
-    record_name="TEST:REC$i"
-    cat <<EOF
-record(calcout, "$record_name")
-{
-    field(DESC, "Performance test record")
-    field(SCAN, ".1 second")
-    field(A, "0")
-    field(CALC, "A + 1")
-    field(OUT, "$record_name.A")
-}
-EOF
-
-done >$SUB_DIR/coniqlPerformanceTestDb.db
+./generate_db.sh $SUB_DIR $N_PVS
 
 # Make directory to store logs
 LOG_DIR=$SUB_DIR"/logs"
