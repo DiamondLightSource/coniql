@@ -24,6 +24,10 @@
     "url": "https://DiamondLightSource.github.io/coniql/kubernetes_performance_test/"
   },
   {
+    "version": "performance_tests_tidy",
+    "url": "https://DiamondLightSource.github.io/coniql/performance_tests_tidy/"
+  },
+  {
     "version": "test-branch",
     "url": "https://DiamondLightSource.github.io/coniql/test-branch/"
   },
