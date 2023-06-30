@@ -36,10 +36,14 @@ def register_channel(func: str):
 
 @dataclass
 class SimChannel(Channel):
+    id: Optional[str] = None
     value: Optional[ChannelValue] = None
     display: Optional[ChannelDisplay] = None
     time: Optional[ChannelTime] = None
     status: Optional[ChannelStatus] = None
+
+    def get_id(self) -> Optional[str]:
+        return self.id
 
     def get_value(self) -> Optional[ChannelValue]:
         return self.value

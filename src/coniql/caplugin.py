@@ -33,6 +33,7 @@ from coniql.types import (
 )
 
 coniql_logger = logging.getLogger(__name__)
+TRANSPORT = "ca://"
 
 
 class CAChannelMaker:
@@ -136,15 +137,20 @@ class CAChannelMaker:
                     mutable=self.writeable,
                 )
                 self.cached_status = status
-        return CAChannel(value, time, status, display)
+        id = TRANSPORT + self.name
+        return CAChannel(id, value, time, status, display)
 
 
 @dataclass
 class CAChannel(Channel):
+    id: Optional[str]
     value: Optional[ChannelValue]
     time: Optional[ChannelTime]
     status: Optional[ChannelStatus]
     display: Optional[ChannelDisplay]
+
+    def get_id(self) -> Optional[str]:
+        return self.id
 
     def get_time(self) -> Optional[ChannelTime]:
         return self.time

@@ -65,6 +65,10 @@ DISPLAY_FORM_MAP = [
     DisplayForm.ENGINEERING,
 ]
 
+# GraphQL schema has a variable named 'float', which is an inbuilt type in Python
+# and can lead to problems when used in type hinting. Create alias inbuilt float type.
+TypeFloatAlias = float
+
 
 @strawberry.type
 class ChannelDisplay:
@@ -277,6 +281,9 @@ class ChannelValue:
 
 
 class Channel:
+    def get_id(self) -> Optional[str]:
+        raise NotImplementedError(self)
+
     def get_value(self) -> Optional[ChannelValue]:
         raise NotImplementedError(self)
 
