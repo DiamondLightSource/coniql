@@ -4,6 +4,8 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-yaml
+        args:
+          - "--allow-multiple-documents"
       - id: check-merge-conflict
 
   - repo: local
