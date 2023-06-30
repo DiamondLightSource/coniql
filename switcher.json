@@ -16,6 +16,10 @@
     "url": "https://DiamondLightSource.github.io/coniql/fix_intermittent_test_failures/"
   },
   {
+    "version": "increase_test_coverage",
+    "url": "https://DiamondLightSource.github.io/coniql/increase_test_coverage/"
+  },
+  {
     "version": "integration",
     "url": "https://DiamondLightSource.github.io/coniql/integration/"
   },
