@@ -23,43 +23,6 @@ store_global.add_plugin("ssim", SimPlugin())
 store_global.add_plugin("ca", CAPlugin(), set_default=True)
 
 
-class DeferredChannel(TypeChannel):
-    id: str
-    lock: asyncio.Lock
-    channel: Optional[TypeChannel] = None
-
-    async def populate_channel(self) -> TypeChannel:
-        raise NotImplementedError(self)
-
-    async def get_channel(self) -> TypeChannel:
-        if self.channel is None:
-            async with self.lock:
-                # If channel is still None we should make it
-                if self.channel is None:
-                    self.channel = await self.populate_channel()
-        assert self.channel
-        return self.channel
-
-
-class GetChannel(DeferredChannel):
-    def __init__(self, channel_id: str, timeout: float, store: PluginStore):
-        self.plugin, self.id = store.plugin_config_id(channel_id)
-        # Remove the transport prefix from the read pv
-        self.pv = store.transport_pv(channel_id)[1]
-        self.timeout = timeout
-        self.lock = asyncio.Lock()
-
-    async def populate_channel(self) -> TypeChannel:
-        channel = await self.plugin.get_channel(self.pv, self.timeout)
-        return channel
-
-
-class SubscribeChannel(DeferredChannel):
-    def __init__(self, channel_id: str, channel: TypeChannel):
-        self.id = channel_id
-        self.channel = channel
-
-
 async def resolve_float(root: TypeChannelValue) -> Optional[float]:
     return root.formatter.to_float(root.value)
 
@@ -128,35 +91,58 @@ class ChannelTime(TypeChannelTime):
         return datetime.datetime.fromtimestamp(root.seconds)
 
 
-async def resolver_value(root: DeferredChannel) -> Optional[TypeChannelValue]:
+async def resolver_id(root: "DeferredChannel") -> Optional[str]:
+    channel = await root.get_channel()
+    return channel.get_id()
+
+
+async def resolver_value(root: "DeferredChannel") -> Optional[TypeChannelValue]:
     channel = await root.get_channel()
     return channel.get_value()
 
 
-async def resolver_time(root: DeferredChannel) -> Optional[TypeChannelTime]:
+async def resolver_time(root: "DeferredChannel") -> Optional[TypeChannelTime]:
     channel = await root.get_channel()
     return channel.get_time()
 
 
-async def resolver_status(root: DeferredChannel) -> Optional[TypeChannelStatus]:
+async def resolver_status(root: "DeferredChannel") -> Optional[TypeChannelStatus]:
     channel = await root.get_channel()
     return channel.get_status()
 
 
-async def resolver_display(root: DeferredChannel) -> Optional[ChannelDisplay]:
+async def resolver_display(root: "DeferredChannel") -> Optional[ChannelDisplay]:
     channel = await root.get_channel()
     return channel.get_display()
 
 
 @strawberry.type
-class Channel:
+class Channel(TypeChannel):
     """
     A single value with associated time, status and metadata. These values
     can be Null so that in a subscription they are only updated on change
     """
 
+    def __init__(self, plugin_channel: TypeChannel):
+        self.parentChannel = plugin_channel
+
+    def get_id(self) -> Optional[str]:
+        return self.parentChannel.get_id()
+
+    def get_value(self) -> Optional[TypeChannelValue]:
+        return self.parentChannel.get_value()
+
+    def get_time(self) -> Optional[TypeChannelTime]:
+        return self.parentChannel.get_time()
+
+    def get_status(self) -> Optional[TypeChannelStatus]:
+        return self.parentChannel.get_status()
+
+    def get_display(self) -> Optional[ChannelDisplay]:
+        return self.parentChannel.get_display()
+
     # ID that uniquely defines this Channel, normally a PV
-    id: strawberry.ID
+    id: Optional[str] = strawberry.field(resolver=resolver_id)
     # The current value of this channel
     value: Optional[ChannelValue] = strawberry.field(resolver=resolver_value)
     # When was the value last updated
@@ -167,17 +153,56 @@ class Channel:
     display: Optional[ChannelDisplay] = strawberry.field(resolver=resolver_display)
 
 
-def get_channel(id: strawberry.ID, timeout: float = 5.0) -> TypeChannel:
+class DeferredChannel(Channel):
+    id: str
+    lock: asyncio.Lock
+    channel: Optional[Channel] = None
+
+    async def populate_channel(self) -> Channel:
+        raise NotImplementedError(self)
+
+    async def get_channel(self) -> Channel:
+        if self.channel is None:
+            async with self.lock:
+                # If channel is still None we should make it
+                if self.channel is None:
+                    self.channel = await self.populate_channel()
+        assert self.channel
+        return self.channel
+
+
+class GetChannel(DeferredChannel):
+    def __init__(self, channel_id: str, timeout: float, store: PluginStore):
+        self.plugin, self.id = store.plugin_config_id(channel_id)
+        # Remove the transport prefix from the read pv
+        self.pv = store.transport_pv(channel_id)[1]
+        self.timeout = timeout
+        self.lock = asyncio.Lock()
+
+    async def populate_channel(self) -> Channel:
+        channel = await self.plugin.get_channel(self.pv, self.timeout)
+        # Convert types.Channel object to a Strawberry schema Channel
+        strawberry_channel = Channel(channel)
+        return strawberry_channel
+
+
+def get_channel(id: strawberry.ID, timeout: float = 5.0) -> Channel:
     return GetChannel(id, timeout, store_global)
 
 
 @strawberry.type
 class Query:
     # Get the current value of a Channel
-    getChannel: Channel = strawberry.field(resolver=get_channel)  # type: ignore
+    getChannel: Channel = strawberry.field(resolver=get_channel)
 
 
-async def subscribe_channel(id: strawberry.ID) -> AsyncGenerator[TypeChannel, None]:
+class SubscribeChannel(DeferredChannel):
+    def __init__(self, channel_id: str, channel: Channel):
+        self.id = channel_id
+        self.channel = channel
+
+
+async def subscribe_channel(id: strawberry.ID) -> AsyncGenerator[Channel, None]:
     """Subscribe to changes in top level fields of Channel,
     if they haven't changed they will be Null"""
     store: PluginStore = store_global
@@ -185,7 +210,9 @@ async def subscribe_channel(id: strawberry.ID) -> AsyncGenerator[TypeChannel, No
     # Remove the transport prefix from the read pv
     pv = store.transport_pv(id)[1]
     async for channel in plugin.subscribe_channel(pv):
-        yield SubscribeChannel(channel_id, channel)
+        # Convert types.Channel object to a Strawberry schema Channel
+        strawberry_channel = Channel(channel)
+        yield SubscribeChannel(channel_id, strawberry_channel)
 
 
 @strawberry.type

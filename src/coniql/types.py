@@ -281,6 +281,9 @@ class ChannelValue:
 
 
 class Channel:
+    def get_id(self) -> Optional[str]:
+        raise NotImplementedError(self)
+
     def get_value(self) -> Optional[ChannelValue]:
         raise NotImplementedError(self)
 
