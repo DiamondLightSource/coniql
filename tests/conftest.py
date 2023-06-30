@@ -126,6 +126,7 @@ longout_get_query = (
     """
 query {
     getChannel(id: "ca://%slongout") {
+        id
         value {
             float
             string
@@ -164,6 +165,7 @@ query {
 
 longout_get_query_result = {
     "getChannel": {
+        "id": f"ca://{PV_PREFIX}longout",
         "value": {"float": 42.0, "string": "42"},
         "display": {
             "widget": "TEXTINPUT",
