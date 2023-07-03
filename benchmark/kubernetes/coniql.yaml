@@ -46,7 +46,6 @@ metadata:
     app: coniql
 spec:
   type: ClusterIP
-  clusterIP: 10.105.151.27 # TODO: Don't use static IP...
   ports:
     - name: coniqlport
       port: 8080

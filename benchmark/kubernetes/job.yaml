@@ -19,6 +19,6 @@ spec:
           "--npvs", "100", 
           "--nsamples", "500", 
           "--protocol", "2",
-          "--coniql-addr", "10.105.151.27:8080/ws", # TODO: Don't use static IP...
+          "--coniql-addr", "coniql-performance-test-service:8080/ws",
           "--no-cpu-monitor", # We use Kubernetes features for CPU monitoring 
         ]
