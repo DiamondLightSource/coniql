@@ -7,6 +7,8 @@ spec:
   parallelism: 5
   template:
     spec:
+      # cloud-17 is a known little-used node so should provide more stable performance
+      nodeName: cs05r-sc-cloud-17.diamond.ac.uk
       restartPolicy: Never
       containers:
       - name: python-client

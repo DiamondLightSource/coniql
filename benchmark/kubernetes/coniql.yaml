@@ -15,6 +15,8 @@ spec:
       labels:
         app: coniql
     spec:
+      # cloud-17 is a known little-used node so should provide more stable performance
+      nodeName: cs05r-sc-cloud-17.diamond.ac.uk
       containers:
       - name: coniql
         image: ghcr.io/diamondlightsource/coniql:latest
