@@ -28,8 +28,8 @@ completion_time = datetime.strptime(
 
 duration = completion_time - start_time
 
-# Add 2 minutes as there's lag for the data to make it into Prometheus
-data_offset_seconds = 120
+# Add some time as there's lag for the data to make it into Prometheus
+data_offset_seconds = 30
 # TODO: Work out a better data window - the data for the CPU is delayed more than the
 # delay for the memory...
 start_time_offset = start_time + timedelta(seconds=30)
@@ -102,15 +102,18 @@ average_missed_events = [int(x) for x in average_missed_events]
 max_missed_events = re.findall("Max. missed events = (\\d*)", logs_output)
 max_missed_events = [int(x) for x in max_missed_events]
 
+
+MBFACTOR = float(1 << 20)  # 1048576 == bytes in a Mebibyte
+
 print("Statistics:")
 print("CPU Usage:")
-print(f"  Mean:             {cpu_mean}")
-print(f"  Max:              {cpu_max}")
-print(f"  Median:           {cpu_median}")
+print(f"  Mean:             {cpu_mean * 100:.2f}%")
+print(f"  Max:              {cpu_max* 100:.2f}%")
+print(f"  Median:           {cpu_median* 100:.2f}%")
 print("Memory Usage:")
-print(f"  Mean:             {mem_mean}")
-print(f"  Max:              {mem_max}")
-print(f"  Median:           {mem_median}")
+print(f"  Mean:             {mem_mean / MBFACTOR:.2f} MiB")
+print(f"  Max:              {mem_max / MBFACTOR:.2f} MiB")
+print(f"  Median:           {mem_median / MBFACTOR:.2f} MiB")
 print("Job:")
 print(f"  Start time:       {start_time}")
 print(f"  End time:         {completion_time}")
@@ -120,20 +123,29 @@ print(f"Max events missed:  {max(max_missed_events)}")
 
 
 # Create Prometheus URL for graphs of CPU and Memory of Coniql container
+
+time_from_start = duration + timedelta(seconds=data_offset_seconds)
+
+# Add padding so we can clearly see start and end
+range_input = time_from_start.seconds + 60
+end_input = completion_time + timedelta(seconds=60)
+
 graph_params = {
     "g0.expr": (
         'container_memory_working_set_bytes{namespace="eyh46967", container="coniql"}'
     ),
     "g0.tab": "0",
     "g0.stacked": "1",
-    "g0.range_input": "30m",
+    "g0.range_input": f"{range_input}s",
+    "g0.end_input": f"{end_input.isoformat()}",
     "g1.expr": (
         "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate"
         '{namespace="eyh46967", container="coniql"}'
     ),
     "g1.tab": "0",
-    "g1.stacked": "0",
-    "g1.range_input": "30m",
+    "g1.stacked": "1",
+    "g1.range_input": f"{range_input}s",
+    "g1.end_input": f"{end_input.isoformat()}",
 }
 r = requests.get(
     url="https://argus-prometheus.diamond.ac.uk/graph", params=graph_params
