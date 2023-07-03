@@ -32,7 +32,27 @@ start_coniql()
 start_job() 
 {
   kubectl apply -f $JOB_YAML
-  kubectl wait --timeout=-1s --for=condition=complete job/kubernetes-performance-test
+
+  # Wait for completion in background - will return 0 if occurs
+  kubectl wait --timeout=-1s --for=condition=complete job/kubernetes-performance-test &
+  completion_pid=$!
+
+  # Wait for failure in background - will return 1 if occurs
+  kubectl wait --timeout=-1s --for=condition=failed job/kubernetes-performance-test && exit 1 &
+  failed_pid=$!
+
+  # Capture exit code of the first subprocess to exit
+  wait -n $completion_pid $failed_pid
+  exit_code=$?
+
+  if (( $exit_code == 0 )); then
+    echo "Job completed"
+  else
+    echo "Job failed"
+  fi
+
+  return $exit_code
+
 }
 
 stop_coniql()
@@ -44,17 +64,24 @@ stop_coniql()
 stop_job()
 {
   kubectl delete -f $JOB_YAML
-  kubectl wait --timeout=-1s --for=delete pod -l app=coniql
+  kubectl wait --timeout=-1s --for=delete job/kubernetes-performance-test
 }
 
 
 start_coniql
 start_job
+result=$?
 
 stop_coniql
 
-python $SCRIPT_DIR/process_results.py
+if (( $result == 0 )); then
+    python $SCRIPT_DIR/process_results.py
+    stop_job
+  else
+    echo "Leaving Job for investigation"
+  fi
 
-stop_job
+
+
 
 

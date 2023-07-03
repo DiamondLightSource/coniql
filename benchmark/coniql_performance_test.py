@@ -321,9 +321,11 @@ async def main():
     # Await all subscriptions to complete
     try:
         await asyncio.gather(*task_list)
+        exit_code = 0
     except Exception as e:
         # Catch any exceptions so that we can still record results
         print("Exception caught: ", e)
+        exit_code = 1
     finally:
         # Signal to CPU monitoring thread to stop recording CPU metrics
         signal.signal_stop()
@@ -384,9 +386,8 @@ async def main():
         print(" CPU average: " + str(cpu_average) + " %")
         print(" Memory usage: " + str(memory_use) + " MiB")
         print(" *********************\n")
-    sys.exit()
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-    sys.exit()
