@@ -35,6 +35,25 @@ data_offset_seconds = 30
 start_time_offset = start_time + timedelta(seconds=30)
 completion_time_offset = completion_time + timedelta(seconds=data_offset_seconds)
 
+# Get the name of the current Coniql pod to ensure we retrieve correct data.
+# Required as there may be some delayed metrics from previous runs in Prometheus
+pod_name = subprocess.run(
+    [
+        "kubectl",
+        "get",
+        "pods",
+        "--no-headers",
+        "-l",
+        "app=coniql",
+        "-o",
+        'custom-columns=":metadata.name"',
+    ],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout
+
+
 print("Waiting for data to appear in Prometheus...")
 time.sleep(data_offset_seconds)
 
@@ -44,7 +63,7 @@ prometheus_url = "https://argus-prometheus.diamond.ac.uk/api/v1/query_range"
 # TODO: Namespace!
 query = (
     "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate"
-    "{namespace='eyh46967', container='coniql'}"
+    f"{{namespace='eyh46967', container='coniql', pod={pod_name}}}"
 )
 
 params = {
@@ -67,7 +86,10 @@ cpu_max = max(values)
 cpu_median = statistics.median(values)
 
 # TODO: namespace
-query = 'container_memory_working_set_bytes{namespace="eyh46967", container="coniql"}'
+query = (
+    "container_memory_working_set_bytes"
+    f'{{namespace="eyh46967", container="coniql", pod="{pod_name}"}}'
+)
 params["query"] = query
 
 r = requests.get(url=prometheus_url, params=params)
