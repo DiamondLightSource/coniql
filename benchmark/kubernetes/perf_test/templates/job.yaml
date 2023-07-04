@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kubernetes-performance-test
+  # namespace: coniql
+spec:
+  completions: {{ .Values.perf_client.completions }}
+  parallelism: {{ .Values.perf_client.parallelism }}
+  backoffLimit: 0
+  template:
+    spec:
+      # cloud-17 is a known little-used node so should provide more stable performance
+      nodeName: cs05r-sc-cloud-17.diamond.ac.uk
+      restartPolicy: Never
+      containers:
+      - name: python-client
+        image: gcr.io/diamond-privreg/controls/coniql/perf_client:{{ .Values.perf_client.tag }}
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+        args: [ 
+          "--npvs", {{ quote .Values.perf_client.npvs }}, 
+          "--nsamples", {{ quote .Values.perf_client.nsamples }}, 
+          "--protocol", {{ quote .Values.perf_client.protocol }},
+          "--coniql-addr", "{{ .Values.coniql.service_name }}:8080/ws",
+          "--no-cpu-monitor", # We use Kubernetes features for CPU monitoring 
+        ]

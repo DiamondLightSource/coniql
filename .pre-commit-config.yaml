@@ -4,8 +4,9 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-yaml
-        args:
-          - "--allow-multiple-documents"
+        # Helm templates aren't true YAML and so fail this checker
+        exclude: benchmark/kubernetes/perf_test/templates
+        
       - id: check-merge-conflict
 
   - repo: local

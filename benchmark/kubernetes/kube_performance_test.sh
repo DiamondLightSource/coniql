@@ -21,17 +21,20 @@ build()
 
 #   - TODO: Perhaps also get a final read from Coniql's /metrics endpoint?
 
-start_coniql() 
+install_chart()
 {
-  kubectl apply -f $CONIQL_YAML
-  # Give moment for Kubernetes to create Pod
-  sleep 1
-  kubectl wait --timeout=-1s --for=condition=ready pod -l app=coniql
+  helm install myperftest $SCRIPT_DIR/perf_test
 }
 
-start_job() 
+uninstall_chart()
 {
-  kubectl apply -f $JOB_YAML
+  helm uninstall myperftest 
+}
+
+
+wait_for_job_ending()
+{
+  echo "Waiting for Job to complete"
 
   # Wait for completion in background - will return 0 if occurs
   kubectl wait --timeout=-1s --for=condition=complete job/kubernetes-performance-test &
@@ -52,36 +55,19 @@ start_job()
   fi
 
   return $exit_code
-
-}
-
-stop_coniql()
-{
-  kubectl delete -f $CONIQL_YAML
-  kubectl wait --timeout=-1s --for=delete pod -l app=coniql
-}
-
-stop_job()
-{
-  kubectl delete -f $JOB_YAML
-  kubectl wait --timeout=-1s --for=delete job/kubernetes-performance-test
 }
 
 
-start_coniql
-start_job
+
+install_chart
+
+wait_for_job_ending
 result=$?
-
-stop_coniql
 
 if (( $result == 0 )); then
     python $SCRIPT_DIR/process_results.py
-    stop_job
+    uninstall_chart
   else
     echo "Leaving Job for investigation"
   fi
-
-
-
-
 

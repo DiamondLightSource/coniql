@@ -1,0 +1,35 @@
+# Default values for perf_test.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Specify test parameters related to the Coniql instance
+coniql:
+  # The version of Coniql to deploy
+  # Either "latest", "edge", or a specific version number e.g. "0.3"
+  # See https://github.com/DiamondLightSource/coniql/pkgs/container/coniql
+  tag: latest
+  # The name of the service used to connect to Coniql container
+  service_name: coniql-performance-test-service
+
+# Specify test parameters related to the Python test client(s)
+perf_client:
+  # The version of the performance client to deploy
+  # Either "latest" or a specific version number e.g. "0.3"
+  # https://console.cloud.google.com/gcr/images/diamond-privreg/global/controls/coniql/perf_client?project=diamond-privreg
+  tag: latest
+  # The number of clients that must complete for the Job to pass
+  completions: 2
+  # The number of clients to run in parallel (often equal to completions)
+  parallelism: 2
+  # Number of PVs each client should subscribe to
+  # TODO: Recommended range. Looks like issues start appearing around 100?
+  npvs: "50"
+  # Number of samples for each PV the client should wait for
+  # This is the main determinant of total runtime
+  # TODO: Suggested value. Each 1k takes ~2 minutes. Want a fairly long runtime to maximise stability.
+  nsamples: "1000"
+  # The Websocket protocol to use 
+  # 1 = graphql-ws (old, deprecated)
+  # 2 = graphql-transport-ws (new)
+  protocol: "2"
+
