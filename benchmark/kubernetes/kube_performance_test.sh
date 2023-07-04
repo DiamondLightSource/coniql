@@ -15,7 +15,7 @@ build()
     podman build --tag=gcr.io/diamond-privreg/controls/coniql/perf_client:latest --target=perf_client .
 
     # Publish them to Google Container Registry
-    podman push gcr.io/diamond-privreg/controls/coniql/ioc:latest
+    podman push gcr.io/diamond-privreg/controls/coniql/ioc
     podman push gcr.io/diamond-privreg/controls/coniql/perf_client
 }
 
@@ -23,7 +23,10 @@ build()
 
 install_chart()
 {
-  helm install myperftest $SCRIPT_DIR/perf_test
+  NUM_CLIENTS=$1
+  helm install myperftest $SCRIPT_DIR/perf_test \
+    --set perf_client.completions=$NUM_CLIENTS \
+    --set perf_client.parallelism=$NUM_CLIENTS
 }
 
 uninstall_chart()
@@ -57,17 +60,22 @@ wait_for_job_ending()
   return $exit_code
 }
 
+#CLIENTS=(1 5 10 20 50 100)
+CLIENTS=(1 5)
 
 
-install_chart
+for NUM_CLIENTS in ${CLIENTS[@]}; do
+  echo "Beginning test. Clients: $NUM_CLIENTS"
+  install_chart $NUM_CLIENTS
 
-wait_for_job_ending
-result=$?
+  wait_for_job_ending
+  result=$?
 
-if (( $result == 0 )); then
-    python $SCRIPT_DIR/process_results.py
-    uninstall_chart
+  if (( $result == 0 )); then
+      python $SCRIPT_DIR/process_results.py
+      uninstall_chart
   else
-    echo "Leaving Job for investigation"
+      echo "Leaving Job for investigation"
+      exit
   fi
-
+done
