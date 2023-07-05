@@ -12,12 +12,17 @@ spec:
       # cloud-17 is a known little-used node so should provide more stable performance
       nodeName: cs05r-sc-cloud-17.diamond.ac.uk
       restartPolicy: Never
+      initContainers:
+      - name: wait-for-coniql
+        image: curlimages/curl:latest
+        command: ["/bin/sh","-c"]
+        args: ['while [ $(curl -ksw "%{http_code}" "http://{{ .Values.coniql.service_name }}:8080/metrics" -o /dev/null) -ne 200 ]; do sleep 2; echo "Coniql not ready. Retrying..."; done']
       containers:
       - name: python-client
         image: gcr.io/diamond-privreg/controls/coniql/perf_client:{{ .Values.perf_client.tag }}
         resources:
           limits:
-            cpu: 1
+            cpu: 0.25
             memory: 2Gi
         args: [ 
           "--npvs", {{ quote .Values.perf_client.npvs }}, 
