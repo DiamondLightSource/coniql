@@ -30,4 +30,5 @@ spec:
           "--protocol", {{ quote .Values.perf_client.protocol }},
           "--coniql-addr", "{{ .Values.coniql.service_name }}:8080/ws",
           "--no-cpu-monitor", # We use Kubernetes features for CPU monitoring 
+          "--log-file", "output.txt",
         ]

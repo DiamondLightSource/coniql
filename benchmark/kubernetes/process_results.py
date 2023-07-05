@@ -74,7 +74,7 @@ params = {
     "step": "15s",
 }
 r = requests.get(url=prometheus_url, params=params)
-print(r.url)
+# print(r.url)
 r.raise_for_status()
 
 data = r.json()
@@ -92,7 +92,7 @@ query = (
 params["query"] = query
 
 r = requests.get(url=prometheus_url, params=params)
-print(r.url)
+# print(r.url)
 r.raise_for_status()
 
 data = r.json()
@@ -125,9 +125,31 @@ max_missed_events = re.findall("Max. missed events = (\\d*)", logs_output)
 max_missed_events = [int(x) for x in max_missed_events]
 
 
+helm_values_output = subprocess.run(
+    [
+        "helm",
+        "get",
+        "values",
+        "myperftest",
+        "--output",
+        "json",
+        f"--namespace={NAMESPACE}",
+    ],
+    capture_output=True,
+    text=True,
+    check=True,
+).stdout
+
+helm_json: Dict[str, Any] = json.loads(helm_values_output)
+
+num_clients = helm_json["perf_client"]["completions"]
+num_pvs = helm_json["perf_client"]["npvs"]
+
+
 MBFACTOR = float(1 << 20)  # 1048576 == bytes in a Mebibyte
 
 print("Statistics:")
+print(f"Clients: {num_clients} Num PVs: {num_pvs}")
 print("CPU Usage:")
 print(f"  Mean:             {cpu_mean * 100:.2f}%")
 print(f"  Max:              {cpu_max* 100:.2f}%")

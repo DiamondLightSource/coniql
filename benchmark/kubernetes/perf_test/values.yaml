@@ -15,7 +15,7 @@ coniql:
 perf_client:
   # The version of the performance client to deploy
   # Either "latest" or a specific version number e.g. "0.3"
-  # https://console.cloud.google.com/gcr/images/diamond-privreg/global/controls/coniql/perf_client?project=diamond-privreg
+  # See https://console.cloud.google.com/gcr/images/diamond-privreg/global/controls/coniql/perf_client?project=diamond-privreg
   tag: latest
   # The number of clients that must complete for the Job to pass
   completions: 2
