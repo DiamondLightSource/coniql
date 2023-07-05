@@ -14,15 +14,9 @@ RUN pip install websockets
 # The Python client script
 COPY ./coniql_performance_test.py .
 
-ENTRYPOINT [ "python", "./coniql_performance_test.py" ]
-
-CMD [ \
-      "-n", "100", \
-      "-s", "1000",  \
-      "-p", "2", \
-      "-f", "results.txt", \
-      "--kubernetes", \
-]
+# "-u" to force unbuffered output, to make print() statements
+# to be flushed to stdout as they occur, rather than being buffered
+ENTRYPOINT [ "python", "-u", "./coniql_performance_test.py" ]
 
 # ioc generates a configurable sized DB, then runs an IOC 
 FROM ghcr.io/epics-containers/epics-base-linux-runtime:23.6.1 as ioc

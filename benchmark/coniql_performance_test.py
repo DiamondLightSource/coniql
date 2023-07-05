@@ -325,6 +325,7 @@ async def main():
     except Exception as e:
         # Catch any exceptions so that we can still record results
         print("Exception caught: ", e)
+        print("repr: ", repr(e))  # Sometimes just printing "e" is blank...
         exit_code = 1
     finally:
         # Signal to CPU monitoring thread to stop recording CPU metrics
