@@ -136,11 +136,15 @@ class GraphQLClient:
                                         / msg_count
                                         * (n_messages - msg_count)
                                     )
-                                    self.log_file.write(
-                                        f"Collected {msg_count}/{n_messages} samples.\
-                                            Remaining time: {round(remaining_time, 0)}\
-                                            secs \n"
+
+                                    message = (
+                                        f"Collected {msg_count}/{n_messages} samples. "
+                                        f"Remaining time: {round(remaining_time, 0)}"
+                                        "secs \n"
                                     )
+
+                                    print(message)
+                                    self.log_file.write(message)
                                     self.log_file.flush()
                     else:
                         continue
