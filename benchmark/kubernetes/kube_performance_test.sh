@@ -32,6 +32,8 @@ install_chart()
 uninstall_chart()
 {
   helm uninstall myperftest 
+  # The Coniql pod is the slowest thing to terminate, so wait for it to disappear
+  kubectl wait --timeout=-1s --for delete pod -l app=coniql
 }
 
 
@@ -60,8 +62,12 @@ wait_for_job_ending()
   return $exit_code
 }
 
-#CLIENTS=(1 5 10 20 50 100)
-CLIENTS=(1 5)
+# Number of Python client programs to run in parallel
+# CLIENTS=(1 2 5 10 20 50)
+
+CLIENTS=(50)
+
+
 
 
 for NUM_CLIENTS in ${CLIENTS[@]}; do
@@ -75,7 +81,7 @@ for NUM_CLIENTS in ${CLIENTS[@]}; do
       python $SCRIPT_DIR/process_results.py
       uninstall_chart
   else
-      echo "Leaving Job for investigation"
+      echo "Leaving Chart for investigation"
       exit
   fi
 done
