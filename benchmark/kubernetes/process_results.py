@@ -11,6 +11,7 @@ from typing import Any, Dict
 import requests
 
 DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+NAMESPACE = "coniql-testing"
 
 job_output = subprocess.run(
     ["kubectl", "get", "jobs", "kubernetes-performance-test", "-o", "json"],
@@ -46,13 +47,13 @@ pod_name = subprocess.run(
         "-l",
         "app=coniql",
         "-o",
-        'custom-columns=":metadata.name"',
+        "custom-columns=:metadata.name",
+        f"--namespace={NAMESPACE}",
     ],
     capture_output=True,
     text=True,
     check=True,
-).stdout
-
+).stdout.strip()
 
 print("Waiting for data to appear in Prometheus...")
 time.sleep(data_offset_seconds)
@@ -60,10 +61,9 @@ time.sleep(data_offset_seconds)
 
 prometheus_url = "https://argus-prometheus.diamond.ac.uk/api/v1/query_range"
 
-# TODO: Namespace!
 query = (
     "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate"
-    f"{{namespace='eyh46967', container='coniql', pod={pod_name}}}"
+    f"{{namespace='{NAMESPACE}', container='coniql', pod='{pod_name}'}}"
 )
 
 params = {
@@ -85,10 +85,9 @@ cpu_mean = statistics.mean(values)
 cpu_max = max(values)
 cpu_median = statistics.median(values)
 
-# TODO: namespace
 query = (
     "container_memory_working_set_bytes"
-    f'{{namespace="eyh46967", container="coniql", pod="{pod_name}"}}'
+    f'{{namespace="{NAMESPACE}", container="coniql", pod="{pod_name}"}}'
 )
 params["query"] = query
 
@@ -112,6 +111,7 @@ logs_output = subprocess.run(
         "job-name=kubernetes-performance-test",
         # Last 3 lines are "SUMMARY", average missed events, max missed events
         "--tail=3",
+        f"--namespace={NAMESPACE}",
     ],
     capture_output=True,
     text=True,
@@ -154,7 +154,8 @@ end_input = completion_time + timedelta(seconds=60)
 
 graph_params = {
     "g0.expr": (
-        'container_memory_working_set_bytes{namespace="eyh46967", container="coniql"}'
+        "container_memory_working_set_bytes"
+        f'{{namespace="{NAMESPACE}", container="coniql", pod="{pod_name}"}}'
     ),
     "g0.tab": "0",
     "g0.stacked": "1",
@@ -162,7 +163,7 @@ graph_params = {
     "g0.end_input": f"{end_input.isoformat()}",
     "g1.expr": (
         "node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate"
-        '{namespace="eyh46967", container="coniql"}'
+        f'{{namespace="{NAMESPACE}", container="coniql", pod="{pod_name}"}}'
     ),
     "g1.tab": "0",
     "g1.stacked": "1",

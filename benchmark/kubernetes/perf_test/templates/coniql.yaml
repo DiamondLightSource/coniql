@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: coniql-performance-test
-  # namespace: coniql
+  namespace: coniql-testing
   labels:
     app: coniql
 spec:
@@ -47,7 +47,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ .Values.coniql.service_name }}
-  # namespace: coniql
+  namespace: coniql-testing
   labels:
     app: coniql
 spec:

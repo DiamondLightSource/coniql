@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: kubernetes-performance-test
-  # namespace: coniql
+  namespace: coniql-testing
 spec:
   completions: {{ .Values.perf_client.completions }}
   parallelism: {{ .Values.perf_client.parallelism }}
