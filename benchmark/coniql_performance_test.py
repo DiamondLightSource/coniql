@@ -144,8 +144,11 @@ class GraphQLClient:
                                     )
 
                                     print(message)
-                                    self.log_file.write(message)
-                                    self.log_file.flush()
+                                    # The file may be closed by another instance of
+                                    # this function.
+                                    if not self.log_file.closed:
+                                        self.log_file.write(message)
+                                        self.log_file.flush()
                     else:
                         continue
 
