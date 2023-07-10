@@ -1,7 +1,7 @@
 # This file contains the images for the performance test
 
 
-# perf_client contains the Python client code that connects to the Coniql 
+# perf_client contains the Python client code that connects to the Coniql
 # server via websockets
 FROM python:3.10 as perf_client
 
@@ -18,7 +18,7 @@ COPY ./coniql_performance_test.py .
 # to be flushed to stdout as they occur, rather than being buffered
 ENTRYPOINT [ "python", "-u", "./coniql_performance_test.py" ]
 
-# ioc generates a configurable sized DB, then runs an IOC 
+# ioc generates a configurable sized DB, then runs an IOC
 FROM ghcr.io/epics-containers/epics-base-linux-runtime:23.6.1 as ioc
 
 COPY ./generate_db.sh .

@@ -1,9 +1,9 @@
 #!/bin/bash
 # Generate an EPICS database and then run a softIOC using it
-# Requires: 
+# Requires:
 #    EPICS installed and available
-# Usage: 
-#    ./build_and_run_ioc.sh <num_pvs> 
+# Usage:
+#    ./build_and_run_ioc.sh <num_pvs>
 # where:
 #    <num_pvs> = the number of records the database will contain
 

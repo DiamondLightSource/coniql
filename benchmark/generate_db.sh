@@ -1,20 +1,20 @@
 #!/bin/bash
-# Generate an EPICS record database of a specified size in a 
+# Generate an EPICS record database of a specified size in a
 # specified location
 
 # Usage:
 #    ./generate_db.sh <directory> <num_pvs>
 # where:
 #    <directory> = directory in which the database file will be created
-#    <num_pvs> = the number of records the database will contain. 
-      
+#    <num_pvs> = the number of records the database will contain.
+
 
 SUB_DIR=$1
 N_PVS=$2
 
 DATABASE_FILE=$SUB_DIR/coniqlPerformanceTestDb.db
 
-# Setup: create db file for EPICS 
+# Setup: create db file for EPICS
 echo "-> Creating EPICS db with $N_PVS PVs at $DATABASE_FILE"
 for ((i=0;i<$N_PVS;i++))
 do
