@@ -6,7 +6,6 @@ import sys
 import threading
 import time
 
-import psutil
 import websockets
 
 # Constants
@@ -60,6 +59,13 @@ parser.add_argument(
     action="store_true",
     dest="no_cpu_monitor",
     help="Do not run the CPU monitor",
+)
+parser.add_argument(
+    "--coniql-addr",
+    action="store",
+    dest="addr",
+    help="Address of Coniql server websocket",
+    default="0.0.0.0:8080/ws",
 )
 
 
@@ -130,12 +136,19 @@ class GraphQLClient:
                                         / msg_count
                                         * (n_messages - msg_count)
                                     )
-                                    self.log_file.write(
-                                        f"Collected {msg_count}/{n_messages} samples.\
-                                            Remaining time: {round(remaining_time, 0)}\
-                                            secs \n"
+
+                                    message = (
+                                        f"Collected {msg_count}/{n_messages} samples. "
+                                        f"Remaining time: {round(remaining_time, 0)}"
+                                        "secs \n"
                                     )
-                                    self.log_file.flush()
+
+                                    print(message)
+                                    # The file may be closed by another instance of
+                                    # this function.
+                                    if not self.log_file.closed:
+                                        self.log_file.write(message)
+                                        self.log_file.flush()
                     else:
                         continue
 
@@ -173,6 +186,9 @@ class PVSubscription:
 
 
 def cpu_monitor(signal):
+    # Keep import local so we don't need it in Container
+    import psutil
+
     pid = 0
     for proc in psutil.process_iter(["pid", "name"]):
         if proc.info["name"] == "coniql":
@@ -282,7 +298,7 @@ async def main():
     # Create client
     signal = StartStopSignal()
     client = GraphQLClient(
-        endpoint="ws://0.0.0.0:8080/ws",
+        endpoint=f"ws://{args.addr}",
         signal=signal,
         ws_protocol=ws_protocol,
         log_filename=log_filename,
@@ -312,9 +328,12 @@ async def main():
     # Await all subscriptions to complete
     try:
         await asyncio.gather(*task_list)
+        exit_code = 0
     except Exception as e:
         # Catch any exceptions so that we can still record results
         print("Exception caught: ", e)
+        print("repr: ", repr(e))  # Sometimes just printing "e" is blank...
+        exit_code = 1
     finally:
         # Signal to CPU monitoring thread to stop recording CPU metrics
         signal.signal_stop()
@@ -351,6 +370,12 @@ async def main():
     # Collect results
     time.sleep(1)
 
+    # NOTE: Kubernetes performance test relies on these being the last 3 lines
+    # of output when not using CPU monitor
+    print("\n\n ****** SUMMARY ******")
+    print(" Average missed events = " + str(round(missing_average)))
+    print(" Max. missed events = " + str(missing_max))
+
     if not no_cpu_monitor:
         res_str = "[{}](nPVs={}, nsamples={}, protocol={})| Av. missed events: {}|\
     Max missed events: {}| CPU av.: {:.2f} %| Mem usage: {:.2f} MiB\n".format(
@@ -366,15 +391,11 @@ async def main():
         with open(args.output_file, "a") as f:
             f.write(res_str)
 
-        print("\n\n ****** SUMMARY ******")
-        print(" Average missed events = " + str(round(missing_average)))
-        print(" Max. missed events = " + str(missing_max))
         print(" CPU average: " + str(cpu_average) + " %")
         print(" Memory usage: " + str(memory_use) + " MiB")
         print(" *********************\n")
-    sys.exit()
+    sys.exit(exit_code)
 
 
 if __name__ == "__main__":
     asyncio.run(main())
-    sys.exit()
