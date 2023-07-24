@@ -51,6 +51,8 @@ dev = [
     "psutil",                           # Required for benchmarking tests
     "pytest-asyncio>0.17",
     "pytest-aiohttp",
+    "types-ujson",
+    "ujson",
     "websockets",                       # Required for benchmarking tests
 ]
 
@@ -116,8 +118,8 @@ skipsdist=True
 # Don't create a virtualenv for the command, requires tox-direct plugin
 direct = True
 passenv = *
-allowlist_externals = 
-    pytest 
+allowlist_externals =
+    pytest
     pre-commit
     mypy
     sphinx-build

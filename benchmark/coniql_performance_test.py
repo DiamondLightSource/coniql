@@ -1,18 +1,20 @@
 import argparse
 import asyncio
 import datetime
-import json
 import sys
 import threading
 import time
+import uuid
+from typing import Dict
 
+import ujson
 import websockets
 
 # Constants
 cpu_average = 0
 memory_use = 0
 PV_PREFIX = "TEST:REC"
-subscriptions_list = {}
+subscriptions_list: Dict[str, "PVSubscription"] = {}
 task_list = []
 
 
@@ -67,6 +69,9 @@ parser.add_argument(
     help="Address of Coniql server websocket",
     default="0.0.0.0:8080/ws",
 )
+parser.add_argument(
+    "--debug", action="store_true", help="Enable extra debugging information"
+)
 
 
 class GraphQLClient:
@@ -80,20 +85,35 @@ class GraphQLClient:
         if self.log_filename is not None:
             print("-> Logging subscription progress")
             self.log_file = open(self.log_filename, "w")
+        else:
+            self.log_file = None
 
-    async def subscribe(self, idid, query, handle, n_messages):
+    async def subscribe(self, idid, query, handle, n_messages, debug):
         monitor_progress = False
         if self.first_subscribe and self.log_filename is not None:
             monitor_progress = True
             self.first_subscribe = False
-        connection_init_message = json.dumps({"type": "connection_init", "payload": {}})
 
-        request_message_graphql_ws_protocol = json.dumps(
-            {"type": "start", "id": idid, "payload": {"query": query}}
+        if debug:
+            monitor_progress = True
+
+        uid = str(uuid.uuid4())
+        connection_init_message = ujson.dumps(
+            {"type": "connection_init", "payload": {}}
         )
 
-        request_message_graphql_transport_ws_protocol = json.dumps(
-            {"type": "subscribe", "id": idid, "payload": {"query": query}}
+        request_message_graphql_ws_protocol = ujson.dumps(
+            {"type": "start", "id": uid, "payload": {"query": query}}
+        )
+
+        request_message_graphql_transport_ws_protocol = ujson.dumps(
+            {"type": "subscribe", "id": uid, "payload": {"query": query}}
+        )
+
+        stop_message_graphql_ws_protocol = ujson.dumps({"type": "stop", "id": uid})
+
+        stop_message_graphql_transport_ws_protocol = ujson.dumps(
+            {"type": "complete", "id": uid}
         )
 
         protocols = ["graphql-ws", "graphql-transport-ws"]
@@ -111,7 +131,7 @@ class GraphQLClient:
             msg_count = 0
             start_time = time.time()
             async for response in websocket:
-                data = json.loads(response)
+                data = ujson.loads(response)
                 if data["type"] == "connection_ack":
                     pass
                 elif data["type"] == "ka":
@@ -124,7 +144,16 @@ class GraphQLClient:
                             pass
                         else:
                             if msg_count > n_messages:
-                                if self.log_filename is not None:
+                                if self.ws_protocol == 2:
+                                    await websocket.send(
+                                        stop_message_graphql_ws_protocol
+                                    )
+                                else:
+                                    await websocket.send(
+                                        stop_message_graphql_transport_ws_protocol
+                                    )
+
+                                if self.log_file and not self.log_file.closed:
                                     self.log_file.close()
                                 break
                             msg_count = msg_count + 1
@@ -138,7 +167,8 @@ class GraphQLClient:
                                     )
 
                                     message = (
-                                        f"Collected {msg_count}/{n_messages} samples. "
+                                        f"Collected {msg_count}/{n_messages} samples "
+                                        f"for pv {idid}. "
                                         f"Remaining time: {round(remaining_time, 0)}"
                                         "secs \n"
                                     )
@@ -146,7 +176,7 @@ class GraphQLClient:
                                     print(message)
                                     # The file may be closed by another instance of
                                     # this function.
-                                    if not self.log_file.closed:
+                                    if self.log_file and not self.log_file.closed:
                                         self.log_file.write(message)
                                         self.log_file.flush()
                     else:
@@ -272,13 +302,14 @@ def get_subscription_query(pv_name):
     )
 
 
-async def coniql_subscription(client, pv_name, n_samples):
+async def coniql_subscription(client: GraphQLClient, pv_name, n_samples, debug):
     subscriptions_list[pv_name] = PVSubscription(pv_name)
     await client.subscribe(
         idid=pv_name,
         query=get_subscription_query(pv_name),
         handle=data_handler,
         n_messages=n_samples,
+        debug=debug,
     )
 
 
@@ -289,6 +320,7 @@ async def main():
     ws_protocol = int(args.ws_protocol)
     log_filename = args.log_filename
     no_cpu_monitor = args.no_cpu_monitor
+    debug = args.debug
 
     protocol = "graphql-ws"
     if ws_protocol == 2:
@@ -316,7 +348,9 @@ async def main():
         pv_name = PV_PREFIX + str(i)
 
         # Create a task
-        sub_task = asyncio.create_task(coniql_subscription(client, pv_name, n_samples))
+        sub_task = asyncio.create_task(
+            coniql_subscription(client, pv_name, n_samples, debug)
+        )
 
         # Add to list of tasks to await
         task_list.append(sub_task)
@@ -324,6 +358,8 @@ async def main():
 
     # Signal for the CPU monitor thread to start recording CPU metrics
     signal.signal_start()
+
+    start_time = time.time()
 
     # Await all subscriptions to complete
     try:
@@ -338,6 +374,8 @@ async def main():
         # Signal to CPU monitoring thread to stop recording CPU metrics
         signal.signal_stop()
 
+    duration = time.time() - start_time
+
     # Analyse results
     missing_average = 0
     missing_max = 0
@@ -346,6 +384,10 @@ async def main():
         if len(res) == 0:
             break
         expected_result = res[0]
+
+        if expected_result is None:
+            print("ERROR: Found None for ", pv, " ", res)
+
         missing = 0
         for val in res:
             if val != expected_result:
@@ -377,17 +419,13 @@ async def main():
     print(" Max. missed events = " + str(missing_max))
 
     if not no_cpu_monitor:
-        res_str = "[{}](nPVs={}, nsamples={}, protocol={})| Av. missed events: {}|\
-    Max missed events: {}| CPU av.: {:.2f} %| Mem usage: {:.2f} MiB\n".format(
-            datetime.datetime.now(),
-            n_pvs,
-            n_samples,
-            protocol,
-            round(missing_average),
-            missing_max,
-            cpu_average,
-            memory_use,
+        res_str = (
+            f"[{datetime.datetime.now()}](nPVs={n_pvs}, nsamples={n_samples}, "
+            f"protocol={protocol})| Av. missed events: {round(missing_average)}| "
+            f"Max missed events: {missing_max}| CPU av.: {cpu_average:.2f} %| "
+            f"Mem usage: {memory_use:.2f} MiB| Duration: {duration:.2f} secs\n"
         )
+
         with open(args.output_file, "a") as f:
             f.write(res_str)
 
