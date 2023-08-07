@@ -1,15 +1,21 @@
+# Support type hints for asyncio.Queue
+from __future__ import annotations
+
 import asyncio
-import collections
 import logging
-import threading
+import uuid
+from asyncio import Queue
+from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, AsyncIterator, Deque, List, Optional, Sequence
+from enum import Enum
+from typing import AsyncIterator, Callable, Dict, List, Optional, Sequence
 
 from aioca import (
     DBE_PROPERTY,
     FORMAT_CTRL,
     FORMAT_TIME,
     CANothing,
+    Subscription,
     caget,
     cainfo,
     camonitor,
@@ -72,7 +78,15 @@ class CAChannelMaker:
         self,
         time_value: Optional[AugmentedValue] = None,
         meta_value: Optional[AugmentedValue] = None,
+        send_quality: bool = False,
     ) -> Channel:
+        """Create a Channel object, populated with data taken from the provided
+        AugmentedValue(s).
+
+        Specify `send_quality` to force the "quality" attribute to be included in
+        the returned channel - by default it will only send this attribute if it
+        has changed state.
+        """
         value = None
         time = None
         status = None
@@ -117,7 +131,11 @@ class CAChannelMaker:
                 assert time_value.timestamp
                 value = ChannelValue(time_value, self.formatter)
                 quality = str(ChannelQuality(time_value.severity))
-                if self.cached_status is None or self.cached_status.quality != quality:
+                if (
+                    send_quality
+                    or self.cached_status is None
+                    or self.cached_status.quality != quality
+                ):
                     status = ChannelStatus(
                         quality=quality,
                         message="",
@@ -165,7 +183,181 @@ class CAChannel(Channel):
         return self.display
 
 
+@dataclass
+class CallbackContext:
+    callback: Callable[[Channel], None]
+    first_result_sent: bool = False
+
+
+@dataclass
+class SubscriptionData:
+    pv: str
+
+    time_value: Optional[AugmentedValue]
+    time_monitor: Subscription
+
+    meta_value: Optional[AugmentedValue]
+    meta_monitor: Subscription
+
+    callbacks: Dict[str, CallbackContext]
+    maker: CAChannelMaker
+
+    subscribers: int
+
+
+class DataEnum(Enum):
+    TIME_VALUE = "time_value"
+    META_VALUE = "meta_value"
+
+
+class CASubscriptionManager:
+    """Pools camonitor requests across all subscriptions, ensuring we only have one
+    active subscription for each PV."""
+
+    def __init__(self) -> None:
+        self.pvs: Dict[str, SubscriptionData] = {}
+        self.metrics_task: Optional[asyncio.Task] = None
+        self.locks: Dict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
+
+    async def update_metrics(self) -> None:
+        value_monitor_last_dropped: Dict[str, int] = defaultdict(int)
+        meta_monitor_last_dropped: Dict[str, int] = defaultdict(int)
+
+        while True:
+            for x in self.pvs.values():
+                value_monitor_last_dropped[x.pv] = update_subscription_metrics(
+                    x.time_monitor, value_monitor_last_dropped[x.pv], {"type": "value"}
+                )
+                meta_monitor_last_dropped[x.pv] = update_subscription_metrics(
+                    x.meta_monitor, meta_monitor_last_dropped[x.pv], {"type": "meta"}
+                )
+            await asyncio.sleep(1)  # Update metrics every 1 seconds
+
+    def __callback(self, pv: str, key: DataEnum, v: AugmentedValue):
+        if pv not in self.pvs:
+            return
+
+        data = self.pvs[pv]
+
+        if key == DataEnum.TIME_VALUE:
+            data.time_value = v
+        elif key == DataEnum.META_VALUE:
+            data.meta_value = v
+        else:
+            raise KeyError(f"Unrecognised key {key}")
+
+        # Ensure we have both values before creating the channel
+        # This ensures the first update sent to the client has both
+        # values and metadata
+        if data.time_value is None or data.meta_value is None:
+            return
+
+        if key == DataEnum.TIME_VALUE:
+            channel = data.maker.channel_from_update(time_value=data.time_value)
+        elif key == DataEnum.META_VALUE:
+            channel = data.maker.channel_from_update(meta_value=data.meta_value)
+
+        for context in data.callbacks.values():
+            # For the first subscription return we must send both time and meta values
+            if context.first_result_sent is False:
+                channel = data.maker.channel_from_update(
+                    time_value=data.time_value,
+                    meta_value=data.meta_value,
+                    send_quality=True,
+                )
+                context.first_result_sent = True
+
+            context.callback(channel)
+
+    async def subscribe(
+        self, pv: str, callback: Callable[[Channel], None], callback_key: str
+    ):
+        """Subscribe to the given PV. The provided callback will be called for every new
+        update to the PV.
+
+        Caller must provide a key that will be associated with the callback. This same
+        key must be passed to the `unsubscribe` function."""
+        callback_context = CallbackContext(callback)
+
+        # Restrict access to the shared dictionary - otherwise issues arise if two
+        # clients attempt to subscribe to the same PV at the same time
+        async with self.locks[pv]:
+            # One-time async init across all subscriptions
+            if self.metrics_task is None:
+                self.metrics_task = asyncio.create_task(self.update_metrics())
+
+            # Either this PV is new or we've previously closed the monitors.
+            if (
+                pv not in self.pvs
+                or self.pvs[pv].meta_monitor.state == Subscription.CLOSED
+            ):
+                # A specific request required for whether the channel is writeable.
+                # This will not be updated, so wait until a callback is received
+                # before making the request when the channel is likely be connected.
+                # NOTE: This MUST happen before the camonitors are created, otherwise we
+                # run the risk of the initial monitor callbacks happening while we're
+                # waiting for this cainfo call to return.
+                writeable = True
+                try:
+                    info = await cainfo(pv)
+                    writeable = info.write
+                except CANothing:
+                    # Unlikely, but allow subscriptions to continue.
+                    pass
+
+                # Initialize camonitors for this PV
+                value_monitor = camonitor(
+                    pv,
+                    lambda v: self.__callback(pv, DataEnum.TIME_VALUE, v),
+                    format=FORMAT_TIME,
+                    notify_disconnect=True,
+                )
+
+                # Monitor PV only for property changes. For EPICS < 3.15 this monitor
+                # will update once on connection but will not subsequently be triggered.
+                # https://github.com/dls-controls/coniql/issues/22#issuecomment-863899258
+                meta_monitor = camonitor(
+                    pv,
+                    lambda v: self.__callback(pv, DataEnum.META_VALUE, v),
+                    events=DBE_PROPERTY,
+                    format=FORMAT_CTRL,
+                )
+
+                maker = CAChannelMaker(pv, writeable)
+
+                self.pvs[pv] = SubscriptionData(
+                    pv=pv,
+                    time_value=None,
+                    time_monitor=value_monitor,
+                    meta_value=None,
+                    meta_monitor=meta_monitor,
+                    callbacks={callback_key: callback_context},
+                    maker=maker,
+                    subscribers=1,
+                )
+
+            else:
+                self.pvs[pv].subscribers += 1
+                self.pvs[pv].callbacks[callback_key] = callback_context
+
+    def unsubscribe(self, pv: str, callback_key: str) -> None:
+        """Unsubscribe from the given PV. The callback key must be provided and must
+        match the one passed to the `subscribe` function."""
+        data = self.pvs[pv]
+
+        data.subscribers -= 1
+
+        data.callbacks.pop(callback_key)
+
+        if data.subscribers == 0:
+            data.time_monitor.close()
+            data.meta_monitor.close()
+
+
 class CAPlugin(Plugin):
+    def __init__(self):
+        self.subscription_manager = CASubscriptionManager()
+
     async def get_channel(self, pv: str, timeout: float) -> Channel:
         time_value, meta_value, info = await asyncio.gather(
             caget(pv, format=FORMAT_TIME, timeout=timeout),
@@ -180,180 +372,28 @@ class CAPlugin(Plugin):
     ):
         await caput(pvs, values, timeout=timeout)
 
-    @staticmethod
-    async def __signal_single_channel(
-        value: "UpdateSignal",
-        values: Deque[AugmentedValue],
-        maker: CAChannelMaker,
-        lock: threading.Lock,
-    ) -> Channel:
-        """Called when a specific signal is armed indicating that a value is
-        ready to be read from the input deque. The signal is disarmed so it is
-        ready for the next update and the deque's contents is used to create
-        and return a Channel object containing the update."""
-        with lock:
-            try:
-                # Consume a single value from the queue
-                value.disarm()
-                return maker.channel_from_update(**values.popleft())
-            except IndexError:
-                # In case deque is empty just return an empty channel
-                return maker.channel_from_update()
-
-    @staticmethod
-    async def __signal_double_channel(
-        value: "UpdateSignal",
-        meta: "UpdateSignal",
-        values: Deque[AugmentedValue],
-        metas: Deque[AugmentedValue],
-        maker: CAChannelMaker,
-        value_lock: threading.Lock,
-        meta_lock: threading.Lock,
-    ) -> Channel:
-        """Called when both value and metadata signals are armed indicating
-        that values are ready to be read from the value and metadata deques.
-        Signals are disarmed so they are ready for next update and the deque's
-        contents are used to create and return a Channel object containing
-        the update."""
-        with value_lock and meta_lock:
-            try:
-                # Consume a single value from the queue
-                value.disarm()
-                meta.disarm()
-                return maker.channel_from_update(**values.popleft(), **metas.popleft())
-            except IndexError:
-                # In case deque is empty just return an empty channel
-                return maker.channel_from_update()
-
-    class UpdateSignal:
-        """Class used to signal when an update is available"""
-
-        def __init__(self) -> None:
-            self.signal: bool = False
-
-        def arm(self):
-            self.signal = True
-
-        def disarm(self):
-            self.signal = False
-
-        def is_armed(self) -> bool:
-            return self.signal
-
-    def __callback(
-        self,
-        v: Any,
-        dict_key: str,
-        signal: UpdateSignal,
-        value_deque: Deque[AugmentedValue],
-        lock: threading.Lock,
-    ) -> None:
-        with lock:
-            value_deque.append({dict_key: v})
-            signal.arm()
-
     async def subscribe_channel(self, pv: str) -> AsyncIterator[Channel]:
-        # Monitor PV for value and alarm changes with associated timestamp.
-        # Use this monitor also for notifications of disconnections.
-        value_signal = self.UpdateSignal()
-        value_lock = threading.Lock()
-        values: Deque[AugmentedValue] = collections.deque(maxlen=1)
-        value_monitor = camonitor(
-            pv,
-            lambda v: self.__callback(
-                v, "time_value", value_signal, values, value_lock
-            ),
-            format=FORMAT_TIME,
-            notify_disconnect=True,
-        )
-        # Monitor PV only for property changes. For EPICS < 3.15 this monitor
-        # will update once on connection but will not subsequently be triggered.
-        # https://github.com/dls-controls/coniql/issues/22#issuecomment-863899258
-        meta_signal = self.UpdateSignal()
-        meta_lock = threading.Lock()
-        metas: Deque[AugmentedValue] = collections.deque(maxlen=1)
-        meta_monitor = camonitor(
-            pv,
-            lambda v: self.__callback(v, "meta_value", meta_signal, metas, meta_lock),
-            events=DBE_PROPERTY,
-            format=FORMAT_CTRL,
-        )
+        value: Queue[Channel] = asyncio.Queue(maxsize=1)
+
+        # Generate unique key for this subscription
+        uid = str(uuid.uuid4())
+
+        def __callback(channel: Channel):
+            # Ensure queue is empty
+            while True:
+                try:
+                    value.get_nowait()
+                    value.task_done()  # Not necessary as we never join on the queue
+                except asyncio.QueueEmpty:
+                    break
+
+            value.put_nowait(channel)
+
+        await self.subscription_manager.subscribe(pv, __callback, uid)
 
         try:
-            # A specific request required for whether the channel is writeable.
-            # This will not be updated, so wait until a callback is received
-            # before making the request when the channel is likely be connected.
-            writeable = True
-            try:
-                info = await cainfo(pv)
-                writeable = info.write
-            except CANothing:
-                # Unlikely, but allow subscriptions to continue.
-                pass
-
-            maker = CAChannelMaker(pv, writeable)
-
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                # 'RuntimeError: There is no current event loop...'
-                coniql_logger.error("No running event loop...", stack_info=True)
-                loop = None
-            # Handle all subsequent updates from both monitors.
-            firstChannelReceived = False
-
-            value_monitor_last_dropped = 0
-            meta_monitor_last_dropped = 0
-
             while True:
-                await asyncio.sleep(0.01)
+                yield await value.get()
 
-                # Update metrics for this subscription
-                value_monitor_last_dropped = update_subscription_metrics(
-                    value_monitor, value_monitor_last_dropped, {"type": "value"}
-                )
-                meta_monitor_last_dropped = update_subscription_metrics(
-                    meta_monitor, meta_monitor_last_dropped, {"type": "meta"}
-                )
-
-                # Wait to receive both channels at the beginning
-                if loop is not None and not firstChannelReceived:
-                    if value_signal.is_armed() and meta_signal.is_armed():
-                        data = loop.create_task(
-                            self.__signal_double_channel(
-                                value_signal,
-                                meta_signal,
-                                values,
-                                metas,
-                                maker,
-                                value_lock,
-                                meta_lock,
-                            )
-                        )
-                        await data
-                        if data.result() is not None:
-                            yield data.result()
-                        firstChannelReceived = True
-                # Now update accordingly
-                elif loop is not None and firstChannelReceived:
-                    if value_signal.is_armed():
-                        data = loop.create_task(
-                            self.__signal_single_channel(
-                                value_signal, values, maker, value_lock
-                            )
-                        )
-                        await data
-                        if data.result() is not None:
-                            yield data.result()
-                    if meta_signal.is_armed():
-                        data = loop.create_task(
-                            self.__signal_single_channel(
-                                meta_signal, metas, maker, meta_lock
-                            )
-                        )
-                        await data
-                        if data.result() is not None:
-                            yield data.result()
         finally:
-            value_monitor.close()
-            meta_monitor.close()
+            self.subscription_manager.unsubscribe(pv, uid)
