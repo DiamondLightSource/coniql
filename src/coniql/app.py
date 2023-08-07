@@ -7,6 +7,7 @@ import aiohttp_cors
 from aiohttp import web
 from aiohttp.hdrs import METH_GET, METH_POST
 from strawberry.aiohttp.views import GraphQLView
+from strawberry.schema.config import StrawberryConfig
 from strawberry.subscriptions import GRAPHQL_TRANSPORT_WS_PROTOCOL, GRAPHQL_WS_PROTOCOL
 
 import coniql.strawberry_schema as schema
@@ -23,12 +24,18 @@ from . import __version__
 
 
 def create_schema(debug: bool):
+    # Disabling automatic camel casing saves ~1% CPU time as Strawberry won't attempt
+    # to check/change our field names. Currently we don't have any snake_case fields
+    # so there isn't any transformation happening anyway.
+    config = StrawberryConfig(auto_camel_case=False)
+
     # Create the schema
     return MetricsSchema(
         query=schema.Query,
         subscription=schema.Subscription,
         mutation=schema.Mutation,
         extensions=[MetricsExtension],
+        config=config,
     )
 
 
