@@ -89,28 +89,28 @@ class ChannelTime(TypeChannelTime):
         return datetime.datetime.fromtimestamp(root.seconds)
 
 
-async def resolver_id(root: "DeferredChannel") -> Optional[str]:
-    channel = await root.get_channel()
+def resolver_id(root: "DeferredChannel") -> Optional[str]:
+    channel = root.get_channel()
     return channel.get_id()
 
 
-async def resolver_value(root: "DeferredChannel") -> Optional[TypeChannelValue]:
-    channel = await root.get_channel()
+def resolver_value(root: "DeferredChannel") -> Optional[TypeChannelValue]:
+    channel = root.get_channel()
     return channel.get_value()
 
 
-async def resolver_time(root: "DeferredChannel") -> Optional[TypeChannelTime]:
-    channel = await root.get_channel()
+def resolver_time(root: "DeferredChannel") -> Optional[TypeChannelTime]:
+    channel = root.get_channel()
     return channel.get_time()
 
 
-async def resolver_status(root: "DeferredChannel") -> Optional[TypeChannelStatus]:
-    channel = await root.get_channel()
+def resolver_status(root: "DeferredChannel") -> Optional[TypeChannelStatus]:
+    channel = root.get_channel()
     return channel.get_status()
 
 
-async def resolver_display(root: "DeferredChannel") -> Optional[ChannelDisplay]:
-    channel = await root.get_channel()
+def resolver_display(root: "DeferredChannel") -> Optional[ChannelDisplay]:
+    channel = root.get_channel()
     return channel.get_display()
 
 
@@ -159,12 +159,7 @@ class DeferredChannel(Channel):
     async def populate_channel(self) -> Channel:
         raise NotImplementedError(self)
 
-    async def get_channel(self) -> Channel:
-        if self.channel is None:
-            async with self.lock:
-                # If channel is still None we should make it
-                if self.channel is None:
-                    self.channel = await self.populate_channel()
+    def get_channel(self) -> Channel:
         assert self.channel
         return self.channel
 
@@ -181,11 +176,14 @@ class GetChannel(DeferredChannel):
         channel = await self.plugin.get_channel(self.pv, self.timeout)
         # Convert types.Channel object to a Strawberry schema Channel
         strawberry_channel = Channel(channel)
+        self.channel = strawberry_channel
         return strawberry_channel
 
 
-def get_channel(id: strawberry.ID, timeout: float = 5.0) -> Channel:
-    return GetChannel(id, timeout, store_global)
+async def get_channel(id: strawberry.ID, timeout: float = 5.0) -> Channel:
+    channel = GetChannel(id, timeout, store_global)
+    await channel.populate_channel()
+    return channel
 
 
 @strawberry.type
@@ -264,7 +262,9 @@ class Mutation:
             p.transport for p in plugins
         ]
         await plugins.pop().put_channels(pvs, results, timeout)
-        channels: Sequence = [
+        channels: Sequence[GetChannel] = [
             GetChannel(channel_id, timeout, store) for channel_id in ids
         ]
+        for channel in channels:
+            await channel.populate_channel()
         return channels
