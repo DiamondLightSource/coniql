@@ -23,26 +23,24 @@ store_global.add_plugin("ssim", SimPlugin())
 store_global.add_plugin("ca", CAPlugin(), set_default=True)
 
 
-async def resolve_float(root: TypeChannelValue) -> Optional[float]:
+def resolve_float(root: TypeChannelValue) -> Optional[float]:
     return root.formatter.to_float(root.value)
 
 
-async def resolve_string(root: TypeChannelValue, units: bool = False) -> Optional[str]:
+def resolve_string(root: TypeChannelValue, units: bool = False) -> Optional[str]:
     if units:
         return root.formatter.to_string_with_units(root.value)
     else:
         return root.formatter.to_string(root.value)
 
 
-async def resolve_base64Array(
+def resolve_base64Array(
     root: TypeChannelValue, length: int = 0
 ) -> Optional[TypeBase64Array]:
     return root.formatter.to_base64_array(root.value, length)
 
 
-async def resolve_stringArray(
-    root: TypeChannelValue, length: int = 0
-) -> Optional[List[str]]:
+def resolve_stringArray(root: TypeChannelValue, length: int = 0) -> Optional[List[str]]:
     return root.formatter.to_string_array(root.value, length)
 
 
