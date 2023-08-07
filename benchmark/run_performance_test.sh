@@ -64,7 +64,7 @@ while [ : ]; do
             shift 2
             ;;
         -c | --clients)
-            N_CLIENTS="$2" 
+            N_CLIENTS="$2"
             if ! [[ $N_CLIENTS =~ ^[0-9]+$ ]]; then
                 echo "Number of clients must be an integer"
                 exit
@@ -98,13 +98,13 @@ while [ : ]; do
             fi
             shift 2
             ;;
-        --) shift; 
-            break 
+        --) shift;
+            break
             ;;
     esac
 done
 
-# Check what variables have been set by user 
+# Check what variables have been set by user
 if [ -z $CONIQL_DIR ]; then
     echo "Coniql virtual env directory has not been provided."
     echo "Run './benchmark/run_performance_test --help' for script usage."
@@ -127,7 +127,7 @@ if [ -z $PROTOCOL ]; then
     echo "Websocket protocol not provided, defaulting to 'graphql-transport-ws' (2)"
 fi
 
-./generate_db.sh $SUB_DIR $N_PVS
+$SUB_DIR/generate_db.sh $SUB_DIR $N_PVS
 
 # Make directory to store logs
 LOG_DIR=$SUB_DIR"/logs"
@@ -160,12 +160,12 @@ mkdir -p "$TMP_DIR";
 # Define output and log file
 OUTPUT_FILE="$SUB_DIR/performance_test_results_NClients_$N_CLIENTS.txt"
 PY_PROGRESS_FILE="$TMP_DIR/test_progress.txt"
-PYCMD0="python $SUB_DIR/coniql_performance_test.py -n $N_PVS -s $N_SAMPLES -p $PROTOCOL -f $OUTPUT_FILE"
-for ((i=1;i<=$N_CLIENTS;i++)) 
+PYCMD0="python -u $SUB_DIR/coniql_performance_test.py -n $N_PVS -s $N_SAMPLES -p $PROTOCOL -f $OUTPUT_FILE"
+for ((i=1;i<=$N_CLIENTS;i++))
 do
     # Configure first client to monitor subscription progress
     if [ $i -eq 1 ]; then
-        PYCMD=$PYCMD0" --log-file $PY_PROGRESS_FILE" 
+        PYCMD=$PYCMD0" --log-file $PY_PROGRESS_FILE"
     else
         # Subsequent clients should not create a CPU monitor
         # as the first instance will handle this
@@ -201,7 +201,7 @@ do
             progress="${tail}"
             echo "   "$progress
         fi
-    fi   
+    fi
 done
 echo " Completed"
 
