@@ -116,7 +116,7 @@ class CAChannelMaker:
             if time_value.ok:
                 assert time_value.timestamp
                 value = ChannelValue(time_value, self.formatter)
-                quality = ChannelQuality.get_channel_quality_str(time_value.severity)
+                quality = str(ChannelQuality(time_value.severity))
                 if self.cached_status is None or self.cached_status.quality != quality:
                     status = ChannelStatus(
                         quality=quality,

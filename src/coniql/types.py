@@ -2,7 +2,7 @@ import base64
 import math
 import time
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Any, Callable, List, Optional
 
 import numpy as np
@@ -30,28 +30,30 @@ class Range:
         return rmin <= value <= rmax
 
 
-class ChannelQuality(Enum):
+class ChannelQuality(IntEnum):
     """
     Indication of how the current value of a Channel should be interpreted
+
+    Note: The values align to the "menuAlarmSevr" enum in EPICS, with a couple of
+    extension values.
     """
 
     # Value is known, valid, nothing is wrong
-    VALID = "VALID"
+    VALID = 0
     # Value is known, valid, but is in the range generating a warning
-    WARNING = "WARNING"
+    WARNING = 1
     # Value is known, valid, but is in the range generating an alarm condition
-    ALARM = "ALARM"
+    ALARM = 2
     # Value is known, but not valid, e.g. a RW before its first put
-    INVALID = "INVALID"
+    INVALID = 3
     # The value is unknown, for instance because the channel is disconnected
-    UNDEFINED = "UNDEFINED"
+    UNDEFINED = 4
     # The Channel is currently in the process of being changed
-    CHANGING = "CHANGING"
+    CHANGING = 5
 
-    @classmethod
-    def get_channel_quality_str(cls, severity: int) -> str:
-        channel_quality_map = [key.value for key in cls]
-        return channel_quality_map[severity]
+    def __str__(self):
+        # Returns the Enum item as a string e.g. "VALID", rather than integer value
+        return self.name
 
 
 # Map from display form to DisplayForm enum
