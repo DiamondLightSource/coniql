@@ -231,7 +231,7 @@ class CASubscriptionManager:
                 meta_monitor_last_dropped[x.pv] = update_subscription_metrics(
                     x.meta_monitor, meta_monitor_last_dropped[x.pv], {"type": "meta"}
                 )
-            await asyncio.sleep(1)  # Update metrics every 1 seconds
+            await asyncio.sleep(10)  # Metrics only need updating infrequently
 
     def __callback(self, pv: str, key: DataEnum, v: AugmentedValue):
         if pv not in self.pvs:
