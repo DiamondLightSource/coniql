@@ -11,6 +11,7 @@ Practical step-by-step guides for the more experienced user.
     reference/api
     reference/benchmark
     reference/contributing
+    reference/performance
     Releases <https://github.com/DiamondLightSource/coniql/releases>
     Index <genindex.html#http://>
 
