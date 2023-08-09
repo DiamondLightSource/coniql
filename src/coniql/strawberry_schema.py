@@ -142,11 +142,17 @@ class Channel(TypeChannel):
     # ID that uniquely defines this Channel, normally a PV
     id: Optional[str] = strawberry.field(resolver=resolver_id)
     # The current value of this channel
-    value: Optional[ChannelValue] = strawberry.field(resolver=resolver_value)
+    value: Optional[ChannelValue] = strawberry.field(
+        resolver=resolver_value
+    )  # type: ignore
     # When was the value last updated
-    time: Optional[ChannelTime] = strawberry.field(resolver=resolver_time)
+    time: Optional[ChannelTime] = strawberry.field(
+        resolver=resolver_time
+    )  # type: ignore
     # Status of the connection, whether is is mutable, and alarm info
-    status: Optional[ChannelStatus] = strawberry.field(resolver=resolver_status)
+    status: Optional[ChannelStatus] = strawberry.field(
+        resolver=resolver_status
+    )  # type: ignore
     # How should the Channel be displayed
     display: Optional[ChannelDisplay] = strawberry.field(resolver=resolver_display)
 
