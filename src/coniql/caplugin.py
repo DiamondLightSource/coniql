@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
-from asyncio import Queue
+from asyncio import Event, Queue
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
@@ -186,7 +186,6 @@ class CAChannel(Channel):
 @dataclass
 class CallbackContext:
     callback: Callable[[Channel], None]
-    first_result_sent: bool = False
 
 
 @dataclass
@@ -198,6 +197,8 @@ class SubscriptionData:
 
     meta_value: Optional[AugmentedValue]
     meta_monitor: Subscription
+
+    all_values_received: Event
 
     callbacks: Dict[str, CallbackContext]
     maker: CAChannelMaker
@@ -252,28 +253,29 @@ class CASubscriptionManager:
         if data.time_value is None or data.meta_value is None:
             return
 
-        if key == DataEnum.TIME_VALUE:
-            channel = data.maker.channel_from_update(time_value=data.time_value)
-        elif key == DataEnum.META_VALUE:
-            channel = data.maker.channel_from_update(meta_value=data.meta_value)
+        if not data.all_values_received.is_set():
+            # The first subscription return is handled as part of the
+            # `subscribe` function, which is blocked waiting on this event
+            data.all_values_received.set()
+        else:
+            # Otherwise, construct the appropriate channel and call all callbacks
+            if key == DataEnum.TIME_VALUE:
+                channel = data.maker.channel_from_update(time_value=data.time_value)
+            elif key == DataEnum.META_VALUE:
+                channel = data.maker.channel_from_update(meta_value=data.meta_value)
 
-        for context in data.callbacks.values():
-            # For the first subscription return we must send both time and meta values
-            if context.first_result_sent is False:
-                channel = data.maker.channel_from_update(
-                    time_value=data.time_value,
-                    meta_value=data.meta_value,
-                    send_quality=True,
-                )
-                context.first_result_sent = True
-
-            context.callback(channel)
+            for context in data.callbacks.values():
+                context.callback(channel)
 
     async def subscribe(
         self, pv: str, callback: Callable[[Channel], None], callback_key: str
     ):
-        """Subscribe to the given PV. The provided callback will be called for every new
-        update to the PV.
+        """Subscribe to the given PV.
+
+        This function will block until both a time and meta value update has been
+        received from the PV. Once the data is received the provided callback will be
+        called immediately, with a Channel object that contains both time and meta
+        values.
 
         Caller must provide a key that will be associated with the callback. This same
         key must be passed to the `unsubscribe` function."""
@@ -331,6 +333,7 @@ class CASubscriptionManager:
                     time_monitor=value_monitor,
                     meta_value=None,
                     meta_monitor=meta_monitor,
+                    all_values_received=Event(),
                     callbacks={callback_key: callback_context},
                     maker=maker,
                     subscribers=1,
@@ -339,6 +342,16 @@ class CASubscriptionManager:
             else:
                 self.pvs[pv].subscribers += 1
                 self.pvs[pv].callbacks[callback_key] = callback_context
+
+            # Construct and send a channel with both time and meta values
+            data = self.pvs[pv]
+            await data.all_values_received.wait()
+            channel = data.maker.channel_from_update(
+                time_value=data.time_value,
+                meta_value=data.meta_value,
+                send_quality=True,
+            )
+            callback_context.callback(channel)
 
     def unsubscribe(self, pv: str, callback_key: str) -> None:
         """Unsubscribe from the given PV. The callback key must be provided and must
