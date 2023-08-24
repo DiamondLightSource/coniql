@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API &mdash; coniql 0.4.dev77+g3a8c46e documentation</title>
+  <title>Performance &mdash; coniql 0.4.dev77+g3a8c46e documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -22,8 +22,7 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Benchmarking" href="benchmark.html" />
-    <link rel="prev" title="Why GraphQL?" href="../explanations/why-graphql.html" /> 
+    <link rel="prev" title="Contributing" href="contributing.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -63,14 +62,17 @@
 </ul>
 <p class="caption" role="heading"><span class="caption-text">Reference</span></p>
 <ul class="current">
-<li class="toctree-l1 current"><a class="current reference internal" href="#">API</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#coniql"><code class="docutils literal notranslate"><span class="pre">coniql</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#coniql.coniql.__version__"><code class="docutils literal notranslate"><span class="pre">coniql.__version__</span></code></a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="benchmark.html">Benchmarking</a></li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Performance</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#investigating-coniql-performance">Investigating Coniql Performance</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#method">Method</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#findings">Findings</a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/coniql/releases">Releases</a></li>
 <li class="toctree-l1"><a class="reference external" href="genindex.html#http://">Index</a></li>
 </ul>
@@ -89,9 +91,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">API</li>
+      <li class="breadcrumb-item active">Performance</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="../_sources/reference/api.rst.txt" rel="nofollow"> View page source</a>
+            <a href="../_sources/reference/performance.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -99,26 +101,48 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="api">
-<h1>API<a class="headerlink" href="#api" title="Link to this heading"></a></h1>
-<section id="coniql">
-<span id="module-coniql"></span><h2><code class="docutils literal notranslate"><span class="pre">coniql</span></code><a class="headerlink" href="#coniql" title="Link to this heading"></a></h2>
+  <section id="performance">
+<h1>Performance<a class="headerlink" href="#performance" title="Link to this heading"></a></h1>
+<p>Coniql has had much work done to have the best performance for Subscriptions, which are the primary use case
+of most web GUIs, who are the primary consumers of Coniql data.</p>
+<p>Coniql can handle approximately 2,000 updates per second. This was tested using 10Hz PVs, subscribing to
+increasing numbers until updates were no longer being sent promptly.</p>
+<section id="investigating-coniql-performance">
+<h2>Investigating Coniql Performance<a class="headerlink" href="#investigating-coniql-performance" title="Link to this heading"></a></h2>
+<section id="method">
+<h3>Method<a class="headerlink" href="#method" title="Link to this heading"></a></h3>
+<p>The primary method used for investigating Coniql’s performance has been <a class="reference external" href="https://github.com/benfred/py-spy">py-spy</a>.
+This is a sampling profiler that can output speedscope-format data, which can then be viewed in the very nice
+<a class="reference external" href="https://www.speedscope.app/">Speedscope web UI</a>.</p>
+<p>The profiles have been generates by first installing  <code class="docutils literal notranslate"><span class="pre">py-spy</span></code>, then running the <a class="reference internal" href="benchmark.html"><span class="doc">Benchmarking</span></a> tests,
+modifying the Bash script to launch  <code class="docutils literal notranslate"><span class="pre">py-spy</span></code>, for example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">CMD2</span><span class="o">=</span><span class="s2">&quot;sleep 2;source $CONIQL_DIR/bin/activate;py-spy record --format speedscope --output speedscope-$(date +&quot;</span><span class="o">%</span><span class="n">Y</span><span class="o">-%</span><span class="n">m</span><span class="o">-%</span><span class="n">d</span><span class="o">-%</span><span class="n">H</span><span class="p">:</span><span class="o">%</span><span class="n">M</span><span class="p">:</span><span class="o">%</span><span class="n">S</span><span class="s2">&quot;) coniql&quot;</span>
+</pre></div>
+</div>
+<p>An example speedscope can be found in this directory.</p>
 </section>
-<p>This is the internal API reference for coniql</p>
-<dl class="py data">
-<dt class="sig sig-object py" id="coniql.coniql.__version__">
-<span class="sig-prename descclassname"><span class="pre">coniql.</span></span><span class="sig-name descname"><span class="pre">__version__</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.11)"><span class="pre">str</span></a></em><a class="headerlink" href="#coniql.coniql.__version__" title="Link to this definition"></a></dt>
-<dd><p>Version number as calculated by <a class="reference external" href="https://github.com/dls-controls/versiongit">https://github.com/dls-controls/versiongit</a></p>
-</dd></dl>
-
+<section id="findings">
+<h3>Findings<a class="headerlink" href="#findings" title="Link to this heading"></a></h3>
+<p>Most of the time spent in processing results is done using <code class="docutils literal notranslate"><span class="pre">async</span></code> processing. The major performance gains so far have all come from
+minimizing the amount of <code class="docutils literal notranslate"><span class="pre">async</span></code> calls that are made in our code. For example all of our Resolvers are now synchronous.
+We do have to have some <code class="docutils literal notranslate"><span class="pre">async</span></code> calls, as we must use <code class="docutils literal notranslate"><span class="pre">aioca</span></code> to monitor PVs. These occur on initial calls to Query, Mutations,
+and Subscriptions, in a stage before the Resolvers are called.</p>
+<p>The current sampling shows that 80% of the time is spent in <code class="docutils literal notranslate"><span class="pre">operation_task()</span></code>, which is a high level function inside Strawberry.
+This code calls into the lower level <code class="docutils literal notranslate"><span class="pre">graphql</span></code> library for most of its runtime. Broadly, these calls handle the GraphQL protocol,
+parsing the requested fields into calls to our library for data, then parsing that data back out to return the requested fields
+to the client.</p>
+<p>It is unclear why exactly this process seems to have so much overhead - further investigation is required.</p>
+<p>Approxmately 1% of time is spent directly in Coniql code. Most of that is inside of the <code class="docutils literal notranslate"><span class="pre">aioca</span></code> callbacks. Additional performance gains in this
+area are unlikely to be worthwhile as the possible gains are so small.</p>
+</section>
+</section>
 </section>
 
 
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../explanations/why-graphql.html" class="btn btn-neutral float-left" title="Why GraphQL?" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="benchmark.html" class="btn btn-neutral float-right" title="Benchmarking" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="contributing.html" class="btn btn-neutral float-left" title="Contributing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Run a server &mdash; coniql 0.4.dev62+g1d8c7ff documentation</title>
+  <title>Run a server &mdash; coniql 0.4.dev77+g3a8c46e documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -14,11 +14,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=cc45ba9a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -76,6 +76,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../reference/api.html">API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference/benchmark.html">Benchmarking</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../reference/contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../reference/performance.html">Performance</a></li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/coniql/releases">Releases</a></li>
 <li class="toctree-l1"><a class="reference external" href="genindex.html#http://">Index</a></li>
 </ul>
@@ -105,14 +106,14 @@
            <div itemprop="articleBody">
              
   <section id="run-a-server">
-<h1>Run a server<a class="headerlink" href="#run-a-server" title="Permalink to this heading"></a></h1>
+<h1>Run a server<a class="headerlink" href="#run-a-server" title="Link to this heading"></a></h1>
 <p>Coniql exposes an interface to Channels. A Channel maps to a single
 value, with timeStamp, status information, and display level metadata.
 Channels can be backed by different data stores, provided via a plugin
 interface.</p>
 <p>For example:</p>
 <img alt="../_images/concrete-device-layer.svg" src="../_images/concrete-device-layer.svg" /><section id="running-a-server">
-<h2>Running a server<a class="headerlink" href="#running-a-server" title="Permalink to this heading"></a></h2>
+<h2>Running a server<a class="headerlink" href="#running-a-server" title="Link to this heading"></a></h2>
 <p>You can run up a simulation server like this:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pipenv</span> <span class="n">run</span> <span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">coniql</span>
 </pre></div>
@@ -121,7 +122,7 @@ interface.</p>
 <p><a class="reference external" href="http://localhost:8080/graphiql">http://localhost:8080/graphiql</a></p>
 <p>You can type in queries, pressing Ctrl + space to autocomplete. Below are some examples to try.</p>
 <section id="getting-a-channel">
-<h3>Getting a channel<a class="headerlink" href="#getting-a-channel" title="Permalink to this heading"></a></h3>
+<h3>Getting a channel<a class="headerlink" href="#getting-a-channel" title="Link to this heading"></a></h3>
 <p>A query like the following:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="p">{</span>
   <span class="n">getChannel</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="s2">&quot;ssim://sine&quot;</span><span class="p">)</span> <span class="p">{</span>
@@ -156,7 +157,7 @@ second part is the channel name. See the sections on plugins below for
 details.</p>
 </section>
 <section id="subscribing-to-a-channel">
-<h3>Subscribing to a Channel<a class="headerlink" href="#subscribing-to-a-channel" title="Permalink to this heading"></a></h3>
+<h3>Subscribing to a Channel<a class="headerlink" href="#subscribing-to-a-channel" title="Link to this heading"></a></h3>
 <p>To get updates whenever a Channel changes, you can use subscribeChannel. This returns
 Channel objects with non-changing top level fields set to null. For example, if we
 ask for the value, status and display of the same Channel:</p>
@@ -210,7 +211,7 @@ using the documentation explorer on the right to see what else you can do.</p>
 </section>
 </section>
 <section id="sim-plugin">
-<h2>Sim Plugin<a class="headerlink" href="#sim-plugin" title="Permalink to this heading"></a></h2>
+<h2>Sim Plugin<a class="headerlink" href="#sim-plugin" title="Link to this heading"></a></h2>
 <p>The sim plugin provides a number of channels that accept keyword args. For a
 channel <code class="docutils literal notranslate"><span class="pre">channel</span></code> which takes up to 3 args, the allowed combinations are:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ssim</span><span class="p">:</span><span class="o">//</span><span class="n">channel</span>
@@ -227,7 +228,7 @@ channel <code class="docutils literal notranslate"><span class="pre">channel</sp
 </ul>
 </section>
 <section id="ca-plugin">
-<h2>CA Plugin<a class="headerlink" href="#ca-plugin" title="Permalink to this heading"></a></h2>
+<h2>CA Plugin<a class="headerlink" href="#ca-plugin" title="Link to this heading"></a></h2>
 <p>Coniql can provide values of Channel Access. To try this out, point it at some
 running PVs on Diamond’s network. If you need a softIoc, you can run one up
 using the epicscorelibs Python package that is a dependency of coniql. Inside
@@ -257,7 +258,7 @@ the coniql directory type:</p>
 </div>
 </section>
 <section id="pva-plugin">
-<h2>PVA Plugin<a class="headerlink" href="#pva-plugin" title="Permalink to this heading"></a></h2>
+<h2>PVA Plugin<a class="headerlink" href="#pva-plugin" title="Link to this heading"></a></h2>
 <p>Coniql can also provide its values over pvAccess. To try this out you will need a
 working installation of <a class="reference external" href="https://epics.anl.gov/base/R7-0/index.php">EPICS 7</a>. You can
 then start a soft IOC, or add the PVA plugin to IOCs to expose PVs. The PVs work

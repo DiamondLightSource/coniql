@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Benchmarking &mdash; coniql 0.4.dev62+g1d8c7ff documentation</title>
+  <title>Benchmarking &mdash; coniql 0.4.dev77+g3a8c46e documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -14,11 +14,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=cc45ba9a"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -74,6 +74,7 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="performance.html">Performance</a></li>
 <li class="toctree-l1"><a class="reference external" href="https://github.com/DiamondLightSource/coniql/releases">Releases</a></li>
 <li class="toctree-l1"><a class="reference external" href="genindex.html#http://">Index</a></li>
 </ul>
@@ -103,7 +104,7 @@
            <div itemprop="articleBody">
              
   <section id="benchmarking">
-<h1>Benchmarking<a class="headerlink" href="#benchmarking" title="Permalink to this heading"></a></h1>
+<h1>Benchmarking<a class="headerlink" href="#benchmarking" title="Link to this heading"></a></h1>
 <p>In order to evaluate how changes made to the server impact the performance we have created a benchmarking script to measure the CPU usage, memory usage
 and the number of dropped updates. This script is written in Python. The script creates a websocket client and starts subscriptions to a configurable
 number of EPICS PVs. A separate thread measures the CPU and memory usage of the Coniql application while the subscriptions are running. After _N_ samples
@@ -113,16 +114,16 @@ are also analysed to determine how many updates were missed by Coniql.</p>
 <p>To facilitate the running of all these components a bash script has also been provided. This will handle the creation of the .db file, starting the
 EPICS IOC, starting Coniql, and running the Python performance tests.</p>
 <section id="instructions">
-<h2>Instructions<a class="headerlink" href="#instructions" title="Permalink to this heading"></a></h2>
+<h2>Instructions<a class="headerlink" href="#instructions" title="Link to this heading"></a></h2>
 <section id="prerequisites">
-<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this heading"></a></h3>
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
 <ul class="simple">
 <li><p>EPICS installed</p></li>
 <li><p>Coniql installed in a Python virtual environment</p></li>
 </ul>
 </section>
 <section id="bash-script">
-<h3>Bash script<a class="headerlink" href="#bash-script" title="Permalink to this heading"></a></h3>
+<h3>Bash script<a class="headerlink" href="#bash-script" title="Link to this heading"></a></h3>
 <p>To run the bash script:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">benchmark</span><span class="o">/</span><span class="n">run_performance_test</span><span class="o">.</span><span class="n">sh</span> <span class="o">--</span><span class="n">path</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">coniql</span><span class="o">/</span><span class="n">venv</span><span class="o">&gt;</span>
 </pre></div>
@@ -145,7 +146,7 @@ EPICS IOC, starting Coniql, and running the Python performance tests.</p>
 <p>See script <code class="docutils literal notranslate"><span class="pre">--help</span></code> option for more details.</p>
 </section>
 <section id="expected-results">
-<h3>Expected Results<a class="headerlink" href="#expected-results" title="Permalink to this heading"></a></h3>
+<h3>Expected Results<a class="headerlink" href="#expected-results" title="Link to this heading"></a></h3>
 <p>Results will be output to <code class="docutils literal notranslate"><span class="pre">benchmark/performance_test_results_NClients_X.txt</span></code>.</p>
 <p>Logs from the EPICS IOC, Coniql and Python performance script will be saved in <code class="docutils literal notranslate"><span class="pre">benchmark/logs/</span></code>.</p>
 <p>The results of the performance test should be compared between updates to the code. For the same number of clients, PVs, samples, and the same
