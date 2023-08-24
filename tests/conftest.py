@@ -6,6 +6,7 @@ import subprocess
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import cast
 from unittest.mock import ANY
 
 import pytest
@@ -28,6 +29,8 @@ from strawberry.subscriptions.protocols.graphql_ws.types import (
 )
 
 from coniql.app import create_app
+from coniql.caplugin import CAPlugin, CASubscriptionManager
+from coniql.strawberry_schema import store_global
 
 SOFT_RECORDS = str(Path(__file__).parent / "soft_records.db")
 
@@ -58,7 +61,7 @@ def event_loop():
     loop.close()
 
 
-def ioc_creator(pv_prefix=PV_PREFIX):
+def ioc_creator(pv_prefix=PV_PREFIX) -> subprocess.Popen:
     process = subprocess.Popen(
         [
             sys.executable,
@@ -78,10 +81,6 @@ def ioc_creator(pv_prefix=PV_PREFIX):
     return process
 
 
-def run_ioc(process):
-    yield process
-
-
 def ioc_cleanup(process):
     purge_channel_caches()
     try:
@@ -94,7 +93,7 @@ def ioc_cleanup(process):
 @pytest.fixture(scope="module")
 def ioc():
     process = ioc_creator()
-    yield run_ioc(process)
+    yield process
     ioc_cleanup(process)
 
 
@@ -415,3 +414,13 @@ subscribe_params = [
 def subscription_data(request):
     """Fixture for the possible subscription types"""
     return request.param
+
+
+@pytest.fixture(autouse=True)
+def clear_subscription_manager() -> None:
+    """Reset the CASubscriptionManager inside the CAPlugin
+
+    This ensures there's no record of PVs between tests"""
+
+    ca_plugin: CAPlugin = cast(CAPlugin, store_global.plugins["ca"])
+    ca_plugin.subscription_manager = CASubscriptionManager()

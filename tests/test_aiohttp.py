@@ -37,7 +37,6 @@ from .conftest import (
     longout_subscription_result,
     nan_get_query,
     nan_get_query_result,
-    run_ioc,
 )
 
 
@@ -82,7 +81,6 @@ async def test_aiohttp_client_put_pv(
 async def test_subscribe_disconnect(client: TestClient):
     pv_prefix = PV_PREFIX + "EXTRA:"
     ioc_process = ioc_creator(pv_prefix)
-    run_ioc(ioc_process)
     query = get_longout_subscription_query(pv_prefix)
     results: List[Dict[str, Any]] = []
     async with client.ws_connect(

@@ -1,11 +1,14 @@
 import asyncio
 from subprocess import Popen
-from typing import Any, AsyncIterator, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional, cast
 
 import pytest
+from aioca import Subscription
 from strawberry import Schema
 
 from coniql.app import create_schema
+from coniql.caplugin import CAPlugin
+from coniql.strawberry_schema import store_global
 
 from .conftest import (
     PV_PREFIX,
@@ -29,7 +32,6 @@ from .conftest import (
     longout_subscription_result,
     nan_get_query,
     nan_get_query_result,
-    run_ioc,
     ticking_subscription_query,
 )
 
@@ -82,7 +84,6 @@ async def test_schema_put_pv(
 async def test_subscribe_disconnect(schema: Schema):
     pv_prefix = PV_PREFIX + "EXTRA:"
     ioc_process = ioc_creator(pv_prefix)
-    run_ioc(ioc_process)
     query = get_longout_subscription_query(pv_prefix)
     results: List[Dict[str, Any]] = []
     resp = await schema.subscribe(query)
@@ -126,3 +127,85 @@ async def test_subscribe_ticking(ioc: Popen, schema: Schema):
     subscription_result = get_ticking_subscription_result(startVal)
     for i in range(3):
         assert results[i] == subscription_result[i]
+
+
+@pytest.mark.asyncio
+async def test_subscribe_multiple(schema: Schema):
+    """Test that multiple subscriptions to the same PV all receive the right data"""
+
+    pv_prefix = PV_PREFIX + "MULTIPLE:"
+    ioc_process = ioc_creator(pv_prefix)
+
+    query = get_longout_subscription_query(pv_prefix)
+
+    responses = await asyncio.gather(
+        schema.subscribe(query), schema.subscribe(query), schema.subscribe(query)
+    )
+
+    # Check initial response is correct for all
+    for resp in responses:
+        results: List[Dict[str, Any]] = []
+        assert isinstance(resp, AsyncIterator)
+        async for result in resp:
+            assert result.errors is None
+            assert result.data
+            results.append(result.data)
+            break
+        assert len(results) == 1
+        assert results[0] == longout_subscription_result[0]
+
+    ioc_process.communicate("exit()")
+
+    # And check they all get the disconnect message
+    for resp in responses:
+        results = []
+        assert isinstance(resp, AsyncIterator)
+        async for result in resp:
+            assert result.errors is None
+            assert result.data
+            results.append(result.data)
+            break
+        assert len(results) == 1
+        assert results[0] == longout_subscription_result[1]
+
+
+async def subscribe_task_wrapper(schema: Schema, query: str):
+    resp = await schema.subscribe(query)
+    assert isinstance(resp, AsyncIterator)
+    async for _ in resp:
+        pass
+
+
+@pytest.mark.parametrize("num_subscribers", [1, 5])
+async def test_subscribe_unsubscribe(ioc: Popen, schema: Schema, num_subscribers: int):
+    """Test that cancelling a subscription correctly closes channel monitors"""
+
+    # Create subscription(s)
+    query = get_longout_subscription_query(PV_PREFIX)
+    tasks: List[asyncio.Task] = []
+    for _ in range(num_subscribers):
+        tasks.append(asyncio.create_task(subscribe_task_wrapper(schema, query)))
+
+    await asyncio.sleep(1)
+
+    # Check the subscription is logged in the manager
+    ca_plugin: CAPlugin = cast(CAPlugin, store_global.plugins["ca"])
+    pvs = ca_plugin.subscription_manager.pvs
+    assert len(pvs.keys()) == 1
+    for pv in pvs.values():
+        assert pv.meta_monitor.state == Subscription.OPEN
+        assert pv.time_monitor.state == Subscription.OPEN
+        assert pv.subscribers == num_subscribers
+
+    # Close subscriptions
+    for task in tasks:
+        task.cancel()
+
+    await asyncio.sleep(1)
+
+    # Check subscription has been closed
+    pvs = ca_plugin.subscription_manager.pvs
+    for pv in pvs.values():
+        assert pv.meta_monitor.state == Subscription.CLOSED
+        assert pv.time_monitor.state == Subscription.CLOSED
+        assert pv.subscribers == 0

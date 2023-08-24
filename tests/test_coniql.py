@@ -189,3 +189,26 @@ query {
 def test_cli_version():
     cmd = [sys.executable, "-m", "coniql", "--version"]
     assert subprocess.check_output(cmd).decode().strip() == __version__
+
+
+def test_schema_contains_no_snake_case(schema: Schema):
+    """Test that the Schema contains no snake_case members which may need to be
+    converted to camelCase (as per GraphQL convention).
+
+    Currently we set auto_camel_case=False when constructing the Schema, as currently
+    there are no variables that need to be converted.
+
+    If this test fails due to additions to the schema, this can probably be deleted
+    (as long as we also re-enable auto_camel_case)"""
+
+    introspected_schema = schema.introspect()
+
+    for type in introspected_schema["__schema"]["types"]:
+        name = type["name"]
+        # Some inbuilt types with leading doule underscores exist, e.g. __Schema, __Type
+        if name[0:2] != "__":
+            assert "_" not in name
+
+        if type["fields"] is not None:
+            for field in type["fields"]:
+                assert "_" not in field["name"]
