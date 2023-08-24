@@ -396,7 +396,6 @@ class CAPlugin(Plugin):
             while True:
                 try:
                     value.get_nowait()
-                    value.task_done()  # Not necessary as we never join on the queue
                 except asyncio.QueueEmpty:
                     break
 
