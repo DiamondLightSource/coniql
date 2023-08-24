@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Performance &mdash; coniql 0.4.dev75+g3013983 documentation</title>
+  <title>Performance &mdash; coniql 0.4.dev77+g4bce36b documentation</title>
       <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
       <link rel="stylesheet" href="../_static/graphviz.css" type="text/css" />
@@ -14,11 +14,11 @@
     <script src="../_static/js/html5shiv.min.js"></script>
   <![endif]-->
   
-        <script src="../_static/jquery.js"></script>
-        <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
-        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
-        <script src="../_static/doctools.js"></script>
-        <script src="../_static/sphinx_highlight.js"></script>
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=88392af0"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -102,15 +102,15 @@
            <div itemprop="articleBody">
              
   <section id="performance">
-<h1>Performance<a class="headerlink" href="#performance" title="Permalink to this heading"></a></h1>
+<h1>Performance<a class="headerlink" href="#performance" title="Link to this heading"></a></h1>
 <p>Coniql has had much work done to have the best performance for Subscriptions, which are the primary use case
 of most web GUIs, who are the primary consumers of Coniql data.</p>
 <p>Coniql can handle approximately 2,000 updates per second. This was tested using 10Hz PVs, subscribing to
 increasing numbers until updates were no longer being sent promptly.</p>
 <section id="investigating-coniql-performance">
-<h2>Investigating Coniql Performance<a class="headerlink" href="#investigating-coniql-performance" title="Permalink to this heading"></a></h2>
+<h2>Investigating Coniql Performance<a class="headerlink" href="#investigating-coniql-performance" title="Link to this heading"></a></h2>
 <section id="method">
-<h3>Method<a class="headerlink" href="#method" title="Permalink to this heading"></a></h3>
+<h3>Method<a class="headerlink" href="#method" title="Link to this heading"></a></h3>
 <p>The primary method used for investigating Coniql’s performance has been <a class="reference external" href="https://github.com/benfred/py-spy">py-spy</a>.
 This is a sampling profiler that can output speedscope-format data, which can then be viewed in the very nice
 <a class="reference external" href="https://www.speedscope.app/">Speedscope web UI</a>.</p>
@@ -122,7 +122,7 @@ modifying the Bash script to launch  <code class="docutils literal notranslate">
 <p>An example speedscope can be found in this directory.</p>
 </section>
 <section id="findings">
-<h3>Findings<a class="headerlink" href="#findings" title="Permalink to this heading"></a></h3>
+<h3>Findings<a class="headerlink" href="#findings" title="Link to this heading"></a></h3>
 <p>Most of the time spent in processing results is done using <code class="docutils literal notranslate"><span class="pre">async</span></code> processing. The major performance gains so far have all come from
 minimizing the amount of <code class="docutils literal notranslate"><span class="pre">async</span></code> calls that are made in our code. For example all of our Resolvers are now synchronous.
 We do have to have some <code class="docutils literal notranslate"><span class="pre">async</span></code> calls, as we must use <code class="docutils literal notranslate"><span class="pre">aioca</span></code> to monitor PVs. These occur on initial calls to Query, Mutations,
