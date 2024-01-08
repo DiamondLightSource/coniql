@@ -16,6 +16,10 @@
     "url": "https://DiamondLightSource.github.io/coniql/0.2/"
   },
   {
+    "version": "fix-ci",
+    "url": "https://DiamondLightSource.github.io/coniql/fix-ci/"
+  },
+  {
     "version": "fix_intermittent_test_failures",
     "url": "https://DiamondLightSource.github.io/coniql/fix_intermittent_test_failures/"
   },
