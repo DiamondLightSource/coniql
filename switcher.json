@@ -36,6 +36,10 @@
     "url": "https://DiamondLightSource.github.io/coniql/performance_tests_tidy/"
   },
   {
+    "version": "pin-python-docker-ver",
+    "url": "https://DiamondLightSource.github.io/coniql/pin-python-docker-ver/"
+  },
+  {
     "version": "test-branch",
     "url": "https://DiamondLightSource.github.io/coniql/test-branch/"
   },
