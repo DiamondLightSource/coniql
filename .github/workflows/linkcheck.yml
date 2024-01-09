@@ -19,7 +19,7 @@ jobs:
         with:
           requirements_file: requirements-dev-3.x.txt
           install_options: -e .[dev]
-          python_version: "3.11"
+          python_version: "3.11" # Pinned to 3.11 https://github.com/DiamondLightSource/coniql/issues/101
 
       - name: Check links
         run: tox -e docs build -- -b linkcheck

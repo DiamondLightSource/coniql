@@ -94,6 +94,7 @@ addopts = """
     --cov=coniql --cov-report term --cov-report xml:cov.xml
     """
 # https://iscinumpy.gitlab.io/post/bound-version-constraints/#watch-for-warnings
+# Commented out because of https://github.com/DiamondLightSource/coniql/issues/101
 # filterwarnings = "error"
 # Doctest python code in docs, python code in src docstrings, test functions in tests
 testpaths = "docs src tests"
