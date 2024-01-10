@@ -4,16 +4,16 @@
     "url": "https://DiamondLightSource.github.io/coniql/main/"
   },
   {
-    "version": "0.4",
-    "url": "https://DiamondLightSource.github.io/coniql/0.4/"
+    "version": "0.2",
+    "url": "https://DiamondLightSource.github.io/coniql/0.2/"
   },
   {
     "version": "0.3",
     "url": "https://DiamondLightSource.github.io/coniql/0.3/"
   },
   {
-    "version": "0.2",
-    "url": "https://DiamondLightSource.github.io/coniql/0.2/"
+    "version": "0.4",
+    "url": "https://DiamondLightSource.github.io/coniql/0.4/"
   },
   {
     "version": "fix-ci",
@@ -34,10 +34,6 @@
   {
     "version": "performance_tests_tidy",
     "url": "https://DiamondLightSource.github.io/coniql/performance_tests_tidy/"
-  },
-  {
-    "version": "pin-python-docker-ver",
-    "url": "https://DiamondLightSource.github.io/coniql/pin-python-docker-ver/"
   },
   {
     "version": "test-branch",
