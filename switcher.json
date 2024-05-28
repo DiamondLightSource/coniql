@@ -24,6 +24,10 @@
     "url": "https://DiamondLightSource.github.io/coniql/0.2/"
   },
   {
+    "version": "add-image-build-cron-job",
+    "url": "https://DiamondLightSource.github.io/coniql/add-image-build-cron-job/"
+  },
+  {
     "version": "fix-ci",
     "url": "https://DiamondLightSource.github.io/coniql/fix-ci/"
   },
