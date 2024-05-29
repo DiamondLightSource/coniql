@@ -3,6 +3,7 @@ name: Code CI
 on:
   push:
   pull_request:
+  workflow_dispatch:
 env:
   # The target python version, which must match the Dockerfile version
   CONTAINER_PYTHON: "3.10"
@@ -122,10 +123,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       # image names must be all lower case
       - name: Generate image repo name
         run: echo IMAGE_REPOSITORY=ghcr.io/$(tr '[:upper:]' '[:lower:]' <<< "${{ github.repository }}") >> $GITHUB_ENV
+
+      # Fetch latest tag on this branch if manually triggered
+      - name: Fetch latest tag
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "LATEST_TAG=git tag | sort --version-sort | tail -n1" >> $GITHUB_ENV
 
       - name: Download wheel and lockfiles
         uses: actions/download-artifact@v3
@@ -173,10 +181,12 @@ jobs:
           images: ${{ env.IMAGE_REPOSITORY }}
           # Add the "edge" tag on all commits to the "integration" branch.
           # Add the "latest" tag to repository tags only
+          # Add a version tag if workflow is manually triggered
           tags: |
             type=edge,branch=integration
             type=ref,event=tag
             type=raw,value=latest, enable=${{ github.ref_type == 'tag' }}
+            type=semver,pattern={{version}},value=${{ env.LATEST_TAG }},enable=${{github.event_name == 'workflow_dispatch'}}
 
       - name: Push cached image to container registry
         if: github.ref_type == 'tag' || github.ref_name == 'integration'
