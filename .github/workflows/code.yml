@@ -133,7 +133,7 @@ jobs:
       # Fetch latest tag on this branch if manually triggered
       - name: Fetch latest tag
         if: github.event_name == 'workflow_dispatch'
-        run: echo "LATEST_TAG=git tag | sort --version-sort | tail -n1" >> $GITHUB_ENV
+        run: echo "LATEST_TAG=$(git tag | sort --version-sort | tail -n1)" >> $GITHUB_ENV
 
       - name: Download wheel and lockfiles
         uses: actions/download-artifact@v3
