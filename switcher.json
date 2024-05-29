@@ -52,6 +52,10 @@
     "url": "https://DiamondLightSource.github.io/coniql/test-branch/"
   },
   {
+    "version": "update-ci-triggering",
+    "url": "https://DiamondLightSource.github.io/coniql/update-ci-triggering/"
+  },
+  {
     "version": "update_favicon",
     "url": "https://DiamondLightSource.github.io/coniql/update_favicon/"
   },
