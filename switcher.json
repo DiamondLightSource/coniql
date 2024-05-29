@@ -32,6 +32,10 @@
     "url": "https://DiamondLightSource.github.io/coniql/fix-ci/"
   },
   {
+    "version": "fix-ci-syntax",
+    "url": "https://DiamondLightSource.github.io/coniql/fix-ci-syntax/"
+  },
+  {
     "version": "fix_intermittent_test_failures",
     "url": "https://DiamondLightSource.github.io/coniql/fix_intermittent_test_failures/"
   },
