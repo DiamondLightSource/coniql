@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: coniql
+  title: Coniql
+  description: Control system interface in GraphQL.
+  annotations:
+    backstage.io/techdocs-ref: dir:.
+    github.com/project-slug: DiamondLightSource/coniql
+  tags:
+    - python
+    - graphql
+spec:
+  type: service
+  lifecycle: production
+  owner: group:Controls
+  dependsOn:
+    - component:aioca
