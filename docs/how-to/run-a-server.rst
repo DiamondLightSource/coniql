@@ -152,10 +152,10 @@ This will then let you get the current values of the PVs in that database file::
     }
   }
 
-You can also put to a PV::
+You can also put to one or more PVs::
 
   mutation {
-    putChannel(id: "ca://pc0105:longout", value: "45") {
+    putChannels(ids: ["ca://pc0105:longout"], values: ["45"]) {
       value {
         string(units: true)
       }
